@@ -47,149 +47,6 @@ fs.readFile('musicAlbum.json', 'utf-8', function (err, text) {
   botFunc.Album = JSON.parse(text);
 });
 
-bot.on('noteHeard', (block, instrument, pitch) => {
-  try {
-    if (botFunc.isPlayingMusic) {
-      botFunc.playedNote++;
-      return;
-    }
-    if (botFunc.logNote) {
-      bot.log("[note] " + getJTune(pitch) + " " + block.position + " " + instrument.id);
-    }
-
-    if (block.position.distanceTo(bot.entity.position) > 9.0) return;
-    var Note = {
-      block,
-      instrument,
-      pitch
-    };
-    if (botFunc.isTuning && !botFunc.isSame(block.position, prePosition)) {
-      bot.log("[note] tuned " + preTune);
-    }
-    prePosition = block.position;
-
-    for (var i = 0; i < botFunc.notes.length; i++) {
-      for (var k = 0; k < botFunc.notes[i].length; k++) {
-        if (botFunc.isSame(block.position, botFunc.notes[i][k].block.position)) {
-          if ((botFunc.notes[i][k].pitch == pitch) && (botFunc.notes[i][k].instrument == instrument)) {
-
-          } else if (botFunc.notes[i][k].instrument == instrument){
-            botFunc.notes[i][k].pitch = pitch;
-            if (!botFunc.isTuning && botFunc.logNote) {
-              bot.log("[note] PitchChange");
-            }
-          } else {
-            bot.log("[note] InstChange");
-          }
-          botFunc.notes[i][k].instrument = instrument;
-          preTune = pitch;
-          i = 100;
-          break;
-        }
-      }
-    }
-    if (i == botFunc.notes.length && k == botFunc.notes[i - 1].length) {
-      botFunc.notes[instrument.id].push(Note);
-      if (botFunc.logNote) bot.log("[note] NewNote  " + instrument.name + " " + pitch);
-    }
-  } catch (e) {
-    console.log(e);
-  }
-});
-
-
-bot.loadPlugin(botFunc.blockFinderPlugin);
-
-botFunc.initNote = () => {
-  bot.log("[note] Init");
-  botFunc.notes = [[], [], [], [], [], [], [], [], [], []];
-  bot.findBlock(
-    { point: bot.entity.position.floored(), matching: 25, maxDistance: 12, count: 500 }
-    , function (err, blocks) {
-      if (err) {
-        return console.log('Error trying to find : ' + err);
-      }
-      if (blocks.length) {
-        var i = 0;
-        var initter = setInterval(function () {
-          if (i < blocks.length) {
-            if (blocks[i].position.distanceTo(bot.entity.position) > 8.0) {
-
-            } else {
-              punchNote(blocks[i]);
-            }
-            i++;
-          } else {
-            clearInterval(initter);
-            bot.log("[note] InitEnd");
-            botFunc.tuneNote();
-          }
-        }, botFunc.initTempo);
-
-      } else {
-        bot.log("I couldn't find within 5.");
-        return;
-      }
-    });
-
-}
-
-botFunc.tuneNote = () => {
-  botFunc.isTuning = true;
-  var tuneArray = [];
-  var needCount = 0;
-  for (var i = 0; i < botFunc.notes.length; i++) {
-    botFunc.notes[i].sort((a,b) => a.pitch - b.pitch);
-    if(botFunc.notes[i].length >= 25)
-      for (var k = 0; k < botFunc.notes[i].length && k < 25; k++) {
-        needCount = (botFunc.notes[i][k].pitch <= k) ? k - botFunc.notes[i][k].pitch : 25 - (botFunc.notes[i][k].pitch - k);
-        bot.log("[note] TuneTarget: " + botFunc.notes[i][k].pitch + " needCount: " + needCount);
-        for (; needCount > 0; needCount--) {
-          tuneArray.push(botFunc.notes[i][k]);
-        }
-        if(tuneArray.length > 0 && tuneArray[ tuneArray.length-1 ] != null){
-          tuneArray.push(null);
-        }
-      }
-    else if (botFunc.notes[i].length>0)
-    for (var k = 0; k < 3; k++) {
-      var tg = (k+1)*6;
-      needCount = (botFunc.notes[i][k].pitch <= tg) ? tg - botFunc.notes[i][k].pitch : 25 - (botFunc.notes[i][k].pitch - tg);
-      bot.log("[note] TuneTarget: " + botFunc.notes[i][k].pitch + " needCount: " + needCount);
-      for (; needCount > 0; needCount--) {
-        tuneArray.push(botFunc.notes[i][k]);
-      }
-      if(tuneArray.length > 0 && tuneArray[ tuneArray.length-1 ] != null){
-        tuneArray.push(null);
-      }
-    }
-  }
-  try {
-    var i = 0;
-    var tunitian = setInterval(function () {
-      if (i < tuneArray.length && botFunc.isTuning) {
-        if (tuneArray[i] != null) {
-          bot.activateBlock(tuneArray[i].block);
-          i++;
-        } else {
-          i++;
-          if (i < tuneArray.length && tuneArray[i] != null) {
-            bot.log("[note] TuneWait");
-            bot.lookAt(tuneArray[i].block.position.offset(0.5, 0.5, 0.5), true);
-          }
-        }
-      } else {
-        botFunc.isTuning = false;
-        bot.log("[note] TuneFinish");
-        clearInterval(tunitian);
-      }
-    }, botFunc.tuneTempo);
-
-  } catch (e) {
-    console.log(e);
-  }
-}
-
 
 botFunc.createMusic = (MusicObj, tempo = 48, pits = []) => {
   botFunc.isPlayingMusic = false;
@@ -236,17 +93,14 @@ botFunc.createMusic = (MusicObj, tempo = 48, pits = []) => {
       MusicObj.seqData.push(null);
       continue;
     }
-    for (var k = 0; k < botFunc.notes[inst].length; k++) {//matching
-      if (botFunc.notes[inst][k].pitch == pits[i]) {
-        MusicObj.soundCount++;
-        MusicObj.seqData.push(botFunc.notes[inst][k]);
-        break;
-      }
-    }
-    if (k == botFunc.notes[inst].length) {//not exist
-      MusicObj.outRanges++;
-      MusicObj.seqData.push(null);
-      continue;
+    var pitch = Math.pow(2,(-12+pits[i])/12);
+    pitch = Math.round(pitch * 100) / 100;
+    //console.log(pitch);
+    switch(inst){
+      case 0:MusicObj.seqData.push("/playsound minecraft:block.note.harp block @a ~ ~ ~ 100 "+pitch);
+      break;
+      case 7:MusicObj.seqData.push("/playsound minecraft:block.note.guiter block @a ~ ~ ~ 100 "+pitch);
+      break;
     }
 
   }
@@ -258,6 +112,7 @@ botFunc.createMusic = (MusicObj, tempo = 48, pits = []) => {
   bot.log("[note] MusicCreated  length: " + MusicObj.seqData.length
     + " sounds: " + MusicObj.soundCount
     + " ounRanges: " + MusicObj.outRanges
+    + " tempo: " + MusicObj.tempo
   );
 }
 
@@ -294,11 +149,11 @@ botFunc.playMusic = (MusicObj) => {
 
       if (MusicObj.seqData[musicCode] == null);
       else {
-        punchNote(MusicObj.seqData[musicCode].block);
+        bot.chat(MusicObj.seqData[musicCode]);
       }
       if (++musicCode >= MusicObj.seqData.length || !botFunc.isPlayingMusic) {
         clearInterval(musician);
-        bot.log("[note] MusicEnd " + ((botFunc.playedNote / MusicObj.soundCount) * 100) + "% missing: " + (MusicObj.soundCount - botFunc.playedNote));
+        bot.log("[note] MusicEnd");
         botFunc.currentMusic = null;
         botFunc.isPlayingMusic = false;
       }
@@ -315,17 +170,7 @@ botFunc.stopMusic = () => {
   botFunc.isTuning=false;
 }
 
-function punchNote(block) {
-  bot.lookAt(block.position.offset(0.5, 0.5, 0.5), true, () => {
-    bot._client.write('block_dig', {
-      status: 0, // start digging
-      location: block.position,
-      face: 1 // hard coded to always dig from the top
-    })
-    bot.targetDigBlock = block
-    bot._client.write('arm_animation', { hand: 0 });
-  });
-}
+
 
 function getJTune(pitch) {
   switch (pitch) {

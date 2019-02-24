@@ -10,7 +10,7 @@ eventEmitter.setMaxListeners(640);
 Vec3 = require('vec3').Vec3;
 
 botFunc = new Object();
-botFunc.debug = false;
+botFunc.debug = true;
 if(process.argv[3] == 'true' || process.argv[2] == 'true'){
   botFunc.debug = true;
   console.log("command line debug mode");
@@ -26,7 +26,7 @@ start();
 botFunc.blockFinderPlugin = require('mineflayer-blockfinder')(mineflayer);
 botFunc.isSame = require("./isSameObject");
 require("./calculator");
-require("./musicPlayer");
+require("./musicCommander");
 require("./movement");
 require("./inventoryManager");
 
@@ -46,7 +46,7 @@ function start() {
   } else {
     bot = mineflayer.createBot({
       host: "localhost",
-      port: "58986",
+      port: "60092",
       username: "Steve",
       // password: process.env.MC_PASSWORD,
       verbose: true
