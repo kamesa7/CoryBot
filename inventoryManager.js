@@ -38,6 +38,7 @@ function startEat() {
         bot.equip(item, "hand", function () {
             bot.activateItem()
         });
+        bot.log("[eat] eat "+item.name);
     } else {
         bot.log("[eat] no food")
     }

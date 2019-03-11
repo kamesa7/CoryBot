@@ -10,11 +10,11 @@ eventEmitter.setMaxListeners(640);
 Vec3 = require('vec3').Vec3;
 
 botFunc = new Object();
-botFunc.debug = true;
-if(process.argv[3] == 'true' || process.argv[2] == 'true'){
+botFunc.debug = false;
+if (process.argv[3] == 'true' || process.argv[2] == 'true') {
   botFunc.debug = true;
   console.log("command line debug mode");
-}else if(process.argv[3] == 'false' || process.argv[2] == 'false'){
+} else if (process.argv[3] == 'false' || process.argv[2] == 'false') {
   botFunc.debug = false;
   console.log("command line online mode");
 }
@@ -26,7 +26,7 @@ start();
 botFunc.blockFinderPlugin = require('mineflayer-blockfinder')(mineflayer);
 botFunc.isSame = require("./isSameObject");
 require("./calculator");
-require("./musicCommander");
+require("./musicPlayer");
 require("./movement");
 require("./inventoryManager");
 
@@ -103,7 +103,6 @@ function start() {
   hours = clock.getHours();
   seconds = clock.getSeconds();
   setInterval(time_signal, 100);
-  setInterval(interest_signal, 1000);
 
   console.log('started');
 }
@@ -111,134 +110,7 @@ function start() {
 
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// ロックして追いかける対象target
-var target_entity = undefined;
 
-function getTargetEntity() {
-  return target_entity;
-}
-function setTargetEntity(entity = undefined) {
-  if (target_entity !== entity) {
-    target_entity = entity;
-  }
-}
-
-// 追いかけないが注目する対象 interest
-var interest_entity = undefined;
-
-function getInterestEntity() {
-  return interest_entity;
-}
-
-botFunc.logInterest = true;
-function setInterestEntity(entity = undefined) {
-  if (botFunc.isPlayingMusic || botFunc.isTuning || botFunc.isMoving) return;
-  if (interest_entity !== entity) {
-    interest_entity = entity;
-    if (interest_entity) {
-      var name = interest_entity.name !== undefined ? interest_entity.name : interest_entity.username;
-      var type = interest_entity.type;
-      var kind = interest_entity.kind;
-      if (botFunc.logInterest)
-        bot.log('[bot.setInterestEntity] ' + bot.username + ' is interested in ' + name + ' (' + type + (kind !== undefined ? ':' + kind : '') + ')');
-    }
-  }
-}
-
-function RotToVec3(pitch, yaw, rad) {
-  return new Vec3(-rad * Math.cos(pitch) * Math.sin(yaw),
-    rad * Math.sin(pitch),
-    -rad * Math.cos(pitch) * Math.cos(yaw));
-}
-
-function Vec3ToRot(vec) {
-  return {
-    'pitch': Vec3ToPitch(vec),
-    'yaw': Vec3ToYaw(vec),
-    'radius': vec.distanceTo(new Vec3(null))
-  };
-}
-
-function Vec3ToPitch(vec) {
-  var groundDist = Math.sqrt(vec.x * vec.x + vec.z * vec.z);
-  return Math.atan2(-vec.y, groundDist);
-}
-
-function Vec3ToYaw(vec) {
-  var yaw;
-  if (vec.x != 0.0) {
-    yaw = Math.atan2(vec.x, vec.z)
-  } else {
-    yaw = (vec.z >= 0) ? Math.PI / 2 : -Math.PI / 2;
-  }
-  return yaw;
-}
-
-bot.on('playerCollect', (collector, collected) => {
-  // 注目しているアイテムが誰かに拾われたら注目を解除する
-  if (getInterestEntity() === collected) {
-    setInterestEntity();
-
-    // 拾ったのが自分以外なら拾った人を注目する
-    if (collector !== bot.entity) {
-      setInterestEntity(collector);
-    }
-  }
-});
-
-bot.on('entityMoved', (entity) => {
-  var distance = bot.entity.position.distanceTo(entity.position);
-
-  // 至近距離にプレイヤーがいる場合少し動く
-  if (entity.type === 'player' && distance < 0.8　&& !botFunc.isMoving) {
-    var botpos = bot.entity.position.clone();
-    var entpos = entity.position.clone();
-    botpos.y = entpos.y = 0;
-    botpos.subtract(entpos);
-    bot.entity.velocity.add(botpos.scaled(20));
-  }
-
-  if (distance < 3) {
-    if (!getInterestEntity()) {
-      // 注目している人がいないなら注目
-      setInterestEntity(entity);
-    } else {
-      // 既に注目している人が居る場合、その人よりも近ければ注目を切り替える
-      if (bot.entity.position.distanceTo(getInterestEntity().position) > distance)
-        setInterestEntity(entity);
-    }
-  }
-
-  if (distance > 6) {
-    // 注目している人が一定以上離れたら注目解除
-    if (getInterestEntity() === entity)
-      setInterestEntity();
-  }
-});
-
-function interest_signal() {
-  if (botFunc.isPlayingMusic || botFunc.isTuning || botFunc.isMoving) return;
-  var target = getTargetEntity();
-  var interest = getInterestEntity();
-
-  var entity;
-  if (target) {
-    entity = target;
-  } else if (interest) {
-    entity = interest;
-  }
-
-  if (entity) {
-    var pos = bot.entity.position.clone();
-    pos.subtract(entity.position);
-    var rot = Vec3ToRot(pos);
-
-    // 対象に向く
-    if (Math.abs(rot.yaw - bot.entity.yaw) > 0.05 || Math.abs(rot.pitch - bot.entity.pitch) > 0.05) {
-      bot.look(rot.yaw, rot.pitch, false, false);
-    }
-  }
-}
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -321,14 +193,15 @@ function jmes_to_text(jmes) {
     });
 
   else if (jmes.json && jmes.json.with) {
-    for(var i = 0; i < jmes.json.with.length; i++){
-      if(typeof jmes.json.with[i] == "object") {
-        if(jmes.json.with[i].text){
-          message+="<";
+    console.log(jmes);
+    for (var i = 0; i < jmes.json.with.length; i++) {
+      if (typeof jmes.json.with[i] == "object") {
+        if (jmes.json.with[i].text) {
+          message += "<";
           message += jmes.json.with[i].text;
-          message+="> ";
+          message += "> ";
         }
-      } else if(typeof jmes.json.with[i]  == "string"){
+      } else if (typeof jmes.json.with[i] == "string") {
         message += jmes.json.with[i];
       }
     }
@@ -336,13 +209,13 @@ function jmes_to_text(jmes) {
   return message;
 }
 
-bot.on("message",(jmes) => {
+bot.on("message", (jmes) => {
   bot.log(jmes_to_text(jmes));
   logfile_out(jmes_to_text(jmes));
   //console.log(jmes);
 });
 
-bot.on("actionBar",(jmes) => {
+bot.on("actionBar", (jmes) => {
   console.log(jmes);
 });
 
@@ -363,14 +236,14 @@ function logfile_out(text) {
       + ("0" + now.getMonth() + 1).slice(-2) + ":"
       + ("0" + now.getDate()).slice(-2)
       + "] ";
-    fs.appendFile('./log/'+dateformat(now, 'yyyy-mm-dd')+'.log', " ---------- " + date + " ---------- \r\n", 'UTF-8', function (err) {
+    fs.appendFile('./log/' + dateformat(now, 'yyyy-mm-dd') + '.log', " ---------- " + date + " ---------- \r\n", 'UTF-8', function (err) {
       if (err) {
-          console.log(err);
+        console.log(err);
       }
     });
     callfirst = false;
   }
-  fs.appendFile('./log/'+dateformat(now, 'yyyy-mm-dd')+'.log', text + "\r\n", 'UTF-8', function (err) {
+  fs.appendFile('./log/' + dateformat(now, 'yyyy-mm-dd') + '.log', text + "\r\n", 'UTF-8', function (err) {
     if (err) {
       console.log(err);
     }
@@ -413,35 +286,35 @@ bot.on('chat', (username, message) => {
   }
 
   //Music
-  if (message.match(/^Music info/i) && botFunc.isPlayingMusic){
-    if(botFunc.isEndlessing){
-      bot.safechat("今はプレイリスト"+botFunc.endlessPlaylist+":"+botFunc.endlessIndex+"/"+botFunc.endlessFilelist.length+"曲目の"+botFunc.currentMusic.title
-      +"("+ botFunc.currentMusic.duration +"秒)を演奏中です。");
+  if (message.match(/^Music info/i) && botFunc.isPlayingMusic) {
+    if (botFunc.isEndlessing) {
+      bot.safechat("今はプレイリスト" + botFunc.endlessPlaylist + ":" + botFunc.endlessIndex + "/" + botFunc.endlessFilelist.length + "曲目の" + botFunc.currentMusic.title
+        + "(" + botFunc.currentMusic.duration + "秒)を演奏中です。");
     } else {
-      bot.safechat("今は"+botFunc.currentMusic.title+"を演奏中です。");
+      bot.safechat("今は" + botFunc.currentMusic.title + "を演奏中です。");
     }
   }
-  if (message.match(/^Music skip/i) && botFunc.isEndlessing){
-    botFunc.isPlayingMusic=false;
-    bot.safechat("スキップ:"+botFunc.endlessFilelist[botFunc.endlessIndex-1]+" => "+botFunc.endlessFilelist[botFunc.endlessIndex]);
+  if (message.match(/^Music skip/i) && botFunc.isEndlessing) {
+    botFunc.isPlayingMusic = false;
+    bot.safechat("スキップ:" + botFunc.endlessFilelist[botFunc.endlessIndex - 1] + " => " + botFunc.endlessFilelist[botFunc.endlessIndex]);
   }
-  if (message.match(/^Music restart/i) && botFunc.isEndlessing){
-    botFunc.isPlayingMusic=false;
-    bot.safechat("最初から:"+botFunc.endlessFilelist[botFunc.endlessIndex-1]);
+  if (message.match(/^Music restart/i) && botFunc.isEndlessing) {
+    botFunc.isPlayingMusic = false;
+    bot.safechat("最初から:" + botFunc.endlessFilelist[botFunc.endlessIndex - 1]);
     botFunc.endlessIndex--;
   }
-  if (message.match(/^Music pre/i) && botFunc.isEndlessing){
-    botFunc.isPlayingMusic=false;
-    bot.safechat("前の曲:"+botFunc.endlessFilelist[botFunc.endlessIndex-2]);
-    botFunc.endlessIndex-=2;
-    if(botFunc.endlessIndex < 0){
+  if (message.match(/^Music pre/i) && botFunc.isEndlessing) {
+    botFunc.isPlayingMusic = false;
+    bot.safechat("前の曲:" + botFunc.endlessFilelist[botFunc.endlessIndex - 2]);
+    botFunc.endlessIndex -= 2;
+    if (botFunc.endlessIndex < 0) {
       botFunc.endlessIndex = 0;
     }
   }
-  if (message.match(/^Music set (\d+)/i) && botFunc.isEndlessing){
-    botFunc.isisPlayingMusic=false;
-    bot.safechat("リクエスト:"+botFunc.endlessFilelist[Number(RegExp.$1)]);
-    botFunc.endlessIndex=Number(RegExp.$1);
+  if (message.match(/^Music set (\d+)/i) && botFunc.isEndlessing) {
+    botFunc.isisPlayingMusic = false;
+    bot.safechat("リクエスト:" + botFunc.endlessFilelist[Number(RegExp.$1)]);
+    botFunc.endlessIndex = Number(RegExp.$1);
   }
 
   //selfchat
@@ -472,9 +345,11 @@ bot.on('omikuji', (username, message) => {
 
   if (message.match(/柑橘類/)) {
     bot.randomchat(['wwwww', 'ｗｗｗｗｗ', 'かわいそう', 'w', 'かw',
-    "キャー", "柑橘w", "黄色い", "柑橘類の日", "おめでとう！", "可哀想", "か ん き つ る い",
-    "いいね", "ʬʬʬ", "草", "🍊", username+"さんは柑橘類ね", "柑橘系"+username, message,
-    "", "柑橘…", "柑橘な日もあるよ", "www","ｗｗｗ","卍柑橘卍","柑橘様だ","かかかかかｗ"]);
+      "キャー", "柑橘w", "黄色い", "柑橘類の日", "おめでとう！", "可哀想", "か ん き つ る い",
+      "いいね", "ʬʬʬ", "草", "🍊", username + "さんは柑橘類ね", "柑橘系" + username, message,
+      "", "柑橘…", "柑橘な日もあるよ", "www", "ｗｗｗ", "卍柑橘卍", "柑橘様だ", "かかかかかｗ",
+      "大吉＞中吉＞吉＞＞＞大凶＞＞＞＞＞＞＞＞＞＞＞＞柑橘類","17333","55","カ ン キ ツ","[柑橘]<"+username+">[柑橘]",
+      "オレンジ様だ","レモン様だ","今日の運勢「柑橘類」","(笑)","柑橘類（笑）"]);
   }
 });
 
@@ -517,7 +392,7 @@ function setAuction(seconds) {
     }
 
     aucTimeSetting = seconds;
-    if(aucTimeSetting>10)auc10called = false;
+    if (aucTimeSetting > 10) auc10called = false;
 
     bot.log("[Auction]" + aucDeadline);
   } catch (e) {
@@ -525,6 +400,7 @@ function setAuction(seconds) {
   }
 }
 
+var clock;
 var minutes;
 var hours;
 var seconds;
@@ -550,7 +426,7 @@ function time_signal() {
       aucTimeSetting = 0;
     }
 
-    if(botFunc.auctioning && aucTimeSetting >10 && auc10called == false && aucDeadline.getTime() - clock.getTime() <= 10000){
+    if (botFunc.auctioning && aucTimeSetting > 10 && auc10called == false && aucDeadline.getTime() - clock.getTime() <= 10000) {
       auc10called = true;
       bot.chat(">残り10秒未満  現在Max: " + maxBidPlayer + " " + maxBid);
     }

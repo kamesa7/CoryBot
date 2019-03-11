@@ -3,6 +3,8 @@ bucketsJs = require('buckets-js');
 
 botFunc.isMoving = false;
 botFunc.isFollowing = false;
+botFunc.isWaiting = false;
+
 botFunc.followInterval = 10;
 botFunc.followingPlayer = null;
 botFunc.stepTime = 60;
@@ -13,6 +15,9 @@ botFunc.allowGoal = 3;
 botFunc.destination;
 botFunc.logMove = false;
 const onGround = 0.001;
+
+
+setInterval(interest_signal, 1000);
 
 /*
     forward: boolean;
@@ -100,17 +105,17 @@ function reviceTarget(path) {
     setStandable(start);
     setStandable(goal);
 
-    path.splice(0,path.length);
-    if(botFunc.logMove){
+    path.splice(0, path.length);
+    if (botFunc.logMove) {
         bot.log("[move] follow revice " + goal);
     }
     var cost = bestFirstSearch(path, start, goal);
-    if(botFunc.followInterval < path.length) { 
-        path[botFunc.followInterval][3]="follow";
+    if (botFunc.followInterval < path.length) {
+        path[botFunc.followInterval][3] = "follow";
     } else {
-        path.push([start[0],start[1],start[2],"follow"]);
+        path.push([start[0], start[1], start[2], "follow"]);
     }
-    if( ! botFunc.isFollowing) {
+    if (!botFunc.isFollowing) {
         botFunc.isFollowing = true;
         followPath(path);
     }
@@ -173,10 +178,10 @@ function bestFirstSearch(finalPath, start, goal) {
             bot.log("[move] limit exceeded");
             var nearDistances = [];
             for (var i = 0; i < closed.length; i++) {
-                nearDistances.push(getL1(closed[i],goal));
+                nearDistances.push(getL1(closed[i], goal));
             }
             var nearest = getMinInd(nearDistances);
-            bot.log("[move] nearest: "+closed[nearest]);
+            bot.log("[move] nearest: " + closed[nearest]);
             return bestFirstSearch(finalPath, start, closed[nearest]);
             //return Infinity;
         }
@@ -258,7 +263,7 @@ function expandNode(node) {
 function convertNode(path, node) {
     var sum = 0;
     var tmp = node;
-    
+
     botFunc.destination = [tmp.p[0], tmp.p[1], tmp.p[2]];
     while (tmp.parent != null) {
         path.push([tmp.p[0], tmp.p[1], tmp.p[2], tmp.p[3]]);
@@ -273,7 +278,8 @@ function convertNode(path, node) {
 botFunc.stopMoving = () => {
     botFunc.isMoving = false;
     botFunc.isFollowing = false;
-    botFunc.followingPlayer= null;
+    botFunc.isWaiting = false;
+    botFunc.followingPlayer = null;
     bot.clearControlStates();
     bot.log("[move] stop ");
 }
@@ -301,7 +307,7 @@ function followPath(path) {
                 if (indexCount > botFunc.stepError) {
                     bot.clearControlStates();
                     bot.log("[move] path error end : " + state);
-                    if(botFunc.isFollowing && botFunc.followingPlayer != null && botFunc.followingPlayer.entity != undefined){
+                    if (botFunc.isFollowing && botFunc.followingPlayer != null && botFunc.followingPlayer.entity != undefined) {
                         reviceTarget(path);
                         state = "revice";
                         index = -10;
@@ -370,15 +376,16 @@ function followPath(path) {
                         preDistance = distance;
                         break;
                     case "revice":
-                        if(path.length > 0){
+                        if (path.length > 0) {
                             index = 0;
                         }
                         state = "";
                         break;
                     case "wait":
                         --indexCount;
-                        if(--waitCount<=0){
-                            state="";
+                        if (--waitCount <= 0) {
+                            botFunc.isWaiting = false;
+                            state = "";
                         }
                         break;
                 }
@@ -434,6 +441,7 @@ function followPath(path) {
                     case "wait":
                         bot.clearControlStates();
                         state = "wait";
+                        botFunc.isWaiting = true;
                         waitCount = path[index][4];
                         break;
                     default:
@@ -497,23 +505,23 @@ function isThroughable(pos) {
     }
 }
 
-function setStandable(pos){
-    if(!isStandable(pos)) {
+function setStandable(pos) {
+    if (!isStandable(pos)) {
         var direct = 1;
-        var tmp = plus(pos,[0,0,0]);
-        while(!isStandable(tmp)){
+        var tmp = plus(pos, [0, 0, 0]);
+        while (!isStandable(tmp)) {
             direct *= -1;
-            if(direct>0)direct++;
-            if(direct>20)return;
-            
-            tmp = plus(pos,[0,direct,0]);
+            if (direct > 0) direct++;
+            if (direct > 20) return;
+
+            tmp = plus(pos, [0, direct, 0]);
         }
-        add(pos,[0,direct,0]);
+        add(pos, [0, direct, 0]);
     }
 }
 
 function isGoal(pos, goal) {
-    if (getL1(pos,goal) <= botFunc.allowGoal) return true;
+    if (getL1(pos, goal) <= botFunc.allowGoal) return true;
     else return false;
 }
 
@@ -664,4 +672,136 @@ function createSimplePath(finalPath, start, goal) {
         return Infinity;
     }
     return sum;
+}
+/////////////////////////////////////////////////////////////////////////////////////////////
+
+// ロックして追いかける対象target
+var target_entity = undefined;
+
+function getTargetEntity() {
+    return target_entity;
+}
+function setTargetEntity(entity = undefined) {
+    if (target_entity !== entity) {
+        target_entity = entity;
+    }
+}
+
+// 追いかけないが注目する対象 interest
+var interest_entity = undefined;
+
+function getInterestEntity() {
+    return interest_entity;
+}
+
+botFunc.logInterest = true;
+function setInterestEntity(entity = undefined) {
+    if (!botFunc.isWaiting)
+        if (botFunc.isPlayingMusic || botFunc.isTuning || botFunc.isMoving) return;
+    if (interest_entity !== entity) {
+        interest_entity = entity;
+        if (interest_entity) {
+            var name = interest_entity.name !== undefined ? interest_entity.name : interest_entity.username;
+            var type = interest_entity.type;
+            var kind = interest_entity.kind;
+            if (botFunc.logInterest)
+                bot.log('[bot.setInterestEntity] ' + bot.username + ' is interested in ' + name + ' (' + type + (kind !== undefined ? ':' + kind : '') + ')');
+        }
+    }
+}
+
+function RotToVec3(pitch, yaw, rad) {
+    return new Vec3(-rad * Math.cos(pitch) * Math.sin(yaw),
+        rad * Math.sin(pitch),
+        -rad * Math.cos(pitch) * Math.cos(yaw));
+}
+
+function Vec3ToRot(vec) {
+    return {
+        'pitch': Vec3ToPitch(vec),
+        'yaw': Vec3ToYaw(vec),
+        'radius': vec.distanceTo(new Vec3(null))
+    };
+}
+
+function Vec3ToPitch(vec) {
+    var groundDist = Math.sqrt(vec.x * vec.x + vec.z * vec.z);
+    return Math.atan2(-vec.y, groundDist);
+}
+
+function Vec3ToYaw(vec) {
+    var yaw;
+    if (vec.x != 0.0) {
+        yaw = Math.atan2(vec.x, vec.z)
+    } else {
+        yaw = (vec.z >= 0) ? Math.PI / 2 : -Math.PI / 2;
+    }
+    return yaw;
+}
+
+bot.on('playerCollect', (collector, collected) => {
+    // 注目しているアイテムが誰かに拾われたら注目を解除する
+    if (getInterestEntity() === collected) {
+        setInterestEntity();
+
+        // 拾ったのが自分以外なら拾った人を注目する
+        if (collector !== bot.entity) {
+            setInterestEntity(collector);
+        }
+    }
+});
+
+bot.on('entityMoved', (entity) => {
+    var distance = bot.entity.position.distanceTo(entity.position);
+
+    // 至近距離にプレイヤーがいる場合少し動く
+    if (entity.type === 'player' && distance < 0.8 && !botFunc.isMoving) {
+        var botpos = bot.entity.position.clone();
+        var entpos = entity.position.clone();
+        botpos.y = entpos.y = 0;
+        botpos.subtract(entpos);
+        bot.entity.velocity.add(botpos.scaled(20));
+    }
+
+    if (distance < 3) {
+        if (!getInterestEntity()) {
+            // 注目している人がいないなら注目
+            setInterestEntity(entity);
+        } else {
+            // 既に注目している人が居る場合、その人よりも近ければ注目を切り替える
+            if (bot.entity.position.distanceTo(getInterestEntity().position) > distance)
+                setInterestEntity(entity);
+        }
+    }
+
+    if (distance > 6) {
+        // 注目している人が一定以上離れたら注目解除
+        if (getInterestEntity() === entity)
+            setInterestEntity();
+    }
+});
+
+function interest_signal() {
+    if (!botFunc.isWaiting)
+        if (botFunc.isPlayingMusic || botFunc.isTuning || botFunc.isMoving) return;
+    var target = getTargetEntity();
+    var interest = getInterestEntity();
+
+    var entity;
+    if (target) {
+        entity = target;
+    } else if (interest) {
+        entity = interest;
+    }
+
+    if (entity) {
+        var pos = bot.entity.position.clone();
+        pos.subtract(entity.position);
+        var rot = Vec3ToRot(pos);
+
+        // 対象に向く
+        if (Math.abs(rot.yaw - bot.entity.yaw) > 0.05 || Math.abs(rot.pitch - bot.entity.pitch) > 0.05) {
+            bot.look(rot.yaw, rot.pitch, false, false);
+        }
+    }
 }
