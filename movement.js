@@ -5,16 +5,19 @@ botFunc.isMoving = false;
 botFunc.isFollowing = false;
 botFunc.isWaiting = false;
 
+const onGround = 0.001;
 botFunc.followInterval = 10;
 botFunc.followingPlayer = null;
 botFunc.stepTime = 60;
 botFunc.searchLimit = 5000;
-botFunc.stepError = 100;
-botFunc.allowDistance = 0.1;
-botFunc.allowGoal = 3;
+botFunc.stepError = 20;
+botFunc.onPos = 0.1;
+botFunc.allowGoal = 1;
+botFunc.allowFollow = 5;
 botFunc.destination;
+
 botFunc.logMove = false;
-const onGround = 0.001;
+botFunc.logInterest = true;
 
 
 setInterval(interest_signal, 1000);
@@ -109,7 +112,7 @@ function reviceTarget(path) {
     if (botFunc.logMove) {
         bot.log("[move] follow revice " + goal);
     }
-    var cost = bestFirstSearch(path, start, goal);
+    var cost = bestFirstSearch(path, start, goal, botFunc.allowFollow);
     if (botFunc.followInterval < path.length) {
         path[botFunc.followInterval][3] = "follow";
     } else {
@@ -162,7 +165,7 @@ var lands = [
     [0, -3, -1]
 ];
 
-function bestFirstSearch(finalPath, start, goal) {
+function bestFirstSearch(finalPath, start, goal, allow = botFunc.allowGoal) {
     var closed = [];
     var open = new bucketsJs.PriorityQueue(compare);
     var node;
@@ -172,8 +175,10 @@ function bestFirstSearch(finalPath, start, goal) {
     open.enqueue(new NodeElement(start, getL1(start, goal), node));
     while (!open.isEmpty()) {
         node = open.dequeue();
-        if (isGoal(node.p, goal)) {
-            return convertNode(finalPath, node);;
+        if (isGoal(node.p, goal, allow)) {
+            var cost = convertNode(finalPath, node);
+            optimize(finalPath);
+            return cost;
         } else if (count++ > botFunc.searchLimit) {
             bot.log("[move] limit exceeded");
             var nearDistances = [];
@@ -275,6 +280,54 @@ function convertNode(path, node) {
     // console.log(path);
 }
 
+function optimize(path) {
+    for (var i = 0; i < path.length; i++) {
+        if (bot.blockAt(posToVec(path[i])).boundingBox == "door") {
+            path.splice(i, 0, [path[i][0], path[i][1], path[i][2], "door"]);
+            i++;
+        }
+    }
+    var scnt = 0;
+    var cnt = 0;
+    var dir;
+    var preDir;
+    var fin = false;
+    for (var i = 0; i < path.length; i++) {
+        if (path[i][3] == "walk") {
+            scnt++;
+            if (scnt == 2) {
+                dir = getdir(path[i - 1], path[i]);
+                preDir = dir;
+            }
+            if (scnt >= 3) {
+                dir = getdir(path[i - 1], path[i]);
+                if (dir == preDir) {
+                    cnt++;
+                } else if (cnt >= 3) {
+                    fin = true;
+                }
+                preDir = dir;
+            }
+        } else if (cnt >= 3) {
+            fin = true;
+        } else {
+            scnt = 0;
+            cnt = 0;
+        }
+        if (i >= path.length - 1 && cnt >= 3) {
+            fin = true;
+        }
+        if (fin) {
+            fin = false;
+            path[i - 1][3] = "sprint";
+            path.splice(i - cnt - 2, cnt + 1);
+            scnt = 0;
+            cnt = 0;
+            i = i - cnt - 2;
+        }
+    }
+}
+
 botFunc.stopMoving = () => {
     botFunc.isMoving = false;
     botFunc.isFollowing = false;
@@ -292,163 +345,197 @@ function followPath(path) {
     }
     botFunc.isMoving = true;
     var index = 0;
-    var state = "";
+    var err = false;
     var distance;
     var height;
     var preDistance = Infinity;
-    var preHeight = Infinity;
+    var myPos = getMyPos();
+    var prePos = getMyPos();
     var target;
     var indexCount = 0;
     var waitCount = 0;
+    var stopCount = 0;
     var mover = setInterval(function () {
         if (botFunc.isMoving && index < path.length) {
-            if (state != "") {
-                indexCount++;
-                if (indexCount > botFunc.stepError) {
-                    bot.clearControlStates();
-                    bot.log("[move] path error end : " + state);
-                    if (botFunc.isFollowing && botFunc.followingPlayer != null && botFunc.followingPlayer.entity != undefined) {
+            myPos = floor(getMyPos());
+            if (getDiff(myPos, prePos) == 0) {
+                stopCount++;
+            } else {
+                stopCount = 0;
+            }
+            prePos = floor(getMyPos())
+
+            if (err || ((path[index][3] != "revice" && path[index][3] != "wait") && stopCount > botFunc.stepError)) {
+                bot.clearControlStates();
+                bot.log("[move] path error end : " + path[index] + " stop: " + stopCount);
+                if (botFunc.isFollowing) {
+                    if (botFunc.followingPlayer != null && botFunc.followingPlayer.entity != undefined) {
+                        path[0][3] = "revice";
                         reviceTarget(path);
-                        state = "revice";
-                        index = -10;
+                        index = 0;
                         indexCount = 0;
+                        stopCount = 0;
                     } else {
-                        clearInterval(mover);
-                        botFunc.stopMoving();
-                        botFunc.goto(botFunc.destination);
+                        botFunc.isFollowing = false;
                     }
-                    return;
-                }
-                switch (state) {
-                    case "walk":
-                        bot.setControlState('forward', true);
-                        distance = getL2(getMyPos(), target);
-                        if (preDistance <= distance || distance <= botFunc.allowDistance) {
-                            state = "";
-                            // bot.clearControlStates();
-                            preDistance = Infinity;
-                            break;
-                        }
-                        preDistance = distance;
-                        break;
-                    case "upstair":
-                        bot.setControlState('forward', true);
-                        bot.lookAt(lookToVec(target), true);
-                        distance = getXZL2(getMyPos(), target);
-                        height = getMyPos()[1];
-                        if ((height - onGround) % 1 != 0) break;
-                        if (preDistance <= distance - botFunc.allowDistance
-                            || distance <= botFunc.allowDistance) {
-                            state = "";
-                            bot.clearControlStates();
-                            preDistance = Infinity;
-                            break;
-                        }
-                        preDistance = distance;
-                        break;
-                    case "downstair":
-                        bot.setControlState('forward', true);
-                        bot.lookAt(lookToVec(target), true);
-                        distance = getXZL2(getMyPos(), target);
-                        height = getMyPos()[1];
-                        if ((height - onGround) % 1 != 0) break;
-                        if (preDistance <= distance || distance <= botFunc.allowDistance) {
-                            state = "";
-                            bot.clearControlStates();
-                            preDistance = Infinity;
-                            break;
-                        }
-                        preDistance = distance;
-                        break;
-                    case "jumpover":
-                        bot.setControlState('forward', true);
-                        bot.lookAt(lookToVec(target), true);
-                        distance = getXZL2(getMyPos(), target);
-                        height = getMyPos()[1];
-                        if ((height - onGround) % 1 != 0) break;
-                        if (preDistance <= distance - botFunc.allowDistance
-                            || distance <= botFunc.allowDistance) {
-                            state = "";
-                            bot.clearControlStates();
-                            preDistance = Infinity;
-                            break;
-                        }
-                        preDistance = distance;
-                        break;
-                    case "revice":
-                        if (path.length > 0) {
-                            index = 0;
-                        }
-                        state = "";
-                        break;
-                    case "wait":
-                        --indexCount;
-                        if (--waitCount <= 0) {
-                            botFunc.isWaiting = false;
-                            state = "";
-                        }
-                        break;
+                } else {
+                    clearInterval(mover);
+                    botFunc.stopMoving();
+                    botFunc.goto(botFunc.destination);
                 }
             } else {
-                indexCount = 0;
+                target = getTarget(path[index]);
+                if (botFunc.logMove) bot.log("[move] " + path[index] + "  cnt: " + indexCount);
                 switch (path[index][3]) {
                     case "walk":
-                        target = getTarget(path[index]);
-                        if (botFunc.logMove) bot.log("[move] " + target);
+                        if (indexCount == 0) {
+                            bot.lookAt(lookToVec(target), true);
+                            bot.setControlState('forward', true);
+                        }
+                        indexCount++;
+                        distance = getL2(getMyPos(), target);
+                        if (indexCount > botFunc.stepError) {
+                            err = true;
+                            break;
+                        } else if (preDistance <= distance || distance <= botFunc.onPos) {
+                            preDistance = Infinity;
+                            index++;
+                            indexCount = 0;
+                            break;
+                        }
+                        preDistance = distance;
+                        break;
+                    case "sprint":
                         bot.lookAt(lookToVec(target), true);
-                        state = "walk";
+                        if (indexCount == 0) {
+                            bot.setControlState('forward', true);
+                            bot.setControlState('sprint', true);
+                        }
+                        indexCount++;
+                        distance = getL2(getMyPos(), target);
+                        if (preDistance <= distance || distance <= botFunc.onPos) {
+                            bot.clearControlStates();
+                            preDistance = Infinity;
+                            index++;
+                            indexCount = 0;
+                            break;
+                        }
+                        preDistance = distance;
                         break;
                     case "upstair":
-                        target = getTarget(path[index]);
-                        if (botFunc.logMove) bot.log("[move] " + target);
                         bot.lookAt(lookToVec(target), true);
-                        bot.setControlState('jump', true);
-                        bot.setControlState('jump', false);
-                        bot.setControlState('forward', true);
-                        state = "upstair";
-                        break;
-                    case "downstair":
-                        target = getTarget(path[index]);
-                        if (botFunc.logMove) bot.log("[move] " + target);
-                        bot.lookAt(lookToVec(target), true);
-                        state = "downstair";
-                        break;
-                    case "jumpover":
-                        target = getTarget(path[index]);
-                        if (botFunc.logMove) bot.log("[move] " + target);
-                        bot.lookAt(lookToVec(target), true);
-                        bot.setControlState('jump', true);
-                        bot.setControlState('jump', false);
-                        bot.setControlState('forward', true);
-                        state = "jumpover";
+                        if (indexCount == 0) {
+                            bot.setControlState('jump', true);
+                            bot.setControlState('jump', false);
+                            bot.setControlState('forward', true);
+                        }
+                        indexCount++;
+                        distance = getXZL2(getMyPos(), target);
+                        height = getMyPos()[1];
+                        if ((height - onGround) % 1 != 0) break;
+                        if (target[1] != height - onGround && indexCount > 1) {
+                            err = true;
+                            break;
+                        } else if (preDistance <= distance - botFunc.onPos || distance <= botFunc.onPos) {
+                            bot.clearControlStates();
+                            preDistance = Infinity;
+                            index++;
+                            indexCount = 0;
+                            break;
+                        }
+                        preDistance = distance;
                         break;
                     case "land":
-                        target = getTarget(path[index]);
-                        if (botFunc.logMove) bot.log("[move] " + target);
+                    case "downstair":
                         bot.lookAt(lookToVec(target), true);
-                        state = "downstair";
+                        if (indexCount == 0) {
+                            bot.setControlState('forward', true);
+                        }
+                        indexCount++;
+                        distance = getXZL2(getMyPos(), target);
+                        height = getMyPos()[1];
+                        if ((height - onGround) % 1 != 0) break;
+
+                        if (target[1] != height - onGround) {
+                            //まだ降りてない
+                        } else if (preDistance <= distance || distance <= botFunc.onPos) {
+                            bot.clearControlStates();
+                            preDistance = Infinity;
+                            index++;
+                            indexCount = 0;
+                            break;
+                        }
+                        preDistance = distance;
+                        break;
+                    case "jumpover":
+                        bot.lookAt(lookToVec(target), true);
+                        if (indexCount == 0) {
+                            bot.setControlState('jump', true);
+                            bot.setControlState('jump', false);
+                            bot.setControlState('forward', true);
+                        }
+                        indexCount++;
+                        distance = getXZL2(getMyPos(), target);
+                        height = getMyPos()[1];
+                        if ((height - onGround) % 1 != 0) break;
+                        if (target[1] != height - onGround) {
+                            err = true;
+                            break;
+                        }
+                        if (preDistance <= distance - botFunc.onPos || distance <= botFunc.onPos) {
+                            bot.clearControlStates();
+                            preDistance = Infinity;
+                            index++;
+                            indexCount = 0;
+                            break;
+                        }
+                        preDistance = distance;
+                        break;
+                    case "door":
+                        targetVec = posToVec(path[index]);
+                        var door = bot.blockAt(targetVec);
+                        if (door.metadata < 4 || 7 < door.metadata) {
+                            bot.lookAt(targetVec, true);
+                            bot.activateBlock(door);
+                        }
                         break;
                     case "follow":
                         bot.clearControlStates();
                         if (botFunc.followingPlayer != undefined && botFunc.followingPlayer.entity != undefined) {
+                            bot.lookAt(botFunc.followingPlayer.entity.position, true);
+                            path[0][3] = "revice";
                             reviceTarget(path);
-                            state = "revice";
-                            index = -10;
+                            index = 0;
+                            indexCount = 0;
+                            stopCount = 0;
+                            break;
                         } else {
                             botFunc.isFollowing = false;
                         }
                         break;
+                    case "revice":
+                        bot.lookAt(botFunc.followingPlayer.entity.position, true);
+                        index = 0;
+                        indexCount = 0;
+                        stopCount = 0;
+                        break;
                     case "wait":
-                        bot.clearControlStates();
-                        state = "wait";
-                        botFunc.isWaiting = true;
-                        waitCount = path[index][4];
+                        if (indexCount == 0) {
+                            bot.clearControlStates();
+                            botFunc.isWaiting = true;
+                            waitCount = path[index][4];
+                        } else if (indexCount >= waitCount) {
+                            index++;
+                            indexCount = 0;
+                            botFunc.isWaiting = false;
+                            break;
+                        }
+                        indexCount++;
                         break;
                     default:
                         bot.log("[move] unknown state");
                         botFunc.stopMoving();
                 }
-                index++;
             }
         } else {
             clearInterval(mover);
@@ -481,8 +568,8 @@ function isStandable(pos) {
     var B2 = bot.blockAt(new Vec3(pos[0], pos[1], pos[2]))
     var B3 = bot.blockAt(new Vec3(pos[0], pos[1] + 1, pos[2]))
     if (B1.boundingBox == 'block' &&
-        B2.boundingBox == 'empty' &&
-        B3.boundingBox == 'empty' &&
+        B2.boundingBox != 'block' &&
+        B3.boundingBox != 'block' &&
         isNotAvoidance(B1) &&
         isNotAvoidance(B2)
     ) {
@@ -495,8 +582,8 @@ function isStandable(pos) {
 function isThroughable(pos) {
     var B1 = bot.blockAt(new Vec3(pos[0], pos[1], pos[2]))
     var B2 = bot.blockAt(new Vec3(pos[0], pos[1] + 1, pos[2]))
-    if (B1.boundingBox == 'empty' &&
-        B2.boundingBox == 'empty' &&
+    if (B1.boundingBox != 'block' &&
+        B2.boundingBox != 'block' &&
         isNotAvoidance(B1)
     ) {
         return true;
@@ -520,8 +607,8 @@ function setStandable(pos) {
     }
 }
 
-function isGoal(pos, goal) {
-    if (getL1(pos, goal) <= botFunc.allowGoal) return true;
+function isGoal(pos, goal, allow) {
+    if (getL1(pos, goal) <= allow) return true;
     else return false;
 }
 
@@ -550,18 +637,29 @@ function add(pos, vel) {
     pos[0] += vel[0];
     pos[1] += vel[1];
     pos[2] += vel[2];
+    return add;
 }
 
 function floor(pos) {
     pos[0] = Math.floor(pos[0]);
     pos[1] = Math.floor(pos[1]);
     pos[2] = Math.floor(pos[2]);
+    return pos;
 }
 
 function mid(pos) {
     pos[0] = Math.floor(pos[0]) + 0.5;
     //pos[1] = Math.floor(pos[1]) + 0.5;
     pos[2] = Math.floor(pos[2]) + 0.5;
+    return pos;
+}
+
+function getdir(pos1, pos2) {
+    return (pos1[0] - pos2[0]) * 10 + (pos1[2] - pos2[2]);
+}
+
+function getDiff(pos1, pos2) {
+    return (pos1[0] - pos2[0]) * 100 + (pos1[1] - pos2[1]) * 10 + (pos1[2] - pos2[2]);
 }
 
 function getTarget(arr) {
@@ -605,7 +703,7 @@ function lookToVec(arr) {
     return new Vec3(arr[0], arr[1] + 1.42, arr[2]);
 }
 
-function arrToVec(arr) {
+function posToVec(arr) {
     return new Vec3(arr[0], arr[1], arr[2]);
 }
 
@@ -675,29 +773,16 @@ function createSimplePath(finalPath, start, goal) {
 }
 /////////////////////////////////////////////////////////////////////////////////////////////
 
-// ロックして追いかける対象target
-var target_entity = undefined;
-
-function getTargetEntity() {
-    return target_entity;
-}
-function setTargetEntity(entity = undefined) {
-    if (target_entity !== entity) {
-        target_entity = entity;
-    }
-}
-
 // 追いかけないが注目する対象 interest
 var interest_entity = undefined;
 
-function getInterestEntity() {
-    return interest_entity;
-}
-
-botFunc.logInterest = true;
 function setInterestEntity(entity = undefined) {
-    if (!botFunc.isWaiting)
-        if (botFunc.isPlayingMusic || botFunc.isTuning || botFunc.isMoving) return;
+    if (!botFunc.isWaiting) {
+        if (botFunc.isPlayingMusic || botFunc.isTuning || botFunc.isMoving || botFunc.isShootingArrow) {
+            interest_entity = undefined;
+            return;
+        }
+    }
     if (interest_entity !== entity) {
         interest_entity = entity;
         if (interest_entity) {
@@ -709,47 +794,6 @@ function setInterestEntity(entity = undefined) {
         }
     }
 }
-
-function RotToVec3(pitch, yaw, rad) {
-    return new Vec3(-rad * Math.cos(pitch) * Math.sin(yaw),
-        rad * Math.sin(pitch),
-        -rad * Math.cos(pitch) * Math.cos(yaw));
-}
-
-function Vec3ToRot(vec) {
-    return {
-        'pitch': Vec3ToPitch(vec),
-        'yaw': Vec3ToYaw(vec),
-        'radius': vec.distanceTo(new Vec3(null))
-    };
-}
-
-function Vec3ToPitch(vec) {
-    var groundDist = Math.sqrt(vec.x * vec.x + vec.z * vec.z);
-    return Math.atan2(-vec.y, groundDist);
-}
-
-function Vec3ToYaw(vec) {
-    var yaw;
-    if (vec.x != 0.0) {
-        yaw = Math.atan2(vec.x, vec.z)
-    } else {
-        yaw = (vec.z >= 0) ? Math.PI / 2 : -Math.PI / 2;
-    }
-    return yaw;
-}
-
-bot.on('playerCollect', (collector, collected) => {
-    // 注目しているアイテムが誰かに拾われたら注目を解除する
-    if (getInterestEntity() === collected) {
-        setInterestEntity();
-
-        // 拾ったのが自分以外なら拾った人を注目する
-        if (collector !== bot.entity) {
-            setInterestEntity(collector);
-        }
-    }
-});
 
 bot.on('entityMoved', (entity) => {
     var distance = bot.entity.position.distanceTo(entity.position);
@@ -763,45 +807,26 @@ bot.on('entityMoved', (entity) => {
         bot.entity.velocity.add(botpos.scaled(20));
     }
 
-    if (distance < 3) {
-        if (!getInterestEntity()) {
-            // 注目している人がいないなら注目
-            setInterestEntity(entity);
-        } else {
-            // 既に注目している人が居る場合、その人よりも近ければ注目を切り替える
-            if (bot.entity.position.distanceTo(getInterestEntity().position) > distance)
+    if (distance < 5) {
+        if (entity.type == "player" || entity.type == "mob") {
+            if (!interest_entity) {
+                // 注目している人がいないなら注目
                 setInterestEntity(entity);
+            } else {
+                // 既に注目している人が居る場合、その人よりも近ければ注目を切り替える
+                if (bot.entity.position.distanceTo(interest_entity.position) > distance)
+                    setInterestEntity(entity);
+                else
+                    setInterestEntity(interest_entity);
+            }
         }
-    }
-
-    if (distance > 6) {
-        // 注目している人が一定以上離れたら注目解除
-        if (getInterestEntity() === entity)
-            setInterestEntity();
     }
 });
 
 function interest_signal() {
-    if (!botFunc.isWaiting)
-        if (botFunc.isPlayingMusic || botFunc.isTuning || botFunc.isMoving) return;
-    var target = getTargetEntity();
-    var interest = getInterestEntity();
-
-    var entity;
-    if (target) {
-        entity = target;
-    } else if (interest) {
-        entity = interest;
-    }
-
-    if (entity) {
-        var pos = bot.entity.position.clone();
-        pos.subtract(entity.position);
-        var rot = Vec3ToRot(pos);
-
-        // 対象に向く
-        if (Math.abs(rot.yaw - bot.entity.yaw) > 0.05 || Math.abs(rot.pitch - bot.entity.pitch) > 0.05) {
-            bot.look(rot.yaw, rot.pitch, false, false);
-        }
+    if (interest_entity && bot.entity.position.distanceTo(interest_entity.position) < 5) {
+        bot.lookAt(interest_entity.position.offset(0, 1.4, 0));
+    } else {
+        setInterestEntity();
     }
 }

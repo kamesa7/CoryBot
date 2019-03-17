@@ -10,7 +10,7 @@ eventEmitter.setMaxListeners(640);
 Vec3 = require('vec3').Vec3;
 
 botFunc = new Object();
-botFunc.debug = false;
+botFunc.debug = true;
 if (process.argv[3] == 'true' || process.argv[2] == 'true') {
   botFunc.debug = true;
   console.log("command line debug mode");
@@ -29,6 +29,7 @@ require("./calculator");
 require("./musicPlayer");
 require("./movement");
 require("./inventoryManager");
+require("./combat");
 
 
 function start() {
@@ -46,7 +47,7 @@ function start() {
   } else {
     bot = mineflayer.createBot({
       host: "localhost",
-      port: "60092",
+      port: "55039",
       username: "Steve",
       // password: process.env.MC_PASSWORD,
       verbose: true
@@ -348,8 +349,8 @@ bot.on('omikuji', (username, message) => {
       "キャー", "柑橘w", "黄色い", "柑橘類の日", "おめでとう！", "可哀想", "か ん き つ る い",
       "いいね", "ʬʬʬ", "草", "🍊", username + "さんは柑橘類ね", "柑橘系" + username, message,
       "", "柑橘…", "柑橘な日もあるよ", "www", "ｗｗｗ", "卍柑橘卍", "柑橘様だ", "かかかかかｗ",
-      "大吉＞中吉＞吉＞＞＞大凶＞＞＞＞＞＞＞＞＞＞＞＞柑橘類","17333","55","カ ン キ ツ","[柑橘]<"+username+">[柑橘]",
-      "オレンジ様だ","レモン様だ","今日の運勢「柑橘類」","(笑)","柑橘類（笑）"]);
+      "大吉＞中吉＞吉＞＞＞大凶＞＞＞＞＞＞＞＞＞＞＞＞柑橘類", "17333", "55", "カ ン キ ツ", "[柑橘]<" + username + ">[柑橘]",
+      "オレンジ様だ", "レモン様だ", "今日の運勢「柑橘類」", "(笑)", "柑橘類（笑）"]);
   }
 });
 

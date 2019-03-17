@@ -57,7 +57,7 @@ bot.on('noteHeard', (block, instrument, pitch) => {
       bot.log("[note] " + getJTune(pitch) + " " + block.position + " " + instrument.id);
     }
 
-    if (block.position.distanceTo(bot.entity.position) > 9.0) return;
+    if (block.position.distanceTo(bot.entity.position) > 8) return;
     var Note = {
       block,
       instrument,
@@ -113,7 +113,7 @@ botFunc.initNote = () => {
         var i = 0;
         var initter = setInterval(function () {
           if (i < blocks.length) {
-            if (blocks[i].position.distanceTo(bot.entity.position) > 8.0) {
+            if (blocks[i].position.distanceTo(bot.entity.position) > 8) {
 
             } else {
               punchNote(blocks[i]);
