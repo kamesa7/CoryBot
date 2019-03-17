@@ -9,13 +9,13 @@ const eventEmitter = new events.EventEmitter();
 eventEmitter.setMaxListeners(640);
 Vec3 = require('vec3').Vec3;
 
-botFunc = new Object();
-botFunc.debug = true;
+glob = new Object();
+glob.debug = true;
 if (process.argv[3] == 'true' || process.argv[2] == 'true') {
-  botFunc.debug = true;
+  glob.debug = true;
   console.log("command line debug mode");
 } else if (process.argv[3] == 'false' || process.argv[2] == 'false') {
-  botFunc.debug = false;
+  glob.debug = false;
   console.log("command line online mode");
 }
 console.log('starting');
@@ -23,8 +23,8 @@ console.log("repl to debug");
 
 start();
 
-botFunc.blockFinderPlugin = require('mineflayer-blockfinder')(mineflayer);
-botFunc.isSame = require("./isSameObject");
+glob.blockFinderPlugin = require('mineflayer-blockfinder')(mineflayer);
+glob.isSame = require("./isSameObject");
 require("./calculator");
 require("./musicPlayer");
 require("./movement");
@@ -33,7 +33,7 @@ require("./combat");
 
 
 function start() {
-  if (botFunc.debug == false) {
+  if (glob.debug == false) {
     bot = mineflayer.createBot({
       host: process.env.MC_HOST,
       port: process.env.MC_PORT,
@@ -75,7 +75,7 @@ function start() {
   bot.on('connect', () => {
     bot.log('[bot.connect]');
     delay(1000).then(() => {
-      if (botFunc.debug == true) {
+      if (glob.debug == true) {
         //bot.chatAddPattern(/^<([^ :]*)> (.*)$/, 'chat');
         bot.log('[bot.login] localhost');
       } else if (process.env.MC_HOST != null && (process.env.MC_HOST == 'kenmomine.club' || process.env.MC_HOST == 'ironingot.net')) {
@@ -269,12 +269,12 @@ bot.on('chat', (username, message) => {
   if (username == "Super_AI") return;
   //Calculator
   if (message.match(/(.*)=$/)) {
-    var calcMessage = botFunc.Calc(message);
+    var calcMessage = glob.Calc(message);
     if (!calcMessage.match(/¬/)) bot.safechat(calcMessage, 0);
   }
 
   //Auction
-  if (message.match(/^>\s*(\d+)/) && botFunc.auctioning) {
+  if (message.match(/^>\s*(\d+)/) && glob.auctioning) {
     if (maxBid < Number(RegExp.$1)) {
       maxBid = Number(RegExp.$1);
       maxBidPlayer = username;
@@ -287,35 +287,35 @@ bot.on('chat', (username, message) => {
   }
 
   //Music
-  if (message.match(/^Music info/i) && botFunc.isPlayingMusic) {
-    if (botFunc.isEndlessing) {
-      bot.safechat("今はプレイリスト" + botFunc.endlessPlaylist + ":" + botFunc.endlessIndex + "/" + botFunc.endlessFilelist.length + "曲目の" + botFunc.currentMusic.title
-        + "(" + botFunc.currentMusic.duration + "秒)を演奏中です。");
+  if (message.match(/^Music info/i) && glob.isPlayingMusic) {
+    if (glob.isEndlessing) {
+      bot.safechat("今はプレイリスト" + glob.endlessPlaylist + ":" + glob.endlessIndex + "/" + glob.endlessFilelist.length + "曲目の" + glob.currentMusic.title
+        + "(" + glob.currentMusic.duration + "秒)を演奏中です。");
     } else {
-      bot.safechat("今は" + botFunc.currentMusic.title + "を演奏中です。");
+      bot.safechat("今は" + glob.currentMusic.title + "を演奏中です。");
     }
   }
-  if (message.match(/^Music skip/i) && botFunc.isEndlessing) {
-    botFunc.isPlayingMusic = false;
-    bot.safechat("スキップ:" + botFunc.endlessFilelist[botFunc.endlessIndex - 1] + " => " + botFunc.endlessFilelist[botFunc.endlessIndex]);
+  if (message.match(/^Music skip/i) && glob.isEndlessing) {
+    glob.isPlayingMusic = false;
+    bot.safechat("スキップ:" + glob.endlessFilelist[glob.endlessIndex - 1] + " => " + glob.endlessFilelist[glob.endlessIndex]);
   }
-  if (message.match(/^Music restart/i) && botFunc.isEndlessing) {
-    botFunc.isPlayingMusic = false;
-    bot.safechat("最初から:" + botFunc.endlessFilelist[botFunc.endlessIndex - 1]);
-    botFunc.endlessIndex--;
+  if (message.match(/^Music restart/i) && glob.isEndlessing) {
+    glob.isPlayingMusic = false;
+    bot.safechat("最初から:" + glob.endlessFilelist[glob.endlessIndex - 1]);
+    glob.endlessIndex--;
   }
-  if (message.match(/^Music pre/i) && botFunc.isEndlessing) {
-    botFunc.isPlayingMusic = false;
-    bot.safechat("前の曲:" + botFunc.endlessFilelist[botFunc.endlessIndex - 2]);
-    botFunc.endlessIndex -= 2;
-    if (botFunc.endlessIndex < 0) {
-      botFunc.endlessIndex = 0;
+  if (message.match(/^Music pre/i) && glob.isEndlessing) {
+    glob.isPlayingMusic = false;
+    bot.safechat("前の曲:" + glob.endlessFilelist[glob.endlessIndex - 2]);
+    glob.endlessIndex -= 2;
+    if (glob.endlessIndex < 0) {
+      glob.endlessIndex = 0;
     }
   }
-  if (message.match(/^Music set (\d+)/i) && botFunc.isEndlessing) {
-    botFunc.isisPlayingMusic = false;
-    bot.safechat("リクエスト:" + botFunc.endlessFilelist[Number(RegExp.$1)]);
-    botFunc.endlessIndex = Number(RegExp.$1);
+  if (message.match(/^Music set (\d+)/i) && glob.isEndlessing) {
+    glob.isisPlayingMusic = false;
+    bot.safechat("リクエスト:" + glob.endlessFilelist[Number(RegExp.$1)]);
+    glob.endlessIndex = Number(RegExp.$1);
   }
 
   //selfchat
@@ -335,7 +335,7 @@ bot.on('whisper', (username, message) => {
     bot.log('[botselfcommand]');
   }
   if (message.match(/(.*)=$/)) {
-    bot.safechat("/tell " + username + " " + message + "  " + botFunc.Calc(message));
+    bot.safechat("/tell " + username + " " + message + "  " + glob.Calc(message));
   }
 });
 
@@ -373,7 +373,7 @@ bot.on('spawn', () => {
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
-botFunc.auctioning = false;
+glob.auctioning = false;
 var auc10called = false;
 var aucDeadline;
 var aucTimeSetting = 0;
@@ -384,8 +384,8 @@ function setAuction(seconds) {
     if (seconds < 1) return;
     aucDeadline = new Date();
     aucDeadline.setSeconds(aucDeadline.getSeconds() + seconds);
-    if (botFunc.auctioning == false) {
-      botFunc.auctioning = true;
+    if (glob.auctioning == false) {
+      glob.auctioning = true;
       bot.chat(">オークションを開始しました: 最終入札(>[数値])から" + seconds + "秒まで");
       aucTimeSetting = seconds;
       maxBid = 0;
@@ -421,13 +421,13 @@ function time_signal() {
       bot.safechat('/omikuji', 3000);
     }
 
-    if (botFunc.auctioning && clock.getTime() >= aucDeadline.getTime()) {//auction
+    if (glob.auctioning && clock.getTime() >= aucDeadline.getTime()) {//auction
       bot.chat(">落札！ Max: " + maxBidPlayer + " " + maxBid);
-      botFunc.auctioning = false;
+      glob.auctioning = false;
       aucTimeSetting = 0;
     }
 
-    if (botFunc.auctioning && aucTimeSetting > 10 && auc10called == false && aucDeadline.getTime() - clock.getTime() <= 10000) {
+    if (glob.auctioning && aucTimeSetting > 10 && auc10called == false && aucDeadline.getTime() - clock.getTime() <= 10000) {
       auc10called = true;
       bot.chat(">残り10秒未満  現在Max: " + maxBidPlayer + " " + maxBid);
     }

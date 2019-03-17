@@ -9,11 +9,11 @@ const armorSlots = {
   feet: 8
 }
 */
-botFunc.isEating = false;
+glob.isEating = false;
 
-botFunc.startEat = startEat;
-botFunc.findItem = findItem;
-botFunc.clearInventory = clearInventory;
+glob.startEat = startEat;
+glob.findItem = findItem;
+glob.clearInventory = clearInventory;
 
 var eatTime;
 
@@ -36,9 +36,9 @@ function bodyManage() {
     } else if (bot.health < 10 && bot.food < 20) {
         startEat();
     } else {
-        if (botFunc.isEating) {
+        if (glob.isEating) {
             bot.deactivateItem();
-            botFunc.isEating = false;
+            glob.isEating = false;
         }
     }
 }
@@ -47,7 +47,7 @@ function startEat() {
     eatTime = new Date();
     var item = findItem(foods);
     if (item != null) {
-        botFunc.isEating = true;
+        glob.isEating = true;
         bot.equip(item, "hand", function () {
             bot.activateItem()
         });
@@ -58,7 +58,7 @@ function startEat() {
     }
 
     function eating() {
-        if (botFunc.isEating) {
+        if (glob.isEating) {
             if (new Date().getTime() - 3000 > eatTime.getTime()) {
                 bodyManage();
             } else {

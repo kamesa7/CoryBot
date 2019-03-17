@@ -1,7 +1,7 @@
 
 var Gi = 0;
-botFunc.Calc = (BEquation) => {
-  // function botFunc.Calc(BEquation) {
+glob.Calc = (BEquation) => {
+  // function glob.Calc(BEquation) {
   try {
     equation = new String(BEquation);
     equation.value = preCalc(BEquation);
