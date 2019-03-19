@@ -1,26 +1,35 @@
 
-bucketsJs = require('buckets-js');
-
 glob.isMoving = false;
 glob.isFollowing = false;
 glob.isWaiting = false;
+glob.isBrightenMode = false;
+glob.isRandomWalk = false;
 
 const onGround = 0.001;
 const eyeHeight = 1.42;
 
-glob.followInterval = 10;
-glob.followingPlayer = null;
+
 glob.stepTime = 60;
 glob.searchLimit = 5000;
 glob.stepError = 20;
-glob.onPos = 0.1;
+glob.onPos = 0.2;
+
 glob.allowGoal = 1;
 glob.allowFollow = 5;
-glob.destination;
+
+glob.followInterval = 25;
+glob.followingPlayer = null;
+glob.followWait = 100;
+
+glob.randomDistance = 16;
+glob.randomHeight = 4;
+glob.randomWait = 50;
+glob.randomCostLimit = 100;
 
 glob.logMove = false;
 glob.logInterest = true;
 
+var finalDestination;
 
 setInterval(interest_signal, 1000);
 
@@ -44,15 +53,20 @@ moves:
     runover
     land
 */
-function moveCost(move) {
-    switch (move) {
-        case "walk": return 1;
-        case "upstair": return 5;
-        case "downstair": return 5;
-        case "jumpover": return 5;
-        case "land": return 3;
-    }
+
+
+glob.stopMoving = () => {
+    glob.isMoving = false;
+    glob.isFollowing = false;
+    glob.isWaiting = false;
+    glob.isRandomWalk = false;
+    glob.followingPlayer = null;
+    bot.clearControlStates();
+    //bot.log("[move] stop ");
 }
+bot.on('death', () => {
+    glob.stopMoving()
+});
 
 glob.goto = (point) => {
     if (glob.isMoving) {
@@ -66,7 +80,7 @@ glob.goto = (point) => {
     } else {
         goal = getPosFromVec3(point);
     }
-    var start = getPosFromVec3(bot.entity.position);
+    var start = getMyPos()
     floor(goal);
     floor(start);
     setStandable(start);
@@ -103,7 +117,7 @@ glob.follow = (player) => {
 
 function reviceTarget(path) {
     var player = glob.followingPlayer;
-    var start = getPosFromVec3(bot.entity.position);
+    var start = getMyPos();
     var goal = getPosFromVec3(player.entity.position);
     floor(start);
     floor(goal);
@@ -115,6 +129,11 @@ function reviceTarget(path) {
         bot.log("[move] follow revice " + goal);
     }
     var cost = bestFirstSearch(path, start, goal, glob.allowFollow);
+
+    if(player.entity.position.distanceTo(bot.entity.position) < glob.allowFollow){
+        path.push([start[0], start[1], start[2], "wait", Math.floor(Math.random() * glob.followWait)]);
+    }
+
     if (glob.followInterval < path.length) {
         path[glob.followInterval][3] = "follow";
     } else {
@@ -122,6 +141,47 @@ function reviceTarget(path) {
     }
     if (!glob.isFollowing) {
         glob.isFollowing = true;
+        followPath(path);
+    }
+}
+
+glob.randomWalk = () => {
+    if (glob.isMoving) {
+        glob.stopMoving();
+        bot.log("[move] aborted");
+        return;
+    }
+    bot.log("[move] random walk ");
+    var path = [];
+    reRandom(path);
+}
+
+function reRandom(path) {
+    var start = getMyPos();
+    setStandable(start);
+    var goal = getRandomPos(start, glob.randomDistance, glob.randomHeight);
+    floor(start);
+    floor(goal);
+
+    path.splice(0, path.length);
+    if (glob.logMove) {
+        bot.log("[move] random revice " + goal);
+    }
+    var cost = bestFirstSearch(path, start, goal);
+    if (glob.randomCostLimit < cost) {
+        reRandom(path);
+        return;
+    }
+    if (glob.randomInterval < path.length) {
+        path[glob.randomInterval - 1][3] = "wait";
+        path[glob.randomInterval - 1][4] = Math.floor(Math.random() * glob.randomWait * 2);
+        path[glob.randomInterval][3] = "random";
+    } else {
+        path.push([goal[0], goal[1], goal[2], "wait", Math.floor(Math.random() * glob.randomWait)]);
+        path.push([goal[0], goal[1], goal[2], "random"]);
+    }
+    if (!glob.isRandomWalk) {
+        glob.isRandomWalk = true;
         followPath(path);
     }
 }
@@ -166,6 +226,17 @@ var lands = [
     [0, -3, 1],
     [0, -3, -1]
 ];
+
+
+function moveCost(move) {
+    switch (move) {
+        case "walk": return 1;
+        case "upstair": return 5;
+        case "downstair": return 5;
+        case "jumpover": return 5;
+        case "land": return 3;
+    }
+}
 
 function bestFirstSearch(finalPath, start, goal, allow = glob.allowGoal) {
     var closed = [];
@@ -271,7 +342,7 @@ function convertNode(path, node) {
     var sum = 0;
     var tmp = node;
 
-    glob.destination = [tmp.p[0], tmp.p[1], tmp.p[2]];
+    finalDestination = [tmp.p[0], tmp.p[1], tmp.p[2]];
     while (tmp.parent != null) {
         path.push([tmp.p[0], tmp.p[1], tmp.p[2], tmp.p[3]]);
         sum += moveCost(tmp.p[3]);
@@ -283,37 +354,60 @@ function convertNode(path, node) {
 }
 
 function optimize(path) {
+    var start = floor(getMyPos());
+    path.splice(0, 0, [start[0], start[1], start[2], "strict"]);
     for (var i = 0; i < path.length; i++) {
         if (bot.blockAt(posToVec(path[i])).boundingBox == "door") {
-            path.splice(i, 0, [path[i][0], path[i][1], path[i][2], "door"]);
+            var doorFront = path[i-1];
+            if(doorFront) {
+                path.splice(i-1, 0, [doorFront[0], doorFront[1], doorFront[2], "strict"]);
+                i++;
+            }
+            var pathDoor = path[i];
+            path.splice(i, 0, [pathDoor[0], pathDoor[1], pathDoor[2], "door"]);
             i++;
+            for (var k = 0; k < walks.length; k++) {
+                var nextDoor = plus(pathDoor, walks[k]);
+                if (bot.blockAt(posToVec(nextDoor)).boundingBox == "door") {
+                    path.splice(i, 0, [nextDoor[0], nextDoor[1], nextDoor[2], "door"]);
+                    i++
+                }
+            }
         }
     }
-    var scnt = 0;
+    var startInd;
     var cnt = 0;
     var dir;
     var preDir;
     var fin = false;
     for (var i = 0; i < path.length; i++) {
         if (path[i][3] == "walk") {
-            scnt++;
-            if (scnt == 2) {
+            if (cnt == 0) {
+                startInd = i;
+                cnt++;
+                continue;
+            }
+            if (cnt == 1) {
                 dir = getdir(path[i - 1], path[i]);
                 preDir = dir;
+                cnt++;
             }
-            if (scnt >= 3) {
+            if (cnt >= 2) {
                 dir = getdir(path[i - 1], path[i]);
                 if (dir == preDir) {
                     cnt++;
                 } else if (cnt >= 3) {
                     fin = true;
+                } else {
+                    i -= 2;
+                    cnt = 0;
+                    continue;
                 }
                 preDir = dir;
             }
         } else if (cnt >= 3) {
             fin = true;
         } else {
-            scnt = 0;
             cnt = 0;
         }
         if (i >= path.length - 1 && cnt >= 3) {
@@ -322,22 +416,14 @@ function optimize(path) {
         if (fin) {
             fin = false;
             path[i - 1][3] = "sprint";
-            path.splice(i - cnt - 2, cnt + 1);
-            scnt = 0;
+            var goal = path[i - 1];
+            path.splice(startInd + 1, i - startInd - 1, goal);
             cnt = 0;
-            i = i - cnt - 2;
+            i = startInd + 1;
         }
     }
 }
 
-glob.stopMoving = () => {
-    glob.isMoving = false;
-    glob.isFollowing = false;
-    glob.isWaiting = false;
-    glob.followingPlayer = null;
-    bot.clearControlStates();
-    bot.log("[move] stop ");
-}
 
 function followPath(path) {
     if (glob.isMoving) {
@@ -348,19 +434,42 @@ function followPath(path) {
     glob.isMoving = true;
     var index = 0;
     var err = false;
-    var distance;
-    var height;
     var preDistance = Infinity;
-    var myPos = getMyPos();
     var prePos = getMyPos();
-    var target;
     var indexCount = 0;
     var waitCount = 0;
     var stopCount = 0;
+    var placingLight = false;
     var mover = setInterval(function () {
         if (glob.isMoving && index < path.length) {
-            myPos = floor(getMyPos());
-            if (getDiff(myPos, prePos) == 0) {
+
+            if (glob.isBrightenMode && !placingLight) {
+                placingLight = true;
+                var brightPos = getRandomPos(getMyPos(), 3);
+                if (isNeedLight(brightPos)) {
+                    var torch = glob.findItem(50);
+                    if (torch != null) {
+                        floor(brightPos);
+                        bot.log("[brighten] " + brightPos + bot.blockAt(posToVec(brightPos)).light);
+
+                        bot.equip(torch, "hand", function () {
+                            bot.placeBlock(bot.blockAt(posToVec(add(brightPos, [0, -1, 0]))), new Vec3(0, 1, 0), function () {
+                                //bot.log("[brighten] " + brightPos);
+                            });
+                        });
+                        setTimeout(function () {
+                            placingLight = false;
+                        }, glob.stepTime * 50);
+                    } else {
+                        glob.isBrightenMode = false;
+                        bot.log("[brighten] no torch end");
+                    }
+                } else {
+                    placingLight = false;
+                }
+            }
+
+            if (getDiff(floor(getMyPos()), prePos) == 0) {
                 stopCount++;
             } else {
                 stopCount = 0;
@@ -369,38 +478,47 @@ function followPath(path) {
 
             if (err || ((path[index][3] != "revice" && path[index][3] != "wait") && stopCount > glob.stepError)) {
                 bot.clearControlStates();
-                bot.log("[move] path error end : " + path[index] + " stop: " + stopCount);
+                bot.log("[move] path error end : " + path[index] + " stops: " + stopCount);
                 if (glob.isFollowing) {
                     if (glob.followingPlayer != null && glob.followingPlayer.entity != undefined) {
                         path[0][3] = "revice";
                         reviceTarget(path);
-                        index = 0;
-                        indexCount = 0;
-                        stopCount = 0;
                     } else {
                         glob.isFollowing = false;
                     }
+                } else if (glob.isRandomWalk) {
+                    path[0][3] = "revice";
+                    reRandom(path);
                 } else {
                     clearInterval(mover);
                     glob.stopMoving();
-                    glob.goto(glob.destination);
+                    glob.goto(finalDestination);
                 }
+                index = 0;
+                indexCount = 0;
+                stopCount = 0;
+                err = false;
             } else {
-                target = getTarget(path[index]);
+                var target = mid([path[index][0], path[index][1], path[index][2], path[index][3]]);
+                var distance = getXZL2(getMyPos(), target);
+                var height = getMyPos()[1];
                 if (glob.logMove) bot.log("[move] " + path[index] + "  cnt: " + indexCount);
                 switch (path[index][3]) {
                     case "walk":
                         if (indexCount == 0) {
                             bot.lookAt(lookToVec(target), true);
                             bot.setControlState('forward', true);
+                            preDistance = Infinity;
                         }
                         indexCount++;
-                        distance = getL2(getMyPos(), target);
                         if (indexCount > glob.stepError) {
                             err = true;
                             break;
+                        } else if (distance > 2) {
+                            err = true;
+                            break;
                         } else if (preDistance <= distance || distance <= glob.onPos) {
-                            preDistance = Infinity;
+                            bot.clearControlStates();
                             index++;
                             indexCount = 0;
                             break;
@@ -412,12 +530,11 @@ function followPath(path) {
                         if (indexCount == 0) {
                             bot.setControlState('forward', true);
                             bot.setControlState('sprint', true);
+                            preDistance = Infinity;
                         }
                         indexCount++;
-                        distance = getL2(getMyPos(), target);
                         if (preDistance <= distance || distance <= glob.onPos) {
                             bot.clearControlStates();
-                            preDistance = Infinity;
                             index++;
                             indexCount = 0;
                             break;
@@ -430,17 +547,15 @@ function followPath(path) {
                             bot.setControlState('jump', true);
                             bot.setControlState('jump', false);
                             bot.setControlState('forward', true);
+                            preDistance = Infinity;
                         }
                         indexCount++;
-                        distance = getXZL2(getMyPos(), target);
-                        height = getMyPos()[1];
                         if ((height - onGround) % 1 != 0) break;
                         if (target[1] != height - onGround && indexCount > 1) {
                             err = true;
                             break;
                         } else if (preDistance <= distance - glob.onPos || distance <= glob.onPos) {
                             bot.clearControlStates();
-                            preDistance = Infinity;
                             index++;
                             indexCount = 0;
                             break;
@@ -452,17 +567,14 @@ function followPath(path) {
                         bot.lookAt(lookToVec(target), true);
                         if (indexCount == 0) {
                             bot.setControlState('forward', true);
+                            preDistance = Infinity;
                         }
                         indexCount++;
-                        distance = getXZL2(getMyPos(), target);
-                        height = getMyPos()[1];
                         if ((height - onGround) % 1 != 0) break;
-
                         if (target[1] != height - onGround) {
                             //まだ降りてない
                         } else if (preDistance <= distance || distance <= glob.onPos) {
                             bot.clearControlStates();
-                            preDistance = Infinity;
                             index++;
                             indexCount = 0;
                             break;
@@ -475,10 +587,9 @@ function followPath(path) {
                             bot.setControlState('jump', true);
                             bot.setControlState('jump', false);
                             bot.setControlState('forward', true);
+                            preDistance = Infinity;
                         }
                         indexCount++;
-                        distance = getXZL2(getMyPos(), target);
-                        height = getMyPos()[1];
                         if ((height - onGround) % 1 != 0) break;
                         if (target[1] != height - onGround) {
                             err = true;
@@ -486,7 +597,6 @@ function followPath(path) {
                         }
                         if (preDistance <= distance - glob.onPos || distance <= glob.onPos) {
                             bot.clearControlStates();
-                            preDistance = Infinity;
                             index++;
                             indexCount = 0;
                             break;
@@ -494,17 +604,43 @@ function followPath(path) {
                         preDistance = distance;
                         break;
                     case "door":
-                        targetVec = posToVec(path[index]);
+                        bot.clearControlStates();
+                        bot.lookAt(lookToVec(target), true);
+                        bot.setControlState('forward', true);
+                        var targetVec = posToVec(target);
                         var door = bot.blockAt(targetVec);
                         if (door.metadata < 4 || 7 < door.metadata) {
-                            bot.lookAt(targetVec, true);
-                            bot.activateBlock(door);
+                            bot.lookAt(targetVec, true, function () {
+                                bot.activateBlock(door);
+                            });
+                        }
+                        index++;
+                        indexCount = 0;
+                        break;
+                    case "strict":
+                        if (indexCount == 0) {
+                            bot.clearControlStates();
+                            bot.lookAt(lookToVec(target), true, function () {
+                                bot.setControlState('sneak', true);
+                                bot.setControlState('forward', true);
+                            });
+                        }
+                        bot.lookAt(lookToVec(target), true);
+                        indexCount++;
+                        if (indexCount > glob.stepError) {
+                            err = true;
+                            break;
+                        } else if (distance <= glob.onPos) {
+                            bot.clearControlStates();
+                            index++;
+                            indexCount = 0;
+                            break;
                         }
                         break;
                     case "follow":
                         bot.clearControlStates();
                         if (glob.followingPlayer != undefined && glob.followingPlayer.entity != undefined) {
-                            bot.lookAt(glob.followingPlayer.entity.position.offset(0, eyeHeight, 0), true);
+                            bot.lookAt(glob.followingPlayer.entity.position.offset(0, eyeHeight, 0), false);
                             path[0][3] = "revice";
                             reviceTarget(path);
                             index = 0;
@@ -515,8 +651,15 @@ function followPath(path) {
                             glob.isFollowing = false;
                         }
                         break;
+                    case "random":
+                        bot.clearControlStates();
+                        path[0][3] = "revice";
+                        reRandom(path);
+                        index = 0;
+                        indexCount = 0;
+                        stopCount = 0;
+                        break;
                     case "revice":
-                        bot.lookAt(glob.followingPlayer.entity.position.offset(0, eyeHeight, 0), true);
                         index = 0;
                         indexCount = 0;
                         stopCount = 0;
@@ -533,6 +676,7 @@ function followPath(path) {
                             break;
                         }
                         indexCount++;
+                        stopCount = 0;
                         break;
                     default:
                         bot.log("[move] unknown state");
@@ -542,10 +686,37 @@ function followPath(path) {
         } else {
             clearInterval(mover);
             glob.stopMoving();
-            state = "";
             bot.log("[move] path end")
         }
     }, glob.stepTime);
+}
+
+function isNeedLight(pos) {
+    if (isStandable(pos) && mcData.blocks[bot.blockAt(bot.players.kamesa.entity.position.plus(new Vec3(0, -1, 0))).type].transparent) {
+        var block = bot.blockAt(posToVec(pos));
+        var next;
+        if (block.name != "air") return false;
+        if (block.light <= 1) return true;
+        if (block.light == 2) {
+            for (var i = 0; i < walks.length; i++) {
+                next = bot.blockAt(posToVec(plus(pos, walks[i])));
+                if (next.name != "air") continue;
+                if (next.light <= 1) {
+                    add(pos, walks[i]);
+                    return true;
+                }
+            }
+        }
+        if (block.light <= 7) {
+            for (var i = 0; i < walks.length; i++) {
+                next = bot.blockAt(posToVec(plus(pos, walks[i])));
+                if (next.name != "air") continue;
+                if (next.light < block.light) return false;
+            }
+            return true;
+        }
+    }
+    return false;
 }
 
 function isNotAvoidance(block) {
@@ -558,6 +729,7 @@ function isNotAvoidance(block) {
         //minecraft-date snow -> empty
         || block.name.match(/lava/)
         || block.name.match(/water/)
+        || block.name.match(/magma/)
     ) {
         return false;
     }
@@ -586,7 +758,7 @@ function isThroughable(pos) {
     var B2 = bot.blockAt(new Vec3(pos[0], pos[1] + 1, pos[2]))
     if (B1.boundingBox != 'block' &&
         B2.boundingBox != 'block' &&
-        isNotAvoidance(B1)
+        isNotAvoidance(B2)
     ) {
         return true;
     } else {
@@ -594,19 +766,32 @@ function isThroughable(pos) {
     }
 }
 
-function setStandable(pos) {
+function setStandable(pos, limit = 15) {
     if (!isStandable(pos)) {
         var direct = 1;
         var tmp = plus(pos, [0, 0, 0]);
         while (!isStandable(tmp)) {
             direct *= -1;
             if (direct > 0) direct++;
-            if (direct > 20) return;
+            if (direct >= limit) return false;
 
             tmp = plus(pos, [0, direct, 0]);
         }
         add(pos, [0, direct, 0]);
     }
+    return true;
+}
+
+function getRandomPos(root, distance, height = 2) {
+    var limit = 100;
+    var ret;
+    for (var i = 0; i < limit; i++) {
+        var rad = Math.random() * 2 * Math.PI;
+        pl = [Math.random() * distance * Math.sin(rad), 0, Math.random() * distance * Math.cos(rad)];
+        ret = plus(root, pl);
+        if (setStandable(ret, height)) return ret;
+    }
+    return root;
 }
 
 function isGoal(pos, goal, allow) {
@@ -623,23 +808,22 @@ function getL2(pos, target) {
 }
 
 function getXZL2(pos, target) {
-    return Math.sqrt(Math.pow(target[0] - pos[0], 2) + Math.pow(target[2] - pos[2], 2));
+    return Math.sqrt((target[0] - pos[0]) * (target[0] - pos[0]) + (target[2] - pos[2]) * (target[2] - pos[2]));
 }
 
 function plus(pos, vel) {
-    var ret = [
+    return [
         pos[0] + vel[0],
         pos[1] + vel[1],
         pos[2] + vel[2]
     ];
-    return ret;
 }
 
 function add(pos, vel) {
     pos[0] += vel[0];
     pos[1] += vel[1];
     pos[2] += vel[2];
-    return add;
+    return pos;
 }
 
 function floor(pos) {
@@ -656,6 +840,13 @@ function mid(pos) {
     return pos;
 }
 
+function scale(pos, scale) {
+    pos[0] *= scale;
+    pos[1] *= scale;
+    pos[2] *= scale;
+    return pos;
+}
+
 function getdir(pos1, pos2) {
     return (pos1[0] - pos2[0]) * 10 + (pos1[2] - pos2[2]);
 }
@@ -664,20 +855,12 @@ function getDiff(pos1, pos2) {
     return (pos1[0] - pos2[0]) * 100 + (pos1[1] - pos2[1]) * 10 + (pos1[2] - pos2[2]);
 }
 
-function getTarget(arr) {
-    var ret = [arr[0], arr[1], arr[2], arr[3]];
-    mid(ret);
-    return ret;
-}
-
 function getPosFromVec3(abvec) {
-    // var tmp = a
-    var ret = [
+    return [
         Number(abvec.x),
         Number(abvec.y),
         Number(abvec.z)
     ];
-    return ret;
 }
 
 function getMinInd(arr) {
@@ -733,6 +916,7 @@ class NodeElement {
         catch (e) { console.log(e); }
     }
 }
+
 function compare(a, b) {
     if (a.cost < b.cost) {
         return 1;

@@ -14,6 +14,7 @@ glob.isEating = false;
 glob.startEat = startEat;
 glob.findItem = findItem;
 glob.clearInventory = clearInventory;
+glob.equipArmor = equipArmor;
 
 var eatTime;
 
@@ -27,6 +28,7 @@ bot.on('food', function () {
 });
 
 function bodyManage() {
+    if (eatTime == undefined) bot.unequip("hand");
     eatTime = new Date();
     bot.log("[body] health: " + bot.health + ", food: " + bot.food);
     if (bot.health < 20 && bot.food < 19) {
@@ -39,6 +41,8 @@ function bodyManage() {
         if (glob.isEating) {
             bot.deactivateItem();
             glob.isEating = false;
+        } else {
+            bot.equip
         }
     }
 }
@@ -90,11 +94,36 @@ var foods = [
     260, 297, 320, 322, 350, 357, 360, 364, 366, 367, 391, 393, 400, 412, 424, 396
 ];
 
+var helmets = [
+    310, 306, 302, 314, 298
+];
+
 function findItem(list) {
-    var item;
-    for (var index = 0; index < list.length; index++) {
-        item = bot.inventory.findInventoryItem(list[index]);//, 0);
-        if (item != null) return item;
+    if (Array.isArray(list)) {
+        var item;
+        for (var index = 0; index < list.length; index++) {
+            item = bot.inventory.findInventoryItem(list[index]);//, 0);
+            if (item != null) return item;
+        }
+        return null;
+    } else {
+        return bot.inventory.findInventoryItem(list);
     }
-    return null;
+}
+function equipArmor() {
+    var item;
+    for (var k = 0; k < 4; k++) {
+        for (var index = 0; index < helmets.length; index++) {
+            item = findItem(helmets[index] + k);
+            if (item != null) {
+                switch (k) {
+                    case 0: bot.equip(item, "head"); break;
+                    case 1: bot.equip(item, "torso"); break;
+                    case 2: bot.equip(item, "legs"); break;
+                    case 3: bot.equip(item, "feet"); break;
+                }
+                return;
+            }
+        }
+    }
 }

@@ -8,9 +8,14 @@ const events = require('events');
 const eventEmitter = new events.EventEmitter();
 eventEmitter.setMaxListeners(640);
 Vec3 = require('vec3').Vec3;
+mcData = require("minecraft-data")("1.12.2");//bot.version
+bucketsJs = require('buckets-js');
 
 glob = new Object();
 glob.debug = true;
+const PORT = "50860"
+glob.isAnnounceDeath = true;
+
 if (process.argv[3] == 'true' || process.argv[2] == 'true') {
   glob.debug = true;
   console.log("command line debug mode");
@@ -30,6 +35,7 @@ require("./musicPlayer");
 require("./movement");
 require("./inventoryManager");
 require("./combat");
+require("./eventManager");
 
 
 function start() {
@@ -47,7 +53,7 @@ function start() {
   } else {
     bot = mineflayer.createBot({
       host: "localhost",
-      port: "55039",
+      port: PORT,
       username: "Steve",
       // password: process.env.MC_PASSWORD,
       verbose: true
@@ -363,7 +369,7 @@ bot.on('death', () => {
 
 bot.on('spawn', () => {
   if (!is_dead) return;
-  bot.safechat("私はBOTです。よろしければ遺品回収してください。");
+  if (glob.isAnnounceDeath) bot.safechat("私はBOTです。よろしければ遺品回収してください。");
   is_dead = false;
 });
 

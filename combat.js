@@ -16,11 +16,11 @@ bot.on('entityMoved', (entity) => {
     if (entity.kind != undefined && entity.kind == "Hostile mobs") {
         bot.updateHeldItem()
         if (distance < 5 && new Date().getTime() - preAttackTime > swordInterval) {
-            bot.log("[combat] near: " + entity.name);
+            bot.log("[combat] punch: " + entity.name);
             var item = glob.findItem(swords);
             if (item != null) {
                 bot.equip(item, "hand", function () {
-                    bot.attack(entity);
+                    bot.attack(entity);//, true);
                 });
             } else {
                 bot.attack(entity);
@@ -50,6 +50,7 @@ function shootArrow(entity) {
     } else {
         bot.log("[combat] no bow or arrow");
         glob.isShootingArrow = false;
+        glob.isSniperMode = false;
     }
 
     function release() {
