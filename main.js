@@ -13,7 +13,7 @@ bucketsJs = require('buckets-js');
 
 glob = new Object();
 glob.debug = true;
-const PORT = "59791"
+const PORT = "60407"
 glob.isAnnounceDeath = true;
 
 if (process.argv[3] == 'true' || process.argv[2] == 'true') {
@@ -277,6 +277,14 @@ bot.on('chat', (username, message) => {
   if (message.match(/(.*)=$/)) {
     var calcMessage = glob.Calc(message);
     if (!calcMessage.match(/¬/)) bot.safechat(calcMessage, 0);
+  }
+
+  //Follow
+  if (message.match(/おいで$/)) {
+    if (bot.players[username] && bot.players[username].entity) {
+      glob.goToPos(bot.players[username].entity.position);
+      bot.log("[move] chat follow " + username);
+    }
   }
 
   //Auction

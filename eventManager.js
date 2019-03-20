@@ -1,4 +1,44 @@
 glob.logBlockUpdate = false;
+glob.logEffect = false;
+
+const defaultPhysics = {
+    maxGroundSpeed: 4.27, // according to the internet
+    terminalVelocity: 20.0, // guess
+    walkingAcceleration: 100.0, // seems good
+    gravity: 27.0, // seems good
+    groundFriction: 0.9, // seems good
+    playerApothem: 0.32, // notch's client F3 says 0.30, but that caused spankings
+    playerHeight: 1.74, // tested with a binary search
+    jumpSpeed: 9.0, // seems good
+    yawSpeed: 3.0, // seems good
+    sprintSpeed: 1.3 // correct
+}
+
+bot.on("entityEffect", function (entity, effect) {
+    if (entity == bot.entity) {
+        if (glob.logEffect) bot.log("[myEffect] " + effect.id + " : " + effect.amplifier + " : " + effect.duration);
+        switch (effect.id) {
+            case 1:
+                bot.physics.maxGroundSpeed = defaultPhysics.maxGroundSpeed * ((effect.amplifier + 1) * 0.2 + 1);
+                bot.physics.terminalVelocity = defaultPhysics.terminalVelocity * ((effect.amplifier + 1) * 0.2 + 1);
+                bot.physics.maxGroundSpeed = defaultPhysics.maxGroundSpeed * ((effect.amplifier + 1) * 0.2 + 1);
+                break;
+        }
+    }
+});
+
+bot.on("entityEffectEnd", function (entity, effect) {
+    if (entity == bot.entity) {
+        if (glob.logEffect) bot.log("[myEffectEnd] " + effect.id + " : " + effect.amplifier + " : " + effect.duration);
+        switch (effect.id) {
+            case 1:
+                bot.physics.maxGroundSpeed = defaultPhysics.maxGroundSpeed;
+                bot.physics.terminalVelocity = defaultPhysics.terminalVelocity;
+                bot.physics.walkingAcceleration = defaultPhysics.walkingAcceleration;
+                break;
+        }
+    }
+});
 
 bot.on("blockUpdate", function (oldBlock, newBlock) {
     if (glob.logBlockUpdate) bot.log("[new block] " + newBlock.name);

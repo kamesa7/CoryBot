@@ -19,7 +19,7 @@ glob.allowGoal = 1;
 glob.allowFollow = 5;
 
 glob.followInterval = 25;
-glob.followingPlayer = null;
+glob.followingEntity = null;
 glob.followWait = 100;
 
 glob.randomDistance = 16;
@@ -66,7 +66,7 @@ function stopMoving() {
     glob.isFollowing = false;
     glob.isWaiting = false;
     glob.isRandomWalk = false;
-    glob.followingPlayer = null;
+    glob.followingEntity = null;
     bot.clearControlStates();
     //bot.log("[move] stop ");
 }
@@ -104,26 +104,26 @@ function goToPos(point) {
     }
 }
 
-function follow(player) {
+function follow(entity) {
     if (glob.isMoving) {
         stopMoving();
         bot.log("[move] aborted");
         return;
     }
-    if (player.entity == undefined) {
+    if (entity == undefined || !entity.isValid) {
         bot.log("[move] cannot find entity");
         return;
     }
-    bot.log("[move] follow player " + player.entity.position.floored());
+    bot.log("[move] follow entity " + entity.position.floored());
     var path = [];
-    glob.followingPlayer = player;
+    glob.followingEntity = entity;
     reviceTarget(path);
 }
 
 function reviceTarget(path) {
-    var player = glob.followingPlayer;
+    var entity = glob.followingEntity;
     var start = getMyPos();
-    var goal = getPosFromVec3(player.entity.position);
+    var goal = getPosFromVec3(entity.position);
     floor(start);
     floor(goal);
     setStandable(start);
@@ -135,7 +135,7 @@ function reviceTarget(path) {
     }
     var cost = bestFirstSearch(path, start, goal, glob.allowFollow);
 
-    if (player.entity.position.distanceTo(bot.entity.position) < glob.allowFollow) {
+    if (entity.position.distanceTo(bot.entity.position) < glob.allowFollow) {
         path.push([start[0], start[1], start[2], "wait", Math.floor(Math.random() * glob.followWait)]);
     }
 
@@ -469,7 +469,7 @@ function followPath(path) {
                 bot.clearControlStates();
                 bot.log("[move] path error end : " + path[index] + " stops: " + stopCount);
                 if (glob.isFollowing) {
-                    if (glob.followingPlayer != null && glob.followingPlayer.entity != undefined) {
+                    if (glob.followingEntity != null && glob.followingEntity.isValid) {
                         path[0][3] = "revice";
                         reviceTarget(path);
                     } else {
@@ -621,8 +621,8 @@ function followPath(path) {
                         break;
                     case "follow":
                         bot.clearControlStates();
-                        if (glob.followingPlayer != undefined && glob.followingPlayer.entity != undefined) {
-                            bot.lookAt(glob.followingPlayer.entity.position.offset(0, eyeHeight, 0), false);
+                        if (glob.followingEntity != undefined && glob.followingEntity.isValid) {
+                            bot.lookAt(glob.followingEntity.position.offset(0, eyeHeight, 0), false);
                             path[0][3] = "revice";
                             reviceTarget(path);
                             index = 0;
