@@ -4,9 +4,9 @@ bot.on("blockUpdate", function (oldBlock, newBlock) {
     if (glob.logBlockUpdate) bot.log("[new block] " + newBlock.name);
     if (newBlock.light < mcData.blocks[newBlock.type].emitLight) {
         if (glob.logBlockUpdate) bot.log("[light] new " + newBlock.name);
-        applyLight(newBlock.position, Math.max(newBlock.light, mcData.blocks[newBlock.type].emitLight));
-        expand(newBlock.position.floored(), mcData.blocks[newBlock.type].emitLight, newBlock.position.floored());
-        applyLight(newBlock.position, Math.max(newBlock.light, mcData.blocks[newBlock.type].emitLight));
+        newLightCnt = 0;
+        expand(newBlock.position.clone(), mcData.blocks[newBlock.type].emitLight, newBlock.position.clone());
+        if (glob.logBlockUpdate) bot.log("[light] updated: " + newLightCnt);
     }
 });
 
@@ -19,20 +19,18 @@ var round = [
     new Vec3(0, 0, -1)
 ];
 
+var newLightCnt;
 function expand(root, rootLight, pos) {
+
     var posDist = getL1(pos, root);
-    // console.log("new"+posDist)
     if (!mcData.blocks[bot.blockAt(pos).type].transparent) return;
-    if (bot.blockAt(pos).light < rootLight - posDist) {
-        applyLight(pos, rootLight - posDist);
-    } else {
-        return;
-    }
+    if (bot.blockAt(pos).light >= rootLight - posDist) return;
+
+    applyLight(pos, rootLight - posDist);
     for (var i = 0; i < round.length; i++) {
         var next = pos.plus(round[i])
         var nextDist = getL1(next, root);
-        if (nextDist > posDist && nextDist <= 15) {
-            //console.log("pos" + posDist + "nex" + nextDist)
+        if (nextDist > posDist && nextDist <= rootLight) {
             expand(root, rootLight, next);
         }
     }
@@ -48,6 +46,7 @@ function applyLight(pos, light) {
     } else {
         //bot.log("[light] update " + pos + "  " + light)
         column.setBlockLight(posInChunk(pos), light)
+        newLightCnt++;
     }
 }
 

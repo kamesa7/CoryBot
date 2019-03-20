@@ -74,6 +74,7 @@ function shootArrow(entity) {
         }
     }
 }
+
 function canSeeDirectly(target) {
     var zero = new Vec3(0, 0, 0);
     var myPos = bot.entity.position.offset(0, eyeHeight, 0);

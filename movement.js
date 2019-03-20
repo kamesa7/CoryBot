@@ -2,8 +2,9 @@
 glob.isMoving = false;
 glob.isFollowing = false;
 glob.isWaiting = false;
-glob.isBrightenMode = false;
+glob.isLightingMode = false;
 glob.isRandomWalk = false;
+glob.isPlacingLight = false;
 
 const onGround = 0.001;
 const eyeHeight = 1.42;
@@ -31,6 +32,11 @@ glob.logInterest = true;
 
 var finalDestination;
 
+glob.goToPos = goToPos;
+glob.stopMoving = stopMoving;
+glob.random = random;
+glob.follow = follow;
+
 setInterval(interest_signal, 1000);
 
 /*
@@ -55,7 +61,7 @@ moves:
 */
 
 
-glob.stopMoving = () => {
+function stopMoving() {
     glob.isMoving = false;
     glob.isFollowing = false;
     glob.isWaiting = false;
@@ -65,12 +71,12 @@ glob.stopMoving = () => {
     //bot.log("[move] stop ");
 }
 bot.on('death', () => {
-    glob.stopMoving()
+    stopMoving()
 });
 
-glob.goto = (point) => {
+function goToPos(point) {
     if (glob.isMoving) {
-        glob.stopMoving();
+        stopMoving();
         bot.log("[move] aborted");
         return;
     }
@@ -89,7 +95,6 @@ glob.goto = (point) => {
     bot.log("[move] try to goto " + goal + " from " + start);
 
     var path = [];
-    //var cost = createSimplePath(path, start, goal);
     var cost = bestFirstSearch(path, start, goal);
     bot.log("[move] cost: " + cost);
     if (cost < Infinity) {
@@ -99,9 +104,9 @@ glob.goto = (point) => {
     }
 }
 
-glob.follow = (player) => {
+function follow(player) {
     if (glob.isMoving) {
-        glob.stopMoving();
+        stopMoving();
         bot.log("[move] aborted");
         return;
     }
@@ -130,7 +135,7 @@ function reviceTarget(path) {
     }
     var cost = bestFirstSearch(path, start, goal, glob.allowFollow);
 
-    if(player.entity.position.distanceTo(bot.entity.position) < glob.allowFollow){
+    if (player.entity.position.distanceTo(bot.entity.position) < glob.allowFollow) {
         path.push([start[0], start[1], start[2], "wait", Math.floor(Math.random() * glob.followWait)]);
     }
 
@@ -145,9 +150,9 @@ function reviceTarget(path) {
     }
 }
 
-glob.randomWalk = () => {
+function random() {
     if (glob.isMoving) {
-        glob.stopMoving();
+        stopMoving();
         bot.log("[move] aborted");
         return;
     }
@@ -358,9 +363,9 @@ function optimize(path) {
     path.splice(0, 0, [start[0], start[1], start[2], "strict"]);
     for (var i = 0; i < path.length; i++) {
         if (bot.blockAt(posToVec(path[i])).boundingBox == "door") {
-            var doorFront = path[i-1];
-            if(doorFront) {
-                path.splice(i-1, 0, [doorFront[0], doorFront[1], doorFront[2], "strict"]);
+            var doorFront = path[i - 1];
+            if (doorFront) {
+                path.splice(i - 1, 0, [doorFront[0], doorFront[1], doorFront[2], "strict"]);
                 i++;
             }
             var pathDoor = path[i];
@@ -427,7 +432,7 @@ function optimize(path) {
 
 function followPath(path) {
     if (glob.isMoving) {
-        glob.stopMoving();
+        stopMoving();
         bot.log("[move] aborted");
         return;
     }
@@ -436,37 +441,21 @@ function followPath(path) {
     var err = false;
     var preDistance = Infinity;
     var prePos = getMyPos();
+    var preIndex = 0;
     var indexCount = 0;
     var waitCount = 0;
     var stopCount = 0;
-    var placingLight = false;
+    glob.isPlacingLight = false;
     var mover = setInterval(function () {
         if (glob.isMoving && index < path.length) {
 
-            if (glob.isBrightenMode && !placingLight) {
-                placingLight = true;
-                var brightPos = getRandomPos(getMyPos(), 3);
-                if (isNeedLight(brightPos)) {
-                    var torch = glob.findItem(50);
-                    if (torch != null) {
-                        floor(brightPos);
-                        bot.log("[brighten] " + brightPos + bot.blockAt(posToVec(brightPos)).light);
+            if (glob.isLightingMode && !glob.isPlacingLight) {
+                lightingMode();
+            }
 
-                        bot.equip(torch, "hand", function () {
-                            bot.placeBlock(bot.blockAt(posToVec(add(brightPos, [0, -1, 0]))), new Vec3(0, 1, 0), function () {
-                                //bot.log("[brighten] " + brightPos);
-                            });
-                        });
-                        setTimeout(function () {
-                            placingLight = false;
-                        }, glob.stepTime * 50);
-                    } else {
-                        glob.isBrightenMode = false;
-                        bot.log("[brighten] no torch end");
-                    }
-                } else {
-                    placingLight = false;
-                }
+            if (preIndex != index) {
+                indexCount = 0;
+                preIndex = index;
             }
 
             if (getDiff(floor(getMyPos()), prePos) == 0) {
@@ -491,8 +480,8 @@ function followPath(path) {
                     reRandom(path);
                 } else {
                     clearInterval(mover);
-                    glob.stopMoving();
-                    glob.goto(finalDestination);
+                    stopMoving();
+                    goToPos(finalDestination);
                 }
                 index = 0;
                 indexCount = 0;
@@ -520,7 +509,6 @@ function followPath(path) {
                         } else if (preDistance <= distance || distance <= glob.onPos) {
                             bot.clearControlStates();
                             index++;
-                            indexCount = 0;
                             break;
                         }
                         preDistance = distance;
@@ -536,7 +524,6 @@ function followPath(path) {
                         if (preDistance <= distance || distance <= glob.onPos) {
                             bot.clearControlStates();
                             index++;
-                            indexCount = 0;
                             break;
                         }
                         preDistance = distance;
@@ -557,7 +544,6 @@ function followPath(path) {
                         } else if (preDistance <= distance - glob.onPos || distance <= glob.onPos) {
                             bot.clearControlStates();
                             index++;
-                            indexCount = 0;
                             break;
                         }
                         preDistance = distance;
@@ -576,7 +562,6 @@ function followPath(path) {
                         } else if (preDistance <= distance || distance <= glob.onPos) {
                             bot.clearControlStates();
                             index++;
-                            indexCount = 0;
                             break;
                         }
                         preDistance = distance;
@@ -598,7 +583,6 @@ function followPath(path) {
                         if (preDistance <= distance - glob.onPos || distance <= glob.onPos) {
                             bot.clearControlStates();
                             index++;
-                            indexCount = 0;
                             break;
                         }
                         preDistance = distance;
@@ -615,7 +599,6 @@ function followPath(path) {
                             });
                         }
                         index++;
-                        indexCount = 0;
                         break;
                     case "strict":
                         if (indexCount == 0) {
@@ -633,7 +616,6 @@ function followPath(path) {
                         } else if (distance <= glob.onPos) {
                             bot.clearControlStates();
                             index++;
-                            indexCount = 0;
                             break;
                         }
                         break;
@@ -646,9 +628,9 @@ function followPath(path) {
                             index = 0;
                             indexCount = 0;
                             stopCount = 0;
-                            break;
                         } else {
                             glob.isFollowing = false;
+                            stopMoving()
                         }
                         break;
                     case "random":
@@ -671,7 +653,6 @@ function followPath(path) {
                             waitCount = path[index][4];
                         } else if (indexCount >= waitCount) {
                             index++;
-                            indexCount = 0;
                             glob.isWaiting = false;
                             break;
                         }
@@ -680,19 +661,44 @@ function followPath(path) {
                         break;
                     default:
                         bot.log("[move] unknown state");
-                        glob.stopMoving();
+                        stopMoving();
                 }
             }
         } else {
             clearInterval(mover);
-            glob.stopMoving();
+            stopMoving();
             bot.log("[move] path end")
         }
     }, glob.stepTime);
 }
 
+function lightingMode() {
+    glob.isPlacingLight = true;
+    var brightPos = getRandomPos(getMyPos(), 3);
+    if (isNeedLight(brightPos)) {
+        var torch = glob.findItem(50);
+        if (torch != null) {
+            floor(brightPos);
+            bot.log("[brighten] " + brightPos + ": " + bot.blockAt(posToVec(brightPos)).light);
+
+            bot.equip(torch, "hand", function () {
+                bot.placeBlock(bot.blockAt(posToVec(add(brightPos, [0, -1, 0]))), new Vec3(0, 1, 0));
+            });
+            setTimeout(function () {
+                glob.isPlacingLight = false;
+            }, glob.stepTime * 50);
+        } else {
+            glob.isLightingMode = false;
+            bot.log("[brighten] no torch end");
+        }
+    } else {
+        glob.isPlacingLight = false;
+    }
+}
+
+
 function isNeedLight(pos) {
-    if (isStandable(pos) && mcData.blocks[bot.blockAt(bot.players.kamesa.entity.position.plus(new Vec3(0, -1, 0))).type].transparent) {
+    if (isStandable(pos) && !mcData.blocks[bot.blockAt(posToVec(pos).add(new Vec3(0, -1, 0))).type].transparent) {
         var block = bot.blockAt(posToVec(pos));
         var next;
         if (block.name != "air") return false;

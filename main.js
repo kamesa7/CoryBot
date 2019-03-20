@@ -13,7 +13,7 @@ bucketsJs = require('buckets-js');
 
 glob = new Object();
 glob.debug = true;
-const PORT = "50860"
+const PORT = "59791"
 glob.isAnnounceDeath = true;
 
 if (process.argv[3] == 'true' || process.argv[2] == 'true') {

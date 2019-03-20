@@ -110,6 +110,7 @@ function findItem(list) {
         return bot.inventory.findInventoryItem(list);
     }
 }
+
 function equipArmor() {
     var item;
     for (var k = 0; k < 4; k++) {
