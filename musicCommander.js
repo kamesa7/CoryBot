@@ -26,10 +26,6 @@ botFunc.MusicObj = {
   //sectionCount:0,
   //sectionLength:1
 };
-var noteFeedback;
-
-var prePosition;
-var preTune = 0;
 /*
   0:"harp"
   1:"doubleBass"
@@ -46,7 +42,6 @@ botFunc.Album = new Object();
 fs.readFile('musicAlbum.json', 'utf-8', function (err, text) {
   botFunc.Album = JSON.parse(text);
 });
-
 
 botFunc.createMusic = (MusicObj, tempo = 48, pits = []) => {
   botFunc.isPlayingMusic = false;
@@ -168,39 +163,6 @@ botFunc.stopMusic = () => {
   botFunc.isPlayingMusic = false;
   botFunc.isEndlessing = false;
   botFunc.isTuning=false;
-}
-
-
-
-function getJTune(pitch) {
-  switch (pitch) {
-    case 0: return "F#";
-    case 1: return "G";
-    case 2: return "G#";
-    case 3: return "A";
-    case 4: return "A#";
-    case 5: return "B";
-    case 6: return "ﾄﾞ";
-    case 7: return "ﾄﾞ#";
-    case 8: return "ﾚ";
-    case 9: return "ﾚ#";
-    case 10: return "ﾐ";
-    case 11: return "ﾌｧ";
-    case 12: return "ﾌｧ#";
-    case 13: return "ｿ";
-    case 14: return "ｿ#";
-    case 15: return "ﾗ";
-    case 16: return "ﾗ#";
-    case 17: return "ｼ";
-    case 18: return "C";
-    case 19: return "C#";
-    case 20: return "D";
-    case 21: return "D#";
-    case 22: return "E";
-    case 23: return "F";
-    case 24: return "F#";
-    default: return "unknown";
-  }
 }
 
 botFunc.endlessMusic = (playlist) => {

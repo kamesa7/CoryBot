@@ -13,10 +13,12 @@ glob.isEndlessing = false;
 glob.endlessPlaylist = "";
 glob.endlessFilelist = [];
 glob.endlessIndex = 0;
-glob.currentMusic = null;
 
+glob.currentMusic = null;
+glob.validNoteDistance = 9;
 glob.playedNote = 0;
-glob.MusicObj = {
+
+glob.generalMusicObj = {
   pits: [],
   seqData: [],
   soundCount: 0,
@@ -49,15 +51,18 @@ fs.readFile('musicAlbum.json', 'utf-8', function (err, text) {
 
 bot.on('noteHeard', (block, instrument, pitch) => {
   try {
-    if (glob.isPlayingMusic) {
-      glob.playedNote++;
-      return;
-    }
+
+    if (block.position.distanceTo(bot.entity.position) > glob.validNoteDistance) return;
+
     if (glob.logNote) {
       bot.log("[note] " + getJTune(pitch) + " " + block.position + " " + instrument.id);
     }
 
-    if (block.position.distanceTo(bot.entity.position) > 8) return;
+    if (glob.isPlayingMusic) {
+      glob.playedNote++;
+      return;
+    }
+
     var Note = {
       block,
       instrument,
@@ -104,7 +109,7 @@ glob.initNote = () => {
   bot.log("[note] Init");
   glob.notes = [[], [], [], [], [], [], [], [], [], []];
   bot.findBlock(
-    { point: bot.entity.position.floored(), matching: 25, maxDistance: 12, count: 500 }
+    { point: bot.entity.position.floored(), matching: 25, maxDistance: glob.validNoteDistance, count: 500 }
     , function (err, blocks) {
       if (err) {
         return console.log('Error trying to find : ' + err);
@@ -113,9 +118,7 @@ glob.initNote = () => {
         var i = 0;
         var initter = setInterval(function () {
           if (i < blocks.length) {
-            if (blocks[i].position.distanceTo(bot.entity.position) > 8) {
-
-            } else {
+            if (blocks[i].position.distanceTo(bot.entity.position) <= glob.validNoteDistance) {
               punchNote(blocks[i]);
             }
             i++;
@@ -155,6 +158,7 @@ glob.tuneNote = () => {
       }
     else if (glob.notes[i].length > 0)
       for (var k = 0; k < 3; k++) {
+        if(!glob.notes[i][k]) break;
         var tg = (k + 1) * 6;
         needCount = (glob.notes[i][k].pitch <= tg) ? tg - glob.notes[i][k].pitch : 25 - (glob.notes[i][k].pitch - tg);
         bot.log("[note] TuneTarget: " + glob.notes[i][k].pitch + " needCount: " + needCount);
@@ -198,7 +202,7 @@ glob.tuneNote = () => {
 
 
 glob.createMusic = (MusicObj, tempo = 60, pits = []) => {
-  if (MusicObj == glob.MusicObj) {
+  if (MusicObj == glob.generalMusicObj) {
     MusicObj.tempo = tempo;
     MusicObj.pits = pits;
   } else {
@@ -284,7 +288,7 @@ glob.playMusic = (MusicObj) => {
       return;
     }
     if (MusicObj.seqData == undefined) {
-      if(glob.logNote)bot.log("[note] New Music");
+      if (glob.logNote) bot.log("[note] New Music");
       glob.createMusic(MusicObj);
     }
     glob.isPlayingMusic = true;
@@ -367,7 +371,7 @@ glob.endlessMusic = (playlist) => {
   glob.isEndlessing = true;
   glob.endlessPlaylist = playlist;
   glob.endlessFilelist = [];
-  var stream = fs.createReadStream("./PlayLists/"+playlist, "utf8");//"MusicListRandom.txt"
+  var stream = fs.createReadStream("./PlayLists/" + playlist, "utf8");//"MusicListRandom.txt"
 
   var reader = readline.createInterface({ input: stream });
   reader.on("line", (data) => {

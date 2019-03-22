@@ -42,7 +42,7 @@ function bodyManage() {
             bot.deactivateItem();
             glob.isEating = false;
         } else {
-            bot.equip
+            //bot.unequip("hand");
         }
     }
 }

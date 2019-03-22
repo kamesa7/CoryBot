@@ -13,8 +13,8 @@ bucketsJs = require('buckets-js');
 
 glob = new Object();
 glob.debug = true;
-const PORT = "60407"
-glob.isAnnounceDeath = true;
+const PORT = "63695"
+glob.isAnnounceDeathMode = true;
 
 if (process.argv[3] == 'true' || process.argv[2] == 'true') {
   glob.debug = true;
@@ -84,7 +84,7 @@ function start() {
       if (glob.debug == true) {
         //bot.chatAddPattern(/^<([^ :]*)> (.*)$/, 'chat');
         bot.log('[bot.login] localhost');
-      } else if (process.env.MC_HOST != null && (process.env.MC_HOST == 'kenmomine.club' || process.env.MC_HOST == 'ironingot.net')) {
+      } else if (process.env.MC_HOST != null && ((process.env.MC_HOST == 'kenmomine.club' && process.env.PORT == 25565)|| process.env.MC_HOST == 'ironingot.net')) {
         // kenmomine.club向けchat/whisperパターン
         bot.chatAddPattern(/^(?:\[[^\]]*\])<([^ :]*)> (.*)$/, 'chat', 'kenmomine.club chat');
         bot.chatAddPattern(/^(?:\[[^\]]*\])<Super_AI> \[([^ :]*)\] (.*)$/, 'chat', 'kenmomine.club chat');
@@ -282,7 +282,7 @@ bot.on('chat', (username, message) => {
   //Follow
   if (message.match(/おいで$/)) {
     if (bot.players[username] && bot.players[username].entity) {
-      glob.goToPos(bot.players[username].entity.position);
+      //glob.goToPos(bot.players[username].entity.position);
       bot.log("[move] chat follow " + username);
     }
   }
@@ -377,7 +377,7 @@ bot.on('death', () => {
 
 bot.on('spawn', () => {
   if (!is_dead) return;
-  if (glob.isAnnounceDeath) bot.safechat("私はBOTです。よろしければ遺品回収してください。");
+  if (glob.isAnnounceDeathMode) bot.safechat("私はBOTです。よろしければ遺品回収してください。");
   is_dead = false;
 });
 
