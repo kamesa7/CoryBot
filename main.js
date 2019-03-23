@@ -10,10 +10,11 @@ eventEmitter.setMaxListeners(640);
 Vec3 = require('vec3').Vec3;
 mcData = require("minecraft-data")("1.12.2");//bot.version
 bucketsJs = require('buckets-js');
+isSame = require("./isSameObject");
 
 glob = new Object();
 glob.debug = true;
-const PORT = "63695"
+const PORT = "53295"
 glob.isAnnounceDeathMode = true;
 
 if (process.argv[3] == 'true' || process.argv[2] == 'true') {
@@ -29,7 +30,6 @@ console.log("repl to debug");
 start();
 
 glob.blockFinderPlugin = require('mineflayer-blockfinder')(mineflayer);
-glob.isSame = require("./isSameObject");
 require("./calculator");
 require("./musicPlayer");
 require("./movement");

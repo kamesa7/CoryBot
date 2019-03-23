@@ -68,14 +68,14 @@ bot.on('noteHeard', (block, instrument, pitch) => {
       instrument,
       pitch
     };
-    if (glob.isTuning && !glob.isSame(block.position, prePosition)) {
+    if (glob.isTuning && !isSame(block.position, prePosition)) {
       bot.log("[note] tuned " + preTune);
     }
     prePosition = block.position;
 
     for (var i = 0; i < glob.notes.length; i++) {
       for (var k = 0; k < glob.notes[i].length; k++) {
-        if (glob.isSame(block.position, glob.notes[i][k].block.position)) {
+        if (isSame(block.position, glob.notes[i][k].block.position)) {
           if ((glob.notes[i][k].pitch == pitch) && (glob.notes[i][k].instrument == instrument)) {
 
           } else if (glob.notes[i][k].instrument == instrument) {
