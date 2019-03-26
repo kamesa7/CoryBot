@@ -16,11 +16,11 @@ glob.stepError = 20;
 glob.onPos = 0.2;
 
 glob.allowGoal = 1;
-glob.allowFollow = 5;
+glob.allowFollow = 4;
 
 glob.followInterval = 25;
 glob.followingEntity = null;
-glob.followWait = 100;
+glob.followWait = 50;
 
 glob.randomDistance = 16;
 glob.randomHeight = 4;
@@ -71,6 +71,12 @@ function stopMoving() {
     //bot.log("[move] stop ");
 }
 bot.on('death', () => {
+    stopMoving()
+});
+bot.on('forcedMove', () => {
+    // stopMoving()
+});
+bot.on('respawn', () => {
     stopMoving()
 });
 

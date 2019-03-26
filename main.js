@@ -7,23 +7,28 @@ const fs = require('fs');
 const events = require('events');
 const eventEmitter = new events.EventEmitter();
 eventEmitter.setMaxListeners(640);
+
 Vec3 = require('vec3').Vec3;
 mcData = require("minecraft-data")("1.12.2");//bot.version
 bucketsJs = require('buckets-js');
 isSame = require("./isSameObject");
 
 glob = new Object();
-glob.debug = true;
-const PORT = "53295"
-glob.isAnnounceDeathMode = true;
+var CLIENTTOKEN = undefined;
 
-if (process.argv[3] == 'true' || process.argv[2] == 'true') {
-  glob.debug = true;
-  console.log("command line debug mode");
-} else if (process.argv[3] == 'false' || process.argv[2] == 'false') {
-  glob.debug = false;
-  console.log("command line online mode");
-}
+glob.debug = true;
+var PORT = "57104"
+// CLIENTTOKEN = "d93458a1-cfb7-40aa-a8ac-258607850dab";
+glob.isAnnounceDeathMode = true;
+var init = true;
+
+// if (process.argv[3] == 'true' || process.argv[2] == 'true') {
+//   glob.debug = true;
+//   console.log("command line debug mode");
+// } else if (process.argv[3] == 'false' || process.argv[2] == 'false') {
+//   glob.debug = false;
+//   console.log("command line online mode");
+// }
 console.log('starting');
 console.log("repl to debug");
 
@@ -39,7 +44,25 @@ require("./eventManager");
 
 
 function start() {
-  if (glob.debug == false) {
+  if (glob.debug) {
+    bot = mineflayer.createBot({
+      port: PORT,
+      username: "Steve",
+      verbose: true
+    });
+    console.log('Connecting to [localhost]');
+  } else if (CLIENTTOKEN) {
+    bot = mineflayer.createBot({
+      host: process.env.MC_HOST,
+      port: process.env.MC_PORT,
+      username: process.env.MC_USERNAME,
+      password: process.env.MC_PASSWORD,
+      clientToken: CLIENTTOKEN,
+      verbose: true
+    });
+    console.log('Connecting to [' + process.env.MC_HOST + ':' + process.env.MC_PORT + ']');
+    console.log('User [' + process.env.MC_USERNAME + ']');
+  } else {
     bot = mineflayer.createBot({
       host: process.env.MC_HOST,
       port: process.env.MC_PORT,
@@ -49,57 +72,49 @@ function start() {
     });
     console.log('Connecting to [' + process.env.MC_HOST + ':' + process.env.MC_PORT + ']');
     console.log('User [' + process.env.MC_USERNAME + ']');
-    console.log('Name [' + process.env.MC_USERNAME + ']');
-  } else {
-    bot = mineflayer.createBot({
-      host: "localhost",
-      port: PORT,
-      username: "Steve",
-      // password: process.env.MC_PASSWORD,
-      verbose: true
-    });
-    console.log('Connecting to [localhost]');
-    console.log('Name [' + bot.username + ']');
   }
+
+  bot.on('login', () => {
+    console.log('Name [' + bot.username + ']');
+    if (bot._client.session) {
+      console.log('ClientToken [' + bot._client.session.clientToken + ']');
+      console.log('AccessToken [' + bot._client.session.accessToken + ']');
+    }
+  });
+
   bot.on('end', () => {
     bot.log('[bot.end] bot.end');
+    // 自分で止めた時以外は再起動を試みる
+    // bot.log('[bot.end] Trying reconnection 1 min later...');
+    // delay(60000).then(() => {
+    //   start();
+    // });
   });
-  /*
-    bot.on('end', () => {
-      console.log('end');
-      if (bot.hasInterrupt) {
-        process.exit(0);
-      } else {
-        // 自分で止めた時以外は再起動を試みる
-        bot.log('[bot.end] Trying reconnection 2 min later...');
-        delay(120000).then(() => {
-          start();
-        });
-      }
-    });
-  */
-  bot.on('connect', () => {
-    bot.log('[bot.connect]');
-    delay(1000).then(() => {
-      if (glob.debug == true) {
-        //bot.chatAddPattern(/^<([^ :]*)> (.*)$/, 'chat');
-        bot.log('[bot.login] localhost');
-      } else if (process.env.MC_HOST != null && ((process.env.MC_HOST == 'kenmomine.club' && process.env.PORT == 25565)|| process.env.MC_HOST == 'ironingot.net')) {
-        // kenmomine.club向けchat/whisperパターン
-        bot.chatAddPattern(/^(?:\[[^\]]*\])<([^ :]*)> (.*)$/, 'chat', 'kenmomine.club chat');
-        bot.chatAddPattern(/^(?:\[[^\]]*\])<Super_AI> \[([^ :]*)\] (.*)$/, 'chat', 'kenmomine.club chat');
-        bot.chatAddPattern(/^(?:\[Omikuji\]) ([^ :]*)は <(.*)>/, 'omikuji', 'kenmomine.club omikuji');
-        bot.chatAddPattern(/^([^ ]*) whispers: (.*)$/, 'whisper', 'kenmomine.club whisper(Chatco)');
-        bot.log('[bot.login]kenmomine');
-      } else if (process.env.MC_HOST != null && process.env.MC_HOST == 'pcgamemc.dip.jp') {
-        // pcgamemc.dip.jp向けchat/whisperパターン
-        bot.chatAddPattern(/^(?:\[[^\]]*\])<([^ :]*)> (.*)$/, 'chat', 'pcgamemc.dip.jp chat');
-        bot.chatAddPattern(/^([^ ]*) -> (.*)$/, 'whisper', 'pcgamemc.dip.jp whisper(Chatco)');
-        bot.log('[bot.login]PCG');
-      }
-      console.log('chatAdded');
-    });;
-    console.log('connected');
+
+  bot.on('spawn', () => {
+    if (init) {
+      init = false;
+      bot.log('[bot.connect]');
+      delay(1000).then(() => {
+        if (glob.debug == true) {
+          //bot.chatAddPattern(/^<([^ :]*)> (.*)$/, 'chat');
+          bot.log('[bot.login] localhost');
+        } else if (process.env.MC_HOST != null && ((process.env.MC_HOST == 'kenmomine.club' && process.env.PORT == 25565) || process.env.MC_HOST == 'ironingot.net')) {
+          // kenmomine.club向けchat/whisperパターン
+          bot.chatAddPattern(/^(?:\[[^\]]*\])<([^ :]*)> (.*)$/, 'chat', 'kenmomine.club chat');
+          bot.chatAddPattern(/^(?:\[[^\]]*\])<Super_AI> \[([^ :]*)\] (.*)$/, 'chat', 'kenmomine.club chat');
+          bot.chatAddPattern(/^(?:\[Omikuji\]) ([^ :]*)は <(.*)>/, 'omikuji', 'kenmomine.club omikuji');
+          bot.chatAddPattern(/^([^ ]*) whispers: (.*)$/, 'whisper', 'kenmomine.club whisper(Chatco)');
+          bot.log('[bot.login]kenmomine');
+        } else if (process.env.MC_HOST != null && process.env.MC_HOST == 'pcgamemc.dip.jp') {
+          // pcgamemc.dip.jp向けchat/whisperパターン
+          bot.chatAddPattern(/^(?:\[[^\]]*\])<([^ :]*)> (.*)$/, 'chat', 'pcgamemc.dip.jp chat');
+          bot.chatAddPattern(/^([^ ]*) -> (.*)$/, 'whisper', 'pcgamemc.dip.jp whisper(Chatco)');
+          bot.log('[bot.login]PCG');
+        }
+        bot.log('[bot.chatAdded]');
+      });
+    }
   });
 
   var radarPlugin = require('./mineflayer-radar')(mineflayer);
@@ -110,15 +125,9 @@ function start() {
   hours = clock.getHours();
   seconds = clock.getSeconds();
   setInterval(time_signal, 100);
-
-  console.log('started');
 }
 
-
-
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 /// 同じメッセージのループ送信、短時間での大量送信などを
@@ -258,6 +267,7 @@ function logfile_out(text) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 //hi
 // 自分が入ったときの挨拶
@@ -382,8 +392,6 @@ bot.on('spawn', () => {
 });
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
