@@ -17,8 +17,8 @@ glob = new Object();
 var CLIENTTOKEN = undefined;
 
 glob.debug = true;
-var PORT = "57104"
-// CLIENTTOKEN = "d93458a1-cfb7-40aa-a8ac-258607850dab";
+var PORT = "61287"
+CLIENTTOKEN = "d93458a1-cfb7-40aa-a8ac-258607850dab";
 glob.isAnnounceDeathMode = true;
 var init = true;
 
@@ -99,18 +99,20 @@ function start() {
         if (glob.debug == true) {
           //bot.chatAddPattern(/^<([^ :]*)> (.*)$/, 'chat');
           bot.log('[bot.login] localhost');
-        } else if (process.env.MC_HOST != null && ((process.env.MC_HOST == 'kenmomine.club' && process.env.PORT == 25565) || process.env.MC_HOST == 'ironingot.net')) {
+        } else if (process.env.MC_HOST != null && ((process.env.MC_HOST == 'kenmomine.club' && process.env.MC_PORT == 25565) || process.env.MC_HOST == 'ironingot.net')) {
           // kenmomine.club向けchat/whisperパターン
           bot.chatAddPattern(/^(?:\[[^\]]*\])<([^ :]*)> (.*)$/, 'chat', 'kenmomine.club chat');
           bot.chatAddPattern(/^(?:\[[^\]]*\])<Super_AI> \[([^ :]*)\] (.*)$/, 'chat', 'kenmomine.club chat');
           bot.chatAddPattern(/^(?:\[Omikuji\]) ([^ :]*)は <(.*)>/, 'omikuji', 'kenmomine.club omikuji');
           bot.chatAddPattern(/^([^ ]*) whispers: (.*)$/, 'whisper', 'kenmomine.club whisper(Chatco)');
-          bot.log('[bot.login]kenmomine');
+          bot.log('[bot.login] kenmomine');
         } else if (process.env.MC_HOST != null && process.env.MC_HOST == 'pcgamemc.dip.jp') {
           // pcgamemc.dip.jp向けchat/whisperパターン
           bot.chatAddPattern(/^(?:\[[^\]]*\])<([^ :]*)> (.*)$/, 'chat', 'pcgamemc.dip.jp chat');
           bot.chatAddPattern(/^([^ ]*) -> (.*)$/, 'whisper', 'pcgamemc.dip.jp whisper(Chatco)');
           bot.log('[bot.login]PCG');
+        } else {
+          bot.log('[bot.login] unknown host');
         }
         bot.log('[bot.chatAdded]');
       });

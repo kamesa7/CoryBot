@@ -5,6 +5,7 @@ glob.isWaiting = false;
 glob.isLightingMode = false;
 glob.isRandomWalk = false;
 glob.isPlacingLight = false;
+glob.isChasing = false;
 
 const onGround = 0.001;
 const eyeHeight = 1.42;
@@ -19,13 +20,14 @@ glob.allowGoal = 1;
 glob.allowFollow = 4;
 
 glob.followInterval = 25;
-glob.followingEntity = null;
+glob.targetEntity = null;
 glob.followWait = 50;
 
 glob.randomDistance = 16;
 glob.randomHeight = 4;
 glob.randomWait = 50;
 glob.randomCostLimit = 100;
+
 
 glob.logMove = false;
 glob.logInterest = true;
@@ -36,6 +38,7 @@ glob.goToPos = goToPos;
 glob.stopMoving = stopMoving;
 glob.random = random;
 glob.follow = follow;
+glob.chase = chase;
 
 setInterval(interest_signal, 1000);
 
@@ -66,7 +69,8 @@ function stopMoving() {
     glob.isFollowing = false;
     glob.isWaiting = false;
     glob.isRandomWalk = false;
-    glob.followingEntity = null;
+    glob.isChasing = false;
+    glob.targetEntity = null;
     bot.clearControlStates();
     //bot.log("[move] stop ");
 }
@@ -122,12 +126,12 @@ function follow(entity) {
     }
     bot.log("[move] follow entity " + entity.position.floored());
     var path = [];
-    glob.followingEntity = entity;
+    glob.targetEntity = entity;
     reviceTarget(path);
 }
 
 function reviceTarget(path) {
-    var entity = glob.followingEntity;
+    var entity = glob.targetEntity;
     var start = getMyPos();
     var goal = getPosFromVec3(entity.position);
     floor(start);
@@ -196,6 +200,49 @@ function reRandom(path) {
         followPath(path);
     }
 }
+
+
+function chase(entity) {
+    if (glob.isMoving || glob.isChasing) {
+        stopMoving();
+        bot.log("[move] aborted");
+        return;
+    }
+    if (entity == undefined || !entity.isValid) {
+        bot.log("[move] cannot find entity");
+        return;
+    }
+    bot.log("[move] chase entity " + entity.position.floored());
+    bot.setControlState("sprint", true);
+    glob.targetEntity = entity;
+    glob.isChasing = true;
+    glob.isMoving = true;
+    var chaser = setInterval(reChase, glob.stepTime);
+    function reChase() {
+        if (!glob.isChasing || !glob.isMoving) {
+            clearInterval(chaser);
+            stopMoving()
+            return
+        }
+        if (entity == undefined || !entity.isValid) {
+            bot.log("[move] cannot find entity");
+            return;
+        }
+        bot.lookAt(entity.position.offset(0, eyeHeight, 0), true);
+        if (entity.position.distanceTo(bot.entity.position) < glob.allowGoal) {
+            bot.setControlState("forward", false);
+            return;
+        }
+        bot.setControlState("forward", true);
+        var direct = entity.position.minus(bot.entity.position);
+        direct.scaled(1 / entity.position.distanceTo(bot.entity.position))
+        if (bot.blockAt(bot.entity.position.offset(direct.x, 0, direct.z)).boundingBox == "block") {
+            bot.setControlState("jump", true)
+            bot.setControlState("jump", false)
+        }
+    }
+}
+
 
 var walks = [
     [1, 0, 0],
@@ -475,7 +522,7 @@ function followPath(path) {
                 bot.clearControlStates();
                 bot.log("[move] path error end : " + path[index] + " stops: " + stopCount);
                 if (glob.isFollowing) {
-                    if (glob.followingEntity != null && glob.followingEntity.isValid) {
+                    if (glob.targetEntity != null && glob.targetEntity.isValid) {
                         path[0][3] = "revice";
                         reviceTarget(path);
                     } else {
@@ -627,8 +674,8 @@ function followPath(path) {
                         break;
                     case "follow":
                         bot.clearControlStates();
-                        if (glob.followingEntity != undefined && glob.followingEntity.isValid) {
-                            bot.lookAt(glob.followingEntity.position.offset(0, eyeHeight, 0), false);
+                        if (glob.targetEntity != undefined && glob.targetEntity.isValid) {
+                            bot.lookAt(glob.targetEntity.position.offset(0, eyeHeight, 0), false);
                             path[0][3] = "revice";
                             reviceTarget(path);
                             index = 0;

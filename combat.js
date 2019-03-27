@@ -76,15 +76,9 @@ bot.on("entitySpawn", (entity) => {
         var target = entity.position;
         var x = bot.entity.position.x - target.x;
         var z = bot.entity.position.z - target.z;
-        var dist = Math.sqrt((x * x) + (z * z));
-        var asin = Math.asin(z / dist)
-        var acos = Math.acos(x / dist)
-        var rad;
-        if (acos > Math.PI / 2) {
-            rad = Math.PI - asin;
-        } else { rad = asin }
-        if (glob.logCombat) bot.log("[combat] rad:"(rad / Math.PI * 180 - 90) + " yaw:" + (entity.yaw / Math.PI * 180 - 180) + " pitch:" + entity.pitch / Math.PI * 180)
-        if (Math.abs(rad - (entity.yaw - Math.PI / 2)) > Math.PI / 18) return;
+        var rad = -Math.atan2(x,z);
+        if (glob.logCombat) bot.log("[combat] rad:"+(rad / Math.PI * 180) + " yaw:" + (entity.yaw / Math.PI * 180 -180 ) + " pitch:" + entity.pitch / Math.PI * 180)
+        if (Math.abs(rad - (entity.yaw - Math.PI)) > Math.PI / 18) return;
         bot.log("[combat] detecting an approaching arrow")
         var shield = glob.findItem(442); //shield id
         if (shield != null) {
@@ -92,10 +86,12 @@ bot.on("entitySpawn", (entity) => {
             bot.lookAt(entity.position.plus(new Vec3(0, 1, 0)), true);
             bot.activateItem();
             bot.equip(shield, "hand", function () {
+                bot.activateItem();
+                bot.lookAt(entity.position, true);
                 setTimeout(function () {
                     bot.deactivateItem();
                     glob.isGuarding = false;
-                }, Math.max(distance * 100, 1000));
+                }, Math.max(distance / maxArrowSpeed * 3000, 1000));
             });
         } else {
             bot.log("[combat] no shield");
@@ -175,6 +171,7 @@ function timeToShoot(target, isHigh) {
     var discriminant = (ayg * ayg - Gravity * Gravity * ((dist * dist) + (y * y)));
     var t1 = 2 * (ayg + Math.sqrt(discriminant)) / (Gravity * Gravity);
     var t2 = 2 * (ayg - Math.sqrt(discriminant)) / (Gravity * Gravity);
+    Math.ata
     if (!isHigh) {
         if (t1 < 0) t = t2;
         else if (t2 < 0) t = t1;

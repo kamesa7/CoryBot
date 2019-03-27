@@ -21,7 +21,7 @@ bot.on("entityEffect", function (entity, effect) {
             case 1:
                 bot.physics.maxGroundSpeed = defaultPhysics.maxGroundSpeed * ((effect.amplifier + 1) * 0.2 + 1);
                 bot.physics.terminalVelocity = defaultPhysics.terminalVelocity * ((effect.amplifier + 1) * 0.2 + 1);
-                bot.physics.maxGroundSpeed = defaultPhysics.maxGroundSpeed * ((effect.amplifier + 1) * 0.2 + 1);
+                // bot.physics.walkingAcceleration = defaultPhysics.walkingAcceleration * ((effect.amplifier + 1) * 0.2 + 1);
                 break;
         }
     }
@@ -34,7 +34,7 @@ bot.on("entityEffectEnd", function (entity, effect) {
             case 1:
                 bot.physics.maxGroundSpeed = defaultPhysics.maxGroundSpeed;
                 bot.physics.terminalVelocity = defaultPhysics.terminalVelocity;
-                bot.physics.walkingAcceleration = defaultPhysics.walkingAcceleration;
+                // bot.physics.walkingAcceleration = defaultPhysics.walkingAcceleration;
                 break;
         }
     }

@@ -45,9 +45,11 @@ var preTune = 0;
   9:"flute"
 */
 glob.Album = new Object();
-fs.readFile('musicAlbum.json', 'utf-8', function (err, text) {
-  glob.Album = JSON.parse(text);
-});
+glob.loadAlbum = function loadAlbum() {
+  fs.readFile('musicAlbum.json', 'utf-8', function (err, text) {
+    glob.Album = JSON.parse(text);
+  });
+}
 
 bot.on('noteHeard', (block, instrument, pitch) => {
   try {
@@ -158,7 +160,7 @@ glob.tuneNote = () => {
       }
     else if (glob.notes[i].length > 0)
       for (var k = 0; k < 3; k++) {
-        if(!glob.notes[i][k]) break;
+        if (!glob.notes[i][k]) break;
         var tg = (k + 1) * 6;
         needCount = (glob.notes[i][k].pitch <= tg) ? tg - glob.notes[i][k].pitch : 25 - (glob.notes[i][k].pitch - tg);
         bot.log("[note] TuneTarget: " + glob.notes[i][k].pitch + " needCount: " + needCount);
