@@ -122,6 +122,7 @@ function follow(entity) {
     }
     if (entity == undefined || !entity.isValid) {
         bot.log("[move] cannot find entity");
+        stopMoving();
         return;
     }
     bot.log("[move] follow entity " + entity.position.floored());

@@ -3,6 +3,7 @@
 glob.isSelfDefenceMode = true;
 glob.isSniperMode = false;
 glob.isHighAngleMode = false;
+glob.isArrowDefenceMode = false;
 
 glob.isShootingArrow = false;
 glob.isGuarding = false;
@@ -72,7 +73,7 @@ bot.on('entityMoved', (entity) => {
 bot.on("entitySpawn", (entity) => {
     // previousPosition[entity.id] = [entity.position.clone(), new Date().getTime()]
     var distance = bot.entity.position.distanceTo(entity.position);
-    if (!glob.isGuarding && entity.name != undefined && entity.name == "arrow" && distance > 4) {
+    if (glob.isArrowDefenceMode && !glob.isGuarding && entity.name != undefined && entity.name == "arrow" && distance > 4) {
         var target = entity.position;
         var x = bot.entity.position.x - target.x;
         var z = bot.entity.position.z - target.z;
