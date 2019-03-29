@@ -11,12 +11,13 @@ const armorSlots = {
 */
 glob.isEating = false;
 
+//functions
 glob.startEat = startEat;
 glob.findItem = findItem;
 glob.clearInventory = clearInventory;
 glob.equipArmor = equipArmor;
+glob.equipHead = equipHead;
 
-var eatTime;
 
 bot.on('health', function () {
     bodyManage();
@@ -38,7 +39,7 @@ function bodyManage() {
     } else if (bot.health < 10 && bot.food < 20) {
         startEat();
     } else {
-        if (glob.isEating) {
+        if (glob.isEating && bot.food != eatSatu) {
             bot.deactivateItem();
             glob.isEating = false;
         } else {
@@ -47,8 +48,11 @@ function bodyManage() {
     }
 }
 
+var eatTime;
+var eatSatu = 20;
 function startEat() {
     eatTime = new Date();
+    eatSatu = bot.food;
     var item = findItem(foods);
     if (item != null) {
         glob.isEating = true;
@@ -63,7 +67,7 @@ function startEat() {
 
     function eating() {
         if (glob.isEating) {
-            if (new Date().getTime() - 3000 > eatTime.getTime()) {
+            if (new Date().getTime() - 3100 > eatTime.getTime()) {
                 bodyManage();
             } else {
                 setTimeout(eating, 300);
@@ -126,5 +130,12 @@ function equipArmor() {
                 return;
             }
         }
+    }
+}
+
+function equipHead() {
+    var item = findItem(397);
+    if (item != null) {
+        bot.equip(item, "head");
     }
 }

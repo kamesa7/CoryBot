@@ -2,8 +2,8 @@
 
 glob.isSelfDefenceMode = true;
 glob.isSniperMode = false;
-glob.isHighAngleMode = false;
-glob.isArrowDefenceMode = false;
+glob.isHighAngleMode = true;
+glob.isArrowDefenceMode = true;
 
 glob.isShootingArrow = false;
 glob.isGuarding = false;
@@ -40,26 +40,26 @@ glob.hostiles = [];
 // bot.on( "entityMoved", (entity)=> {console.log(new Date().getTime()+" mov"+entity.id)})
 // bot.on( "entityUpdate", (entity)=> {console.log(new Date().getTime()+" up"+entity.id)})
 
+function doNothing() {
+    if (!glob.isGuarding && !glob.isEating && !glob.isShootingArrow) return true;
+    else return false;
+}
+
 bot.on('entityMoved', (entity) => {
     var distance = bot.entity.position.distanceTo(entity.position);
-    if (!glob.isGuarding && ((entity.kind != undefined && entity.kind == "Hostile mobs") || (entity.username != undefined && contains(glob.hostiles, entity.username)))) {
+    if (doNothing() && ((entity.kind && entity.kind == "Hostile mobs") || (entity.username && contains(glob.hostiles, entity.username)))) {//hostile
         bot.updateHeldItem()
-        if (glob.isSelfDefenceMode && distance < 4 && new Date().getTime() - preAttackTime > swordInterval) {
-            if (entity.name != undefined) {
-                bot.log("[combat] punch: " + entity.name);
-            } else {
-                bot.log("[combat] punch: " + entity.username);
-            }
+        if (glob.isSelfDefenceMode && distance < 4 && new Date().getTime() - preAttackTime > swordInterval) {//punch
+            if (entity.name != undefined) bot.log("[combat] punch: " + entity.name);
+            else bot.log("[combat] punch: " + entity.username);
             var item = glob.findItem(swords);
             if (item != null) {
                 bot.equip(item, "hand", function () {
                     bot.attack(entity);//, true);
                 });
-            } else {
-                bot.attack(entity);
-            }
+            } else bot.attack(entity);
             preAttackTime = new Date().getTime();
-        } else if (!glob.isShootingArrow && !glob.isEating && glob.isSniperMode && distance < 96 && !(entity.name && entity.name == "enderman")) {
+        } else if (glob.isSniperMode && distance < 96 && !(entity.name && entity.name == "enderman")) {//shoot
             if (canSeeDirectly(entity.position.offset(0, eyeHeight, 0))) {
                 shootArrow(entity, false);
             } else if (glob.isHighAngleMode && bot.blockAt(bot.entity.position).skyLight == 15 && bot.blockAt(entity.position).skyLight == 15) {
@@ -73,17 +73,21 @@ bot.on('entityMoved', (entity) => {
 bot.on("entitySpawn", (entity) => {
     // previousPosition[entity.id] = [entity.position.clone(), new Date().getTime()]
     var distance = bot.entity.position.distanceTo(entity.position);
-    if (glob.isArrowDefenceMode && !glob.isGuarding && entity.name != undefined && entity.name == "arrow" && distance > 4) {
+    if (glob.isArrowDefenceMode && entity.name && entity.name == "arrow" && distance > 4) {
         var target = entity.position;
         var x = bot.entity.position.x - target.x;
         var z = bot.entity.position.z - target.z;
-        var rad = -Math.atan2(x,z);
-        if (glob.logCombat) bot.log("[combat] rad:"+(rad / Math.PI * 180) + " yaw:" + (entity.yaw / Math.PI * 180 -180 ) + " pitch:" + entity.pitch / Math.PI * 180)
+        var rad = -Math.atan2(x, z);
+        if (glob.logCombat) bot.log("[combat] rad:" + (rad / Math.PI * 180) + " yaw:" + (entity.yaw / Math.PI * 180 - 180) + " pitch:" + entity.pitch / Math.PI * 180)
         if (Math.abs(rad - (entity.yaw - Math.PI)) > Math.PI / 18) return;
         bot.log("[combat] detecting an approaching arrow")
         var shield = glob.findItem(442); //shield id
         if (shield != null) {
+            
             glob.isGuarding = true;
+            glob.isShootingArrow = false;
+            glob.isEating = false;
+
             bot.lookAt(entity.position.plus(new Vec3(0, 1, 0)), true);
             bot.activateItem();
             bot.equip(shield, "hand", function () {
@@ -172,17 +176,12 @@ function timeToShoot(target, isHigh) {
     var discriminant = (ayg * ayg - Gravity * Gravity * ((dist * dist) + (y * y)));
     var t1 = 2 * (ayg + Math.sqrt(discriminant)) / (Gravity * Gravity);
     var t2 = 2 * (ayg - Math.sqrt(discriminant)) / (Gravity * Gravity);
-    Math.ata
+    if (t1 < 0) t1 = t2;
+    else if (t2 < 0) t2 = t1;
     if (!isHigh) {
-        if (t1 < 0) t = t2;
-        else if (t2 < 0) t = t1;
-        else if (t1 < t2) t = t1;
-        else t = t2;
+        t = Math.min(t1, t2);
     } else {
-        if (t1 < 0) t = t1;
-        else if (t2 < 0) t = t2;
-        else if (t1 < t2) t = t2;
-        else t = t1;
+        t = Math.max(t1, t2)
     }
     t = Math.sqrt(t);
     if (glob.logCombat) bot.log("[combat] details " + " L2:" + target.distanceTo(bot.entity.position) + " dist:" + dist + " y:" + y + " angle:" + angle / (Math.PI / 180) + " D:" + discriminant + " time:" + t + " target:" + target)

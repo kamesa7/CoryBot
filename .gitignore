@@ -3,3 +3,4 @@ MineMusic
 CommandMusic
 .env
 log
+session_cache.json

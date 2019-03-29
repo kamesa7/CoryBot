@@ -13,13 +13,11 @@ isSame = require("./isSameObject");
 
 var steveNum = "";
 glob = {
-  debug: true,
-  isAnnounceDeathMode: true
+  debug: true
 };
 
-var CLIENTTOKEN = undefined;
-const PORT = "62186"
-// CLIENTTOKEN = "d93458a1-cfb7-40aa-a8ac-258607850dab";
+const useCache = true
+const PORT = "63239"
 
 for (var i = 0; i < process.argv.length; i++) {
   var arg = process.argv[i];
@@ -49,13 +47,13 @@ function start() {
       verbose: true
     });
     console.log('Connecting to [localhost]');
-  } else if (CLIENTTOKEN) {
+  } else if (useCache) {
+    var sessionCache = jsonfile.readFileSync("session_cache.json")
     bot = mineflayer.createBot({
       host: process.env.MC_HOST,
       port: process.env.MC_PORT,
       username: process.env.MC_USERNAME,
-      password: process.env.MC_PASSWORD,
-      clientToken: CLIENTTOKEN,
+      session: sessionCache,
       verbose: true
     });
     console.log('Connecting to [' + process.env.MC_HOST + ':' + process.env.MC_PORT + ']');
@@ -82,7 +80,7 @@ function start() {
 
   bot.on('end', () => {
     console.log('process exit');
-    jsonfile.writeFileSync("session_cache.json", bot._client.session)
+    if (!glob.debug) jsonfile.writeFileSync("session_cache.json", bot._client.session)
     process.exit();
   });
 

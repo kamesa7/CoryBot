@@ -210,9 +210,9 @@ function Calculator(BEquation, depth) {
           num1 = GetPreviosremove(equation, index);
           index = Gi;
           num2 = GetNextremove(equation, index);
-          if(num2==0) {
+          if (num2 == 0) {
             equation.value = insert(equation.value, index, "0除算");
-          }else{
+          } else {
             equation.value = insert(equation.value, index, String(num1 / num2));
           }
           WriteDetail(tabs + equation.value);
@@ -252,7 +252,7 @@ function Calculator(BEquation, depth) {
 
     WriteDetail(tabs + "out " + equation.value);
     if (equation.value.match(/e/)) {
-      equation.value = "*指数表記 "+ equation.value;
+      equation.value = "*指数表記 " + equation.value;
     }
     return equation;
   } catch (e) {

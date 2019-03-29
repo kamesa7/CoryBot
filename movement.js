@@ -10,7 +10,6 @@ glob.isChasing = false;
 const onGround = 0.001;
 const eyeHeight = 1.42;
 
-
 glob.stepTime = 60;
 glob.searchLimit = 5000;
 glob.stepError = 20;
@@ -28,12 +27,12 @@ glob.randomHeight = 4;
 glob.randomWait = 50;
 glob.randomCostLimit = 100;
 
-
 glob.logMove = false;
 glob.logInterest = true;
 
 var finalDestination;
 
+//functions
 glob.goToPos = goToPos;
 glob.stopMoving = stopMoving;
 glob.random = random;
