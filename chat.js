@@ -156,7 +156,7 @@ bot.on('chat', (username, message) => {
         glob.isSniperMode = false;
     }
 
-    //invently
+    //inventoly
     if (message.match(/^equip$/i)) {
         glob.equipArmor();
     }
@@ -213,9 +213,6 @@ bot.on('spawn', () => {
     is_dead = false;
 });
 
-bot.on('end', () => {
-    bot.log('[bot.end] bot.end');
-});
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 

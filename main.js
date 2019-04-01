@@ -12,12 +12,13 @@ bucketsJs = require('buckets-js');
 isSame = require("./isSameObject");
 
 var steveNum = "";
-glob = {
-  debug: true
-};
 
-const useCache = true
-const PORT = "63239"
+glob = {
+  debug: false,
+  useCache: true,
+  LOCAL: "localhost",//"192.168.1.104",
+  PORT: "25565"
+};
 
 for (var i = 0; i < process.argv.length; i++) {
   var arg = process.argv[i];
@@ -42,12 +43,13 @@ require("./eventManager")
 function start() {
   if (glob.debug) {
     bot = mineflayer.createBot({
-      port: PORT,
+      host: glob.LOCAL,
+      port: glob.PORT,
       username: "Steve" + steveNum,
       verbose: true
     });
     console.log('Connecting to [localhost]');
-  } else if (useCache) {
+  } else if (glob.useCache) {
     var sessionCache = jsonfile.readFileSync("session_cache.json")
     bot = mineflayer.createBot({
       host: process.env.MC_HOST,
@@ -75,6 +77,7 @@ function start() {
     if (bot._client.session) {
       console.log('ClientToken [' + bot._client.session.clientToken + ']');
       console.log('AccessToken [' + bot._client.session.accessToken + ']');
+      jsonfile.writeFile("session_cache.json", bot._client.session)
     }
   });
 

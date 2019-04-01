@@ -1,5 +1,5 @@
-var fs = require('fs');
-var readline = require("readline");
+const fs = require('fs');
+const jsonfile = require('jsonfile');
 glob.isPlayingMusic = false;
 
 glob.isTuning = false;
@@ -15,7 +15,7 @@ glob.endlessFilelist = [];
 glob.endlessIndex = 0;
 
 glob.currentMusic = null;
-glob.validNoteDistance = 9;
+glob.validNoteDistance = 10;
 glob.playedNote = 0;
 
 glob.generalMusicObj = {
@@ -24,11 +24,17 @@ glob.generalMusicObj = {
   soundCount: 0,
   outRanges: 0,
   tempo: 60,
-  title: "MUSIC"
-  //sectionCount:0,
-  //sectionLength:1
+  baseTitle: "baseMUSIC",
+  title: "MUSIC",
+  duration: 0
 };
-var noteFeedback;
+
+glob.loadAlbum = loadAlbum;
+glob.initNote = initNote;
+glob.tuneNote = tuneNote;
+glob.playMusic = playMusic;
+glob.createMusic = createMusic;
+glob.endlessMusic = endlessMusic;
 
 var prePosition;
 var preTune = 0;
@@ -45,7 +51,7 @@ var preTune = 0;
   9:"flute"
 */
 glob.Album = new Object();
-glob.loadAlbum = function loadAlbum() {
+function loadAlbum() {
   fs.readFile('musicAlbum.json', 'utf-8', function (err, text) {
     glob.Album = JSON.parse(text);
   });
@@ -107,7 +113,7 @@ bot.on('noteHeard', (block, instrument, pitch) => {
 
 bot.loadPlugin(glob.blockFinderPlugin);
 
-glob.initNote = () => {
+function initNote() {
   bot.log("[note] Init");
   glob.notes = [[], [], [], [], [], [], [], [], [], []];
   bot.findBlock(
@@ -127,7 +133,7 @@ glob.initNote = () => {
           } else {
             clearInterval(initter);
             bot.log("[note] InitEnd");
-            glob.tuneNote();
+            tuneNote();
           }
         }, glob.initTempo);
 
@@ -139,7 +145,7 @@ glob.initNote = () => {
 
 }
 
-glob.tuneNote = () => {
+function tuneNote() {
   glob.isTuning = true;
   var tuneArray = [];
   var needCount = 0;
@@ -188,12 +194,12 @@ glob.tuneNote = () => {
           }
         }
       } else {
+        clearInterval(tunitian);
+        if (sumNeedCount > 0 && glob.isTuning) {
+          setTimeout(tuneNote, 300);
+        }
         glob.isTuning = false;
         bot.log("[note] TuneFinish");
-        clearInterval(tunitian);
-        if (sumNeedCount > 0) {
-          setTimeout(glob.tuneNote, 300);
-        }
       }
     }, glob.tuneTempo);
 
@@ -203,17 +209,12 @@ glob.tuneNote = () => {
 }
 
 
-glob.createMusic = (MusicObj, tempo = 60, pits = []) => {
-  if (MusicObj == glob.generalMusicObj) {
-    MusicObj.tempo = tempo;
-    MusicObj.pits = pits;
-  } else {
-    pits = MusicObj.pits;
-    tempo = MusicObj.tempo;
-  }
+function createMusic(MusicObj) {
+  var pits = MusicObj.pits;
   MusicObj.seqData = [];
   MusicObj.soundCount = 0;
   MusicObj.outRanges = 0;
+  if (!MusicObj.baseTitle) MusicObj.baseTitle = "";
 
   var inst = 0;
   for (var i = 0; i < pits.length; i++) {
@@ -261,48 +262,44 @@ glob.createMusic = (MusicObj, tempo = 60, pits = []) => {
     }
 
   }
-
-  MusicObj.sectionCount = (3 * 1000) / MusicObj.tempo;
-  MusicObj.sectionLength = Math.round(MusicObj.seqData.length / MusicObj.sectionCount);
-  MusicObj.sectionCount = Math.round(MusicObj.seqData.length / MusicObj.sectionLength);
-
-  bot.log("[note] MusicCreated  length: " + MusicObj.seqData.length
-    + " sounds: " + MusicObj.soundCount
-    + " ounRanges: " + MusicObj.outRanges
-  );
+  if (MusicObj.title && MusicObj.title == "untitled" && MusicObj.baseTitle != "") MusicObj.title = MusicObj.baseTitle
+  bot.log("[note] MusicCreated  " + MusicObj.baseTitle + " : " + MusicObj.title + " ounRanges: " + MusicObj.outRanges);
 }
 
-glob.playMusic = (MusicObj) => {
+function playMusic(MusicObj) {
   var musician;
   var musicCode;
   try {
-    if (glob.isPlayingMusic) return;
+    if (glob.isPlayingMusic) {
+      bot.log("[note] aborted")
+      glob.isPlayingMusic = false;
+      setTimeout(playMusic, 1000, MusicObj)
+      return;
+    }
     if (typeof (MusicObj) == "string") {
       bot.log("[note] load " + MusicObj);
-      var objson;
-      fs.readFile(MusicObj, 'utf-8', function (err, text) {
-        try { objson = JSON.parse(text); } catch (e) { console.log(e); return; }
-      });
-      setTimeout(() => {
-        if (objson == undefined) return;
-        glob.playMusic(objson);
-      }, 500);
+      try {
+        var objson = jsonfile.readFileSync("MineMusic/" + MusicObj);
+      } catch (e) {
+        console.log(e)
+      }
+      if (objson) {
+        objson.baseTitle = MusicObj;
+        playMusic(objson);
+      }
       return;
     }
     if (MusicObj.seqData == undefined) {
       if (glob.logNote) bot.log("[note] New Music");
-      glob.createMusic(MusicObj);
+      createMusic(MusicObj);
     }
     glob.isPlayingMusic = true;
     glob.playedNote = 0;
     glob.currentMusic = MusicObj;
 
-    bot.log("[note] playMusic " + MusicObj.title + " length: " + MusicObj.seqData.length + " tempo: " + MusicObj.tempo + " sections: " + MusicObj.sectionLength + " seconds: " + MusicObj.duration);
+    bot.log("[note] playMusic " + MusicObj.title + " length: " + MusicObj.seqData.length + " sounds: " + MusicObj.soundCount + " tempo: " + MusicObj.tempo + " seconds: " + MusicObj.duration);
     musicCode = 0;
     musician = setInterval(function () {
-      if (musicCode % MusicObj.sectionCount == 0 && glob.logNote)
-        bot.log("[note] section: " + musicCode / MusicObj.sectionCount + "/" + MusicObj.sectionLength);
-
       if (MusicObj.seqData[musicCode] == null);
       else {
         punchNote(MusicObj.seqData[musicCode].block);
@@ -369,15 +366,19 @@ function getJTune(pitch) {
   }
 }
 
-glob.endlessMusic = (playlist) => {
+function endlessMusic(playlist) {
   glob.isEndlessing = true;
   glob.endlessPlaylist = playlist;
   glob.endlessFilelist = [];
-  var stream = fs.createReadStream("./PlayLists/" + playlist, "utf8");//"MusicListRandom.txt"
 
-  var reader = readline.createInterface({ input: stream });
-  reader.on("line", (data) => {
-    glob.endlessFilelist.push(data);
+  fs.readFile("./PlayLists/" + playlist, 'utf-8', function (err, text) {
+    if (err) {
+      console.log(err);
+      glob.isEndlessing = false;
+      return;
+    }
+    glob.endlessFilelist = text.split("\r\n");
+    glob.endlessFilelist.splice(glob.endlessFilelist.length - 1, 1);
   });
 
   var musicPlayer;
@@ -395,8 +396,9 @@ glob.endlessMusic = (playlist) => {
       }
       if (glob.isPlayingMusic) return;
       bot.log("[note] Endless play " + glob.endlessFilelist[glob.endlessIndex] + " playlist: " + glob.endlessIndex + "/" + glob.endlessFilelist.length);
-      glob.playMusic("./MineMusic/" + glob.endlessFilelist[glob.endlessIndex]);
+      playMusic(glob.endlessFilelist[glob.endlessIndex]);
       glob.endlessIndex++;
+      glob.endlessIndex %= glob.endlessFilelist.length;
     }, 5000);
   } catch (e) {
     console.log(e);
