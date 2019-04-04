@@ -1,8 +1,9 @@
 const fs = require('fs');
 const jsonfile = require('jsonfile');
-glob.isPlayingMusic = false;
 
+glob.isPlayingMusic = false;
 glob.isTuning = false;
+glob.isMusicArm = true;
 glob.notes = [[], [], [], [], [], [], [], [], [], []];
 glob.logNote = false;
 
@@ -164,20 +165,20 @@ function tuneNote() {
           tuneArray.push(null);
         }
       }
-    else if (glob.notes[i].length > 0)
-      for (var k = 0; k < 3; k++) {
-        if (!glob.notes[i][k]) break;
-        var tg = (k + 1) * 6;
-        needCount = (glob.notes[i][k].pitch <= tg) ? tg - glob.notes[i][k].pitch : 25 - (glob.notes[i][k].pitch - tg);
-        bot.log("[note] TuneTarget: " + glob.notes[i][k].pitch + " needCount: " + needCount);
-        sumNeedCount += needCount;
-        for (; needCount > 0; needCount--) {
-          tuneArray.push(glob.notes[i][k]);
-        }
-        if (tuneArray.length > 0 && tuneArray[tuneArray.length - 1] != null) {
-          tuneArray.push(null);
-        }
-      }
+    // else if (glob.notes[i].length > 0)
+    //   for (var k = 0; k < 3; k++) {
+    //     if (!glob.notes[i][k]) break;
+    //     var tg = (k + 1) * 6;
+    //     needCount = (glob.notes[i][k].pitch <= tg) ? tg - glob.notes[i][k].pitch : 25 - (glob.notes[i][k].pitch - tg);
+    //     bot.log("[note] TuneTarget: " + glob.notes[i][k].pitch + " needCount: " + needCount);
+    //     sumNeedCount += needCount;
+    //     for (; needCount > 0; needCount--) {
+    //       tuneArray.push(glob.notes[i][k]);
+    //     }
+    //     if (tuneArray.length > 0 && tuneArray[tuneArray.length - 1] != null) {
+    //       tuneArray.push(null);
+    //     }
+    //   }
   }
   try {
     var i = 0;
@@ -215,6 +216,7 @@ function createMusic(MusicObj) {
   MusicObj.soundCount = 0;
   MusicObj.outRanges = 0;
   if (!MusicObj.baseTitle) MusicObj.baseTitle = "";
+  if (!MusicObj.title) MusicObj.title = "";
 
   var inst = 0;
   for (var i = 0; i < pits.length; i++) {
@@ -262,13 +264,14 @@ function createMusic(MusicObj) {
     }
 
   }
-  if (MusicObj.title && MusicObj.title == "untitled" && MusicObj.baseTitle != "") MusicObj.title = MusicObj.baseTitle
   bot.log("[note] MusicCreated  " + MusicObj.baseTitle + " : " + MusicObj.title + " ounRanges: " + MusicObj.outRanges);
+  if ((MusicObj.title == "untitled" || MusicObj.title == "") && MusicObj.baseTitle != "") MusicObj.title = MusicObj.baseTitle
 }
 
 function playMusic(MusicObj) {
   var musician;
   var musicCode;
+  var startTime = new Date().getTime();
   try {
     if (glob.isPlayingMusic) {
       bot.log("[note] aborted")
@@ -306,7 +309,7 @@ function playMusic(MusicObj) {
       }
       if (++musicCode >= MusicObj.seqData.length || !glob.isPlayingMusic) {
         clearInterval(musician);
-        bot.log("[note] MusicEnd " + ((glob.playedNote / MusicObj.soundCount) * 100) + "% missing: " + (MusicObj.soundCount - glob.playedNote));
+        bot.log("[note] MusicEnd " + ((glob.playedNote / MusicObj.soundCount) * 100) + "% missing: " + (MusicObj.soundCount - glob.playedNote)+"  "+(new Date().getTime()-startTime)/1000+" seconds");
         glob.currentMusic = null;
         glob.isPlayingMusic = false;
       }
@@ -324,15 +327,17 @@ glob.stopMusic = () => {
 }
 
 function punchNote(block) {
-  bot.lookAt(block.position.offset(0.5, 0.5, 0.5), true, () => {
-    bot._client.write('block_dig', {
-      status: 0, // start digging
-      location: block.position,
-      face: 1 // hard coded to always dig from the top
-    })
-    bot.targetDigBlock = block
+  if (glob.isMusicArm)
+  bot.lookAt(block.position.offset(0.5, 0.5, 0.5), true);//, () => {
+  bot._client.write('block_dig', {
+    status: 0, // start digging
+    location: block.position,
+    face: 1 // hard coded to always dig from the top
+  })
+  bot.targetDigBlock = block
+  if (glob.isMusicArm)
     bot._client.write('arm_animation', { hand: 0 });
-  });
+  // });
 }
 
 function getJTune(pitch) {

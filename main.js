@@ -1,5 +1,4 @@
 require('dotenv').config();
-const delay = require('delay');
 const jsonfile = require('jsonfile');
 const mineflayer = require('mineflayer');
 const events = require('events');

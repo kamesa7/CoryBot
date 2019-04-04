@@ -55,9 +55,9 @@ bot.on('entityMoved', (entity) => {
             var item = glob.findItem(swords);
             if (item != null) {
                 bot.equip(item, "hand", function () {
-                    bot.attack(entity);//, true);
+                    bot.attack(entity,true);
                 });
-            } else bot.attack(entity);
+            } else bot.attack(entity,true);
             preAttackTime = new Date().getTime();
         } else if (glob.isSniperMode && distance < 96 && !(entity.name && entity.name == "enderman")) {//shoot
             if (canSeeDirectly(entity.position.offset(0, eyeHeight, 0))) {

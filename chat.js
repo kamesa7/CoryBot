@@ -230,7 +230,7 @@ function time_signal() {
     try {
 
         if (hours == 0 && hours != prev_hours) {//omikuji
-            bot.safechat('/omikuji', 3000);
+            bot.safechat('/omikuji', 9000);
         }
 
         if (glob.isAuctioning && clock.getTime() >= aucDeadline.getTime()) {//auction

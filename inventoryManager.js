@@ -17,7 +17,7 @@ glob.findItem = findItem;
 glob.clearInventory = clearInventory;
 glob.equipArmor = equipArmor;
 glob.equipHead = equipHead;
-
+glob.unEquipArmor = unEquipArmor;
 
 bot.on('health', function () {
     bodyManage();
@@ -138,4 +138,12 @@ function equipHead() {
     if (item != null) {
         bot.equip(item, "head");
     }
+}
+
+function unEquipArmor() {
+    setTimeout(function () { bot.unequip("head") }, 1000)
+    setTimeout(function () { bot.unequip("torso") }, 2000)
+    setTimeout(function () { bot.unequip("legs") }, 3000)
+    setTimeout(function () { bot.unequip("feet") }, 4000)
+    setTimeout(function () { bot.unequip("hand") }, 5000)
 }
