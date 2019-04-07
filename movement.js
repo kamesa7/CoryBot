@@ -210,6 +210,7 @@ function chase(entity) {
     }
     if (entity == undefined || !entity.isValid) {
         bot.log("[move] cannot find entity");
+        stopMoving();
         return;
     }
     bot.log("[move] chase entity " + entity.position.floored());
@@ -1023,7 +1024,7 @@ var interest_entity = undefined;
 
 function setInterestEntity(entity = undefined) {
     if (!glob.isWaiting) {
-        if (glob.isPlayingMusic || glob.isTuning || glob.isMoving || glob.isShootingArrow) {
+        if (glob.isTuning || glob.isMoving || glob.isShootingArrow) {
             interest_entity = undefined;
             return;
         }

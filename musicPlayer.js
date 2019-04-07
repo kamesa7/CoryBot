@@ -148,37 +148,57 @@ function initNote() {
 
 function tuneNote() {
   glob.isTuning = true;
+  var needArray = [];
   var tuneArray = [];
-  var needCount = 0;
   var sumNeedCount = 0;
+  function addTune(note, needCount) {
+    sumNeedCount += needCount;
+    for (; needCount > 0; needCount--) {
+      tuneArray.push(note);
+    }
+    if (tuneArray.length > 0 && tuneArray[tuneArray.length - 1] != null) {
+      tuneArray.push(null);
+    }
+  }
   for (var i = 0; i < glob.notes.length; i++) {
-    glob.notes[i].sort((a, b) => a.pitch - b.pitch);
-    if (glob.notes[i].length >= 25)
-      for (var k = 0; k < glob.notes[i].length && k < 25; k++) {
-        needCount = (glob.notes[i][k].pitch <= k) ? k - glob.notes[i][k].pitch : 25 - (glob.notes[i][k].pitch - k);
-        bot.log("[note] TuneTarget: " + glob.notes[i][k].pitch + " needCount: " + needCount);
-        sumNeedCount += needCount;
-        for (; needCount > 0; needCount--) {
-          tuneArray.push(glob.notes[i][k]);
+    bot.log("[note] Tune Inst: " + i);
+    var okArray = [];
+    var arrayInst = glob.notes[i];
+    arrayInst.sort((a, b) => a.pitch - b.pitch);
+    if (25 <= arrayInst.length) {
+      for (var tg = 0; tg < 25; tg++) {
+        for (var m = 0; m < 25; m++) {
+          if (arrayInst[m].pitch == tg) {
+            bot.log("[note] Tune: " + m + " " + arrayInst[m].pitch + " ok");
+            okArray[m] = true;
+            break;
+          }
         }
-        if (tuneArray.length > 0 && tuneArray[tuneArray.length - 1] != null) {
-          tuneArray.push(null);
+        if (m == 25) {
+          needArray.push(tg);
         }
       }
-    // else if (glob.notes[i].length > 0)
-    //   for (var k = 0; k < 3; k++) {
-    //     if (!glob.notes[i][k]) break;
-    //     var tg = (k + 1) * 6;
-    //     needCount = (glob.notes[i][k].pitch <= tg) ? tg - glob.notes[i][k].pitch : 25 - (glob.notes[i][k].pitch - tg);
-    //     bot.log("[note] TuneTarget: " + glob.notes[i][k].pitch + " needCount: " + needCount);
-    //     sumNeedCount += needCount;
-    //     for (; needCount > 0; needCount--) {
-    //       tuneArray.push(glob.notes[i][k]);
-    //     }
-    //     if (tuneArray.length > 0 && tuneArray[tuneArray.length - 1] != null) {
-    //       tuneArray.push(null);
-    //     }
-    //   }
+      for (var k = 0; k < needArray.length; k++) {
+        var tg = needArray[k];
+        for (var m = 0; m < 25; m++) {
+          if (!okArray[m]) {
+            var needCount = (arrayInst[m].pitch <= tg) ? tg - arrayInst[m].pitch : 25 - (arrayInst[m].pitch - tg);
+            bot.log("[note] Tune: " + m + " " + arrayInst[m].pitch + " needCount: " + needCount);
+            addTune(arrayInst[m], needCount);
+            okArray[m] = true;
+            break;
+          }
+        }
+      }
+    } else if (arrayInst.length > 0) {
+      for (var m = 0; m < arrayInst.length; m++) {
+        if (!arrayInst[m]) break;
+        var tg = Math.floor(Math.min((m + 1) * 24 / arrayInst.length - 1, 23));
+        var needCount = (arrayInst[m].pitch <= tg) ? tg - arrayInst[m].pitch : 25 - (arrayInst[m].pitch - tg);
+        bot.log("[note] Tune: " + m + " " + arrayInst[m].pitch + " needCount: " + needCount);
+        addTune(arrayInst[m], needCount);
+      }
+    }
   }
   try {
     var i = 0;
@@ -200,6 +220,9 @@ function tuneNote() {
           setTimeout(tuneNote, 300);
         }
         glob.isTuning = false;
+        for (var k = 0; k < glob.notes.length; k++) {
+          glob.notes[k].sort((a, b) => a.pitch - b.pitch);
+        }
         bot.log("[note] TuneFinish");
       }
     }, glob.tuneTempo);
@@ -248,6 +271,7 @@ function createMusic(MusicObj) {
     if (pits[i] < 0 || pits[i] > 24) {//out range
       MusicObj.outRanges++;
       MusicObj.seqData.push(null);
+      console.log("invalid note range");
       continue;
     }
     for (var k = 0; k < glob.notes[inst].length; k++) {//matching
@@ -266,6 +290,8 @@ function createMusic(MusicObj) {
   }
   bot.log("[note] MusicCreated  " + MusicObj.baseTitle + " : " + MusicObj.title + " ounRanges: " + MusicObj.outRanges);
   if ((MusicObj.title == "untitled" || MusicObj.title == "") && MusicObj.baseTitle != "") MusicObj.title = MusicObj.baseTitle
+
+  if(MusicObj.outRanges>0) bot.log("[note] Something Error in creating Music : " +MusicObj.outRanges);
 }
 
 function playMusic(MusicObj) {
@@ -309,7 +335,7 @@ function playMusic(MusicObj) {
       }
       if (++musicCode >= MusicObj.seqData.length || !glob.isPlayingMusic) {
         clearInterval(musician);
-        bot.log("[note] MusicEnd " + ((glob.playedNote / MusicObj.soundCount) * 100) + "% missing: " + (MusicObj.soundCount - glob.playedNote)+"  "+(new Date().getTime()-startTime)/1000+" seconds");
+        bot.log("[note] MusicEnd " + ((glob.playedNote / MusicObj.soundCount) * 100) + "% missing: " + (MusicObj.soundCount - glob.playedNote) + "  " + (new Date().getTime() - startTime) / 1000 + " seconds");
         glob.currentMusic = null;
         glob.isPlayingMusic = false;
       }
@@ -328,7 +354,7 @@ glob.stopMusic = () => {
 
 function punchNote(block) {
   if (glob.isMusicArm)
-  bot.lookAt(block.position.offset(0.5, 0.5, 0.5), true);//, () => {
+    bot.lookAt(block.position.offset(0.5, 0.5, 0.5), true);//, () => {
   bot._client.write('block_dig', {
     status: 0, // start digging
     location: block.position,
