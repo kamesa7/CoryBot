@@ -115,20 +115,18 @@ function findItem(list) {
     }
 }
 
-function equipArmor() {
+function equipArmor(dest = 0) {
     var item;
-    for (var k = 0; k < 4; k++) {
-        for (var index = 0; index < helmets.length; index++) {
-            item = findItem(helmets[index] + k);
-            if (item != null && (item.slot < 5 || item.slot < 8)) {
-                switch (k) {
-                    case 0: bot.equip(item, "head"); break;
-                    case 1: bot.equip(item, "torso"); break;
-                    case 2: bot.equip(item, "legs"); break;
-                    case 3: bot.equip(item, "feet"); break;
-                }
-                return;
+    for (var index = 0; index < helmets.length; index++) {
+        item = findItem(helmets[index] + dest);
+        if (item != null && (item.slot < 5 || item.slot < 8)) {
+            switch (dest) {
+                case 0: bot.equip(item, "head"); break;
+                case 1: bot.equip(item, "torso"); break;
+                case 2: bot.equip(item, "legs"); break;
+                case 3: bot.equip(item, "feet"); break;
             }
+            return;
         }
     }
 }

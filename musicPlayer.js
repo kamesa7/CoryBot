@@ -291,7 +291,7 @@ function createMusic(MusicObj) {
   bot.log("[note] MusicCreated  " + MusicObj.baseTitle + " : " + MusicObj.title + " ounRanges: " + MusicObj.outRanges);
   if ((MusicObj.title == "untitled" || MusicObj.title == "") && MusicObj.baseTitle != "") MusicObj.title = MusicObj.baseTitle
 
-  if(MusicObj.outRanges>0) bot.log("[note] Something Error in creating Music : " +MusicObj.outRanges);
+  if (MusicObj.outRanges > 0) bot.log("[note] Something Error in creating Music : " + MusicObj.outRanges);
 }
 
 function playMusic(MusicObj) {
@@ -397,7 +397,7 @@ function getJTune(pitch) {
   }
 }
 
-function endlessMusic(playlist) {
+function endlessMusic(playlist, shuffle = false) {
   glob.isEndlessing = true;
   glob.endlessPlaylist = playlist;
   glob.endlessFilelist = [];
@@ -412,8 +412,16 @@ function endlessMusic(playlist) {
     glob.endlessFilelist.splice(glob.endlessFilelist.length - 1, 1);
   });
 
-  var musicPlayer;
+  if (shuffle) {
+    for (var i = glob.endlessFilelist.length - 1; i > 0; i--) {
+      var r = Math.floor(Math.random() * (i + 1));
+      var tmp = glob.endlessFilelist[i];
+      glob.endlessFilelist[i] = glob.endlessFilelist[r];
+      glob.endlessFilelist[r] = tmp;
+    }
+  }
 
+  var musicPlayer;
   try {
     musicPlayer = setInterval(function () {
       if (glob.endlessIndex >= glob.endlessFilelist.length) {

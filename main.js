@@ -55,6 +55,8 @@ function start() {
       port: process.env.MC_PORT,
       username: process.env.MC_USERNAME,
       session: sessionCache,
+      username: process.env.MC_USERNAME,
+      password: process.env.MC_PASSWORD,
       verbose: true
     });
     console.log('Connecting to [' + process.env.MC_HOST + ':' + process.env.MC_PORT + ']');
