@@ -1,10 +1,10 @@
 require('dotenv').config();
-const jsonfile = require('jsonfile');
 const mineflayer = require('mineflayer');
 const events = require('events');
 const eventEmitter = new events.EventEmitter();
 eventEmitter.setMaxListeners(640);
 
+jsonfile = require('jsonfile');
 Vec3 = require('vec3').Vec3;
 mcData = require("minecraft-data")("1.12.2");//bot.version
 bucketsJs = require('buckets-js');
@@ -55,7 +55,6 @@ function start() {
       port: process.env.MC_PORT,
       username: process.env.MC_USERNAME,
       session: sessionCache,
-      username: process.env.MC_USERNAME,
       password: process.env.MC_PASSWORD,
       verbose: true
     });
