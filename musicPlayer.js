@@ -2,11 +2,11 @@ fs = require('fs');
 
 glob.isPlayingMusic = false;
 glob.isTuning = false;
-glob.isMusicArm = true;
+glob.isMusicArm = false;
 glob.notes = [[], [], [], [], [], [], [], [], [], []];
 glob.logNote = false;
 
-glob.initTempo = 150;
+glob.initTempo = 90;
 glob.tuneTempo = 90;
 
 glob.isEndlessing = false;
@@ -16,7 +16,7 @@ glob.endlessIndex = 0;
 
 glob.currentMusic = null;
 glob.validNoteDistance = 10;
-glob.playedNote = 0;
+
 
 glob.generalMusicObj = {
   pits: [],
@@ -28,9 +28,11 @@ glob.generalMusicObj = {
   baseTitle: "baseMUSIC",
   duration: 0,
   baseduration: 0,
-  score: 0
+  score: 0,
+  perfection: 100
 };
 
+glob.skip = skip;
 glob.stopMusic = stopMusic;
 glob.initNote = initNote;
 glob.tuneNote = tuneNote;
@@ -40,6 +42,7 @@ glob.endlessMusic = endlessMusic;
 
 var prePosition;
 var preTune = 0;
+var playedNote = 0;
 /*
   0:"harp"
   1:"doubleBass"
@@ -53,6 +56,16 @@ var preTune = 0;
   9:"flute"
 */
 
+function stopMusic() {
+  glob.isPlayingMusic = false;
+  glob.isEndlessing = false;
+  glob.isTuning = false;
+}
+
+function skip() {
+  glob.isPlayingMusic = false;
+}
+
 bot.on('noteHeard', (block, instrument, pitch) => {
   try {
 
@@ -63,7 +76,7 @@ bot.on('noteHeard', (block, instrument, pitch) => {
     }
 
     if (glob.isPlayingMusic) {
-      glob.playedNote++;
+      playedNote++;
       return;
     }
 
@@ -301,7 +314,7 @@ function playMusic(MusicObj) {
       return;
     }
     if (typeof (MusicObj) == "string") {
-      bot.log("[note] load " + MusicObj);
+      // bot.log("[note] load " + MusicObj);
       try {
         var objson = jsonfile.readFileSync("MineMusic/" + MusicObj);
       } catch (e) {
@@ -318,10 +331,10 @@ function playMusic(MusicObj) {
       createMusic(MusicObj);
     }
     glob.isPlayingMusic = true;
-    glob.playedNote = 0;
+    playedNote = 0;
     glob.currentMusic = MusicObj;
 
-    bot.log("[note] playMusic " + MusicObj.title + " length: " + MusicObj.seqData.length + " sounds: " + MusicObj.soundCount + " tempo: " + MusicObj.tempo + " seconds: " + MusicObj.duration + "/" + MusicObj.baseduration + " score: " + MusicObj.score);
+    bot.log("[note] playMusic " + MusicObj.title + " length: " + MusicObj.seqData.length + " sounds: " + MusicObj.soundCount + " tempo: " + MusicObj.tempo + " seconds: " + MusicObj.duration + "/" + MusicObj.baseduration + " score: " + MusicObj.score + " perfection: "+MusicObj.perfection);
     musicCode = 0;
     musician = setInterval(function () {
       if (MusicObj.seqData[musicCode] == null);
@@ -330,7 +343,7 @@ function playMusic(MusicObj) {
       }
       if (++musicCode >= MusicObj.seqData.length || !glob.isPlayingMusic) {
         clearInterval(musician);
-        bot.log("[note] MusicEnd " + ((glob.playedNote / MusicObj.soundCount) * 100) + "% missing: " + (MusicObj.soundCount - glob.playedNote) + " seconds: " + (new Date().getTime() - startTime) / 1000 + "s");
+        bot.log("[note] MusicEnd " + ((playedNote / MusicObj.soundCount) * 100) + "% missing: " + (MusicObj.soundCount - playedNote) + " seconds: " + (new Date().getTime() - startTime) / 1000 + "s");
         glob.currentMusic = null;
         glob.isPlayingMusic = false;
       }
@@ -341,11 +354,6 @@ function playMusic(MusicObj) {
   }
 };
 
-function stopMusic() {
-  glob.isPlayingMusic = false;
-  glob.isEndlessing = false;
-  glob.isTuning = false;
-}
 
 function punchNote(block) {
   if (glob.isMusicArm)
@@ -394,7 +402,7 @@ function getJTune(pitch) {
 
 function endlessMusic(playlist, shuffle = false) {
   if (glob.isEndlessing) {
-    bot.log("[note] endless aborted")
+    bot.log("[note] [Endless] aborted")
     stopMusic();
     setTimeout(endlessMusic, 1000, playlist, shuffle)
     return;
@@ -403,7 +411,7 @@ function endlessMusic(playlist, shuffle = false) {
   glob.endlessPlaylist = playlist;
   glob.endlessFilelist = [];
 
-  bot.log("[note] endless playlist " + playlist);
+  bot.log("[note] [Endless] playlist " + playlist);
 
   // NOT SYNC
   fs.readFile("./PlayLists/" + playlist, 'utf-8', function (err, text) {
@@ -416,7 +424,7 @@ function endlessMusic(playlist, shuffle = false) {
     glob.endlessFilelist.splice(glob.endlessFilelist.length - 1, 1);
 
     if (shuffle) {
-      bot.log("[note] shuffle playlist")
+      bot.log("[note] [Endless] shuffle playlist")
       for (var i = glob.endlessFilelist.length - 1; i > 0; i--) {
         var r = Math.floor(Math.random() * (i + 1));
         var tmp = glob.endlessFilelist[i];
@@ -435,11 +443,11 @@ function endlessMusic(playlist, shuffle = false) {
 
       if (!glob.isEndlessing) {
         clearInterval(musicPlayer);
-        bot.log("[note] Endless End");
+        bot.log("[note] [Endless] END");
         return;
       }
       if (glob.isPlayingMusic) return;
-      bot.log("[note] Endless play " + glob.endlessFilelist[glob.endlessIndex] + " playlist: " + glob.endlessIndex + "/" + glob.endlessFilelist.length);
+      bot.log("[note] [Endless] " + glob.endlessFilelist[glob.endlessIndex] + " : " + glob.endlessIndex + "/" + glob.endlessFilelist.length);
       playMusic(glob.endlessFilelist[glob.endlessIndex].split("\t")[0]);
       glob.endlessIndex++;
       glob.endlessIndex %= glob.endlessFilelist.length;

@@ -119,7 +119,7 @@ function equipArmor(dest = 0) {
     var item;
     for (var index = 0; index < helmets.length; index++) {
         item = findItem(helmets[index] + dest);
-        if (item != null && (item.slot < 5 || item.slot < 8)) {
+        if (item != null && (item.slot < 5 || 8 < item.slot)) {
             switch (dest) {
                 case 0: bot.equip(item, "head"); break;
                 case 1: bot.equip(item, "torso"); break;

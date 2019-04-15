@@ -8,7 +8,7 @@ glob.isArrowDefenceMode = true;
 glob.isShootingArrow = false;
 glob.isGuarding = false;
 
-glob.bowDamageLimit = 300;
+glob.bowDamageLimit = 350;
 glob.snipeDistance=96;
 
 glob.logCombat = false;
