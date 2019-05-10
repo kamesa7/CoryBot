@@ -4,4 +4,6 @@ CommandMusic
 PlayLists
 .env
 log
+*.log
+*.txt
 session_cache.json
