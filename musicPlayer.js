@@ -337,10 +337,8 @@ function playMusic(MusicObj) {
     bot.log("[note] playMusic " + MusicObj.title + " length: " + MusicObj.seqData.length + " sounds: " + MusicObj.soundCount + " tempo: " + MusicObj.tempo + " seconds: " + MusicObj.duration + "/" + MusicObj.baseduration + " score: " + MusicObj.score + " perfection: "+MusicObj.perfection);
     musicCode = 0;
     musician = setInterval(function () {
-      if (MusicObj.seqData[musicCode] == null);
-      else {
+      if (MusicObj.seqData[musicCode])
         punchNote(MusicObj.seqData[musicCode].block);
-      }
       if (++musicCode >= MusicObj.seqData.length || !glob.isPlayingMusic) {
         clearInterval(musician);
         bot.log("[note] MusicEnd " + ((playedNote / MusicObj.soundCount) * 100) + "% missing: " + (MusicObj.soundCount - playedNote) + " seconds: " + (new Date().getTime() - startTime) / 1000 + "s");
