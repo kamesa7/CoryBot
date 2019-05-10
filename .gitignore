@@ -1,6 +1,8 @@
 node_modules
 MineMusic
 CommandMusic
+PlayLists
 .env
 log
 session_cache.json
+mineflayer-rader

@@ -1,3 +1,7 @@
+/**
+ * THIS FILE IS NOT USED
+ */
+
 var fs = require('fs');
 var readline = require("readline");
 botFunc.isPlayingMusic = false;
@@ -88,14 +92,14 @@ botFunc.createMusic = (MusicObj, tempo = 48, pits = []) => {
       MusicObj.seqData.push(null);
       continue;
     }
-    var pitch = Math.pow(2,(-12+pits[i])/12);
+    var pitch = Math.pow(2, (-12 + pits[i]) / 12);
     pitch = Math.round(pitch * 100) / 100;
     //console.log(pitch);
-    switch(inst){
-      case 0:MusicObj.seqData.push("/playsound minecraft:block.note.harp block @a ~ ~ ~ 100 "+pitch);
-      break;
-      case 7:MusicObj.seqData.push("/playsound minecraft:block.note.guiter block @a ~ ~ ~ 100 "+pitch);
-      break;
+    switch (inst) {
+      case 0: MusicObj.seqData.push("/playsound minecraft:block.note.harp block @a ~ ~ ~ 100 " + pitch);
+        break;
+      case 7: MusicObj.seqData.push("/playsound minecraft:block.note.guiter block @a ~ ~ ~ 100 " + pitch);
+        break;
     }
 
   }
@@ -116,14 +120,14 @@ botFunc.playMusic = (MusicObj) => {
   var musicCode;
   try {
     if (botFunc.isPlayingMusic) return;
-    if (typeof(MusicObj) == "string" ) {
-      bot.log("[note] load "+ MusicObj);
+    if (typeof (MusicObj) == "string") {
+      bot.log("[note] load " + MusicObj);
       var objson;
       fs.readFile(MusicObj, 'utf-8', function (err, text) {
-        try{objson = JSON.parse(text);}catch(e){console.log(e);return;}
+        try { objson = JSON.parse(text); } catch (e) { console.log(e); return; }
       });
       setTimeout(() => {
-        if(objson==undefined)return;
+        if (objson == undefined) return;
         botFunc.playMusic(objson);
       }, 500);
       return;
@@ -136,10 +140,10 @@ botFunc.playMusic = (MusicObj) => {
     botFunc.playedNote = 0;
     botFunc.currentMusic = MusicObj;
 
-    bot.log("[note] playMusic "+ MusicObj.title +" length: " + MusicObj.seqData.length + " tempo: " + MusicObj.tempo + " sections: " + MusicObj.sectionLength + " seconds: " + MusicObj.duration);
+    bot.log("[note] playMusic " + MusicObj.title + " length: " + MusicObj.seqData.length + " tempo: " + MusicObj.tempo + " sections: " + MusicObj.sectionLength + " seconds: " + MusicObj.duration);
     musicCode = 0;
     musician = setInterval(function () {
-      if (musicCode % MusicObj.sectionCount == 0  && botFunc.logNote)
+      if (musicCode % MusicObj.sectionCount == 0 && botFunc.logNote)
         bot.log("[note] section: " + musicCode / MusicObj.sectionCount + "/" + MusicObj.sectionLength);
 
       if (MusicObj.seqData[musicCode] == null);
@@ -162,7 +166,7 @@ botFunc.playMusic = (MusicObj) => {
 botFunc.stopMusic = () => {
   botFunc.isPlayingMusic = false;
   botFunc.isEndlessing = false;
-  botFunc.isTuning=false;
+  botFunc.isTuning = false;
 }
 
 botFunc.endlessMusic = (playlist) => {
@@ -190,8 +194,8 @@ botFunc.endlessMusic = (playlist) => {
         return;
       }
       if (botFunc.isPlayingMusic) return;
-      bot.log("[note] Endless play "+botFunc.endlessFilelist[botFunc.endlessIndex] +  " playlist: "+ botFunc.endlessIndex+"/"+botFunc.endlessFilelist.length);
-      botFunc.playMusic("./MineMusic/"+botFunc.endlessFilelist[botFunc.endlessIndex]);
+      bot.log("[note] Endless play " + botFunc.endlessFilelist[botFunc.endlessIndex] + " playlist: " + botFunc.endlessIndex + "/" + botFunc.endlessFilelist.length);
+      botFunc.playMusic("./MineMusic/" + botFunc.endlessFilelist[botFunc.endlessIndex]);
       botFunc.endlessIndex++;
     }, 5000);
   } catch (e) {

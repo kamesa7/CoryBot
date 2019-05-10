@@ -15,7 +15,7 @@ var steveNum = "";
 glob = {
   debug: false,
   useCache: true,
-  LOCAL: "localhost",//"192.168.1.104",
+  LOCAL: "localhost",
   PORT: "25565"
 };
 
@@ -87,8 +87,8 @@ function start() {
     process.exit();
   });
 
-  if (!glob.debug) {
-    var radarPlugin = require('./mineflayer-radar')(mineflayer);
-    radarPlugin(bot, { host: 'localhost', port: 55146 });
-  }
+  // if (!glob.debug) {
+  //   var radarPlugin = require('./mineflayer-radar')(mineflayer);
+  //   radarPlugin(bot, { host: 'localhost', port: 55146 });
+  // }
 }

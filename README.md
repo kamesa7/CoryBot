@@ -1,26 +1,8 @@
-TemzinBot
+FunctionalChatBot
 =========
 
 mineflayerを利用した適当bot
-
-
-## Features
-
-  - I'M BOT!
-  - Modulized functions
-    - move to the designated position
-    - follow player
-    - greeting responce
-    - 3sec countdown
-    - data recorder
-  - Commandline interface
-  - Dockerize support
-
-## Installation
-
-    $ git clone https://github.com/fubira/TemzinBot
-    $ cd TemzinBot
-    $ npm install
+minecraft 1.12.2 で動作
 
 ## Environment
 
@@ -32,36 +14,3 @@ MC_PORT="25565"
 MC_USERNAME="user@foo.bar"
 MC_PASSWORD="password"
 ```
-
-## Usage
-
-    $ npm start
-
-
-## Dockerize
-
-### Build docker image
-
-```bash
-docker build -t <yourname>/temzinbot .
-```
-
-### Run docker container
-
-```bash
-docker run -d -it \
-  -e MC_HOST=localhost \
-  -e MC_PORT=25565 \
-  -e MC_USERNAME=username \
-  -e MC_PASSWORD=password \
-  --name temzinbot \
-  <yourname>/temzinbot
-```
-
-## License
-
-[MIT](https://github.com/fubira/TemzinBot/blob/master/LICENSE,md)
-
-## Author
-
-[fubira](https://github.com/fubira)
