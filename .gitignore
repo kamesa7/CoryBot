@@ -1,9 +1,7 @@
 node_modules
 MineMusic
-CommandMusic
 PlayLists
 .env
 log
 *.log
-*.txt
 session_cache.json

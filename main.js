@@ -87,8 +87,4 @@ function start() {
     process.exit();
   });
 
-  // if (!glob.debug) {
-  //   var radarPlugin = require('./mineflayer-radar')(mineflayer);
-  //   radarPlugin(bot, { host: 'localhost', port: 55146 });
-  // }
 }
