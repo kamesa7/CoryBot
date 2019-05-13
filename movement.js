@@ -1036,7 +1036,7 @@ function setInterestEntity(entity = undefined) {
             var type = interest_entity.type;
             var kind = interest_entity.kind;
             if (glob.logInterest)
-                bot.log('[bot.setInterestEntity] ' + bot.username + ' is interested in ' + name + ' (' + type + (kind !== undefined ? ':' + kind : '') + ')');
+                bot.log('[interest] interested in ' + name + ' (' + type + (kind !== undefined ? ':' + kind : '') + ')');
         }
     }
 }

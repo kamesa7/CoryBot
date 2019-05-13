@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="ja">
+
+<head>
+  <meta charset="utf-8">
+  <title>CoryRadar</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="jquery-1.11.1.js"></script>
+  <script src="app.js"></script>
+</head>
+
+<body>
+  <div class="wrapper">
+    <div class="column cat1">
+      <div class="radar">
+        <div class="myentity"></div>
+      </div>
+      <div class="info">
+          <div class="myinfo"></div>
+      </div>
+    </div>
+
+    <div class="column cat2">
+      <div class="chat">
+        <ul id="messages"></ul>
+      </div>
+      <div class="chat-sender">
+        <form id="message_form" action="#">
+          <input id="input_msg" autocomplete="off" size="60" /><button>Send</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</body>
+
+</html>

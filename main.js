@@ -4,6 +4,7 @@ const events = require('events');
 const eventEmitter = new events.EventEmitter();
 eventEmitter.setMaxListeners(640);
 
+fs = require('fs');
 jsonfile = require('jsonfile');
 Vec3 = require('vec3').Vec3;
 mcData = require("minecraft-data")("1.12.2");//bot.version
@@ -13,10 +14,11 @@ isSame = require("./isSameObject");
 var steveNum = "";
 
 glob = {
-  debug: false,
+  debug: true,
   useCache: true,
   LOCAL: "localhost",
-  PORT: "25565"
+  LOCALPORT: "51899",
+  event: new events.EventEmitter()
 };
 
 for (var i = 0; i < process.argv.length; i++) {
@@ -38,12 +40,13 @@ require("./movement")
 require("./inventoryManager")
 require("./combat")
 require("./eventManager")
+require("./radar")
 
 function start() {
   if (glob.debug) {
     bot = mineflayer.createBot({
       host: glob.LOCAL,
-      port: glob.PORT,
+      port: glob.LOCALPORT,
       username: "Steve" + steveNum,
       verbose: true
     });

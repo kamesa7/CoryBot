@@ -31,7 +31,7 @@ bot.on('food', function () {
 function bodyManage() {
     if (eatTime == undefined) bot.unequip("hand");
     eatTime = new Date();
-    bot.log("[body] health: " + bot.health + ", food: " + bot.food);
+    bot.log("[body] health: " + Math.round(bot.health) + ", food: " + Math.round(bot.food));
     if (bot.health < 20 && bot.food < 19) {
         startEat();
     } else if (bot.food <= 10) {

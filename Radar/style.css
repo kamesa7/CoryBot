@@ -1,0 +1,55 @@
+.body{
+	height: 95vh;
+	overflow-y: hidden;
+}
+
+.wrapper{
+	display: flex;
+}
+
+.column {
+	height: 95vh;
+	width: 100vw;
+}
+
+.cat1{
+	width: 40vw;
+}
+ 
+.radar{
+	height: 40vw;
+	width: 40vw;
+
+	background: black;
+}
+
+.myentity{
+	height: 8px;
+	width: 8px;
+	background-color: greenyellow;
+	position: relative;
+	top: 19.5vw;
+	left: 19.5vw;
+}
+
+.entity{
+	height: 8px;
+	width: 8px;
+	background-color: wheat;
+	position: absolute
+}
+
+/* .info{
+
+} */
+
+.chat{
+	height:95%;
+	overflow-y:auto;
+	background:#ffffff;
+}
+ 
+.chat-sender{
+	color:#ffffff;
+}
+

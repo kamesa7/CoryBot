@@ -1,5 +1,3 @@
-fs = require('fs');
-
 glob.isPlayingMusic = false;
 glob.isTuning = false;
 glob.isMusicArm = false;

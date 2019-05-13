@@ -339,6 +339,7 @@ bot.log = (...args) => {
         args[0] = '[' + dateformat(new Date(), 'isoTime') + '] ' + args[0];
     }
     console.log.apply(console, args);
+    glob.event.emit("log", args)
 
     if (typeof rl !== 'undefined')
         rl.prompt(true);
