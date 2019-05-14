@@ -388,7 +388,7 @@ function expandNode(node) {
 
     for (var i = 0; i < lands.length; i++) {
         pos = plus(node.p, lands[i]);
-        if (isStandable(pos) && isThroughable(plus(pos, [0, 2, 0]))) {
+        if (isStandable(pos) && isThroughable(plus(pos, [0, 2, 0])) && isThroughable(plus(pos, [0, 4, 0]) )) {
             pos.push("land");
             ret.push(pos);
         }
