@@ -191,14 +191,14 @@ bot.on('whisper', (username, message) => {
 bot.on('omikuji', (username, message) => {
     if (bot.username === username) return;
 
-    if (message.match(/柑橘類/)) {
-        bot.randomchat(['wwwww', 'ｗｗｗｗｗ', 'かわいそう', 'w', 'かw',
-            "キャー", "柑橘w", "黄色い", "柑橘類の日", "おめでとう！", "可哀想", "か ん き つ る い",
-            "いいね", "ʬʬʬ", "草", "🍊", username + "さんは柑橘類ね", "柑橘系" + username, message,
-            "", "柑橘…", "柑橘な日もあるよ", "www", "ｗｗｗ", "卍柑橘卍", "柑橘様だ", "かかかかかｗ",
-            "大吉＞中吉＞吉＞＞＞大凶＞＞＞＞＞＞＞＞＞＞＞＞柑橘類", "17333", "55", "カ ン キ ツ", "[柑橘]<" + username + ">[柑橘]",
-            "オレンジ様だ", "レモン様だ", "今日の運勢「柑橘類」", "(笑)", "柑橘類（笑）"]);
-    }
+    // if (message.match(/柑橘類/)) {
+    //     bot.randomchat(['wwwww', 'ｗｗｗｗｗ', 'かわいそう', 'w', 'かw',
+    //         "キャー", "柑橘w", "黄色い", "柑橘類の日", "おめでとう！", "可哀想", "か ん き つ る い",
+    //         "いいね", "ʬʬʬ", "草", "🍊", username + "さんは柑橘類ね", "柑橘系" + username, message,
+    //         "", "柑橘…", "柑橘な日もあるよ", "www", "ｗｗｗ", "卍柑橘卍", "柑橘様だ", "かかかかかｗ",
+    //         "大吉＞中吉＞吉＞＞＞大凶＞＞＞＞＞＞＞＞＞＞＞＞柑橘類", "17333", "55", "カ ン キ ツ", "[柑橘]<" + username + ">[柑橘]",
+    //         "オレンジ様だ", "レモン様だ", "今日の運勢「柑橘類」", "(笑)", "柑橘類（笑）"]);
+    // }
 });
 
 //death
@@ -330,70 +330,38 @@ bot.randomchat = (messages, delay_ms = 800) => {
 }
 
 
-//prompt処理とかをちゃんとやるログ出力
-bot.log = (...args) => {
-    readline.cursorTo(process.stdout, 0);
-
-    if (typeof args[0] === 'string') {
-        // 出力の頭に現在時刻を挿入
-        args[0] = '[' + dateformat(new Date(), 'isoTime') + '] ' + args[0];
-    }
-    console.log.apply(console, args);
-    glob.event.emit("log", args)
-
-    if (typeof rl !== 'undefined')
-        rl.prompt(true);
-}
-
-function jmes_to_text(jmes) {
-    var message = '';
-    if (jmes.text)
-        message = jmes.text;
-
-    else if (jmes.extra)
-        jmes.extra.forEach((v, i, a) => {
-            message += v.text;
-        });
-
-    else if (jmes.json && jmes.json.with) {
-        for (var i = 0; i < jmes.json.with.length; i++) {
-            if (typeof jmes.json.with[i] == "object") {
-                if (jmes.json.with[i].text) {
-                    message += "<";
-                    message += jmes.json.with[i].text;
-                    message += "> ";
-                }
-            } else if (typeof jmes.json.with[i] == "string") {
-                message += jmes.json.with[i];
-            }
-        }
-        message += "  : " + jmes.translate
-    }
-    return message;
+bot.log = (str) => {
+    str = timestamp(str)
+    console.log(str);
+    glob.event.emit("log", str)
 }
 
 bot.on("message", (jmes) => {
-    bot.log(jmes_to_text(jmes));
-    logfile_out(jmes_to_text(jmes));
-    //console.log(jmes);
+    var ansi = timestamp(jmes.toAnsi());
+    var str = timestamp(jmes.toString());
+    var motd = timestamp(jmes.toMotd());
+    logfile_out(str);
+    console.log(ansi);
+    glob.event.emit("log", motd)
+    // console.log(jmes);
+    // console.log(jmes.toAnsi())
+    // console.log(jmes.toString())
+    // console.log(jmes.toMotd())
 });
 
 bot.on("actionBar", (jmes) => {
-    console.log(jmes);
+    console.log(jmes.toAnsi());
 });
+
+function timestamp(str) {
+    return '[' + dateformat(new Date(), 'isoTime') + '] ' + str;
+}
 
 
 var callfirst = true;
 function logfile_out(text) {
     var now = new Date();
-    var header = "["
-        + ("0" + now.getHours()).slice(-2) + ":"
-        + ("0" + now.getMinutes()).slice(-2) + ":"
-        + ("0" + now.getSeconds()).slice(-2)
-        + "] ";
-    text = header + text;
     if (callfirst) {
-        var now = new Date();
         var date = "["
             + now.getFullYear() + ":"
             + ("0" + now.getMonth() + 1).slice(-2) + ":"

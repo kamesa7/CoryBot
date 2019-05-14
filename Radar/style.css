@@ -43,13 +43,62 @@
 
 } */
 
+.cat2{
+	background:ghostwhite;
+}
+
 .chat{
 	height:95%;
 	overflow-y:auto;
-	background:#ffffff;
 }
  
 .chat-sender{
 	color:#ffffff;
+}
+
+.§0{
+color: black
+}.§1{
+color: #0000AA
+}.§2{
+color: #00AA00	
+}.§3{
+color: #00AAAA
+}.§4{
+color: #AA0000
+}.§5{
+color: #AA00AA
+}.§6{
+color: #FFAA00
+}.§7{
+color: #AAAAAA	
+}.§8{
+color: #555555
+}.§9{
+color: #5555FF
+}.§a{
+color: #55FF55
+}.§b{
+color: #55FFFF	
+}.§c{
+color: #FF5555	
+}.§d{
+color: #FF55FF
+}.§e{
+color: #eeee56	
+}.§f{
+color: black
+}
+
+.§l{
+	font-weight: bold
+}.§o{
+	font-style: italic
+}.§n{
+	text-decoration: underline
+}.§m{
+	text-decoration: line-through
+}.§k{
+	text-decoration: none
 }
 

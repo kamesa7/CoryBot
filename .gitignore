@@ -3,5 +3,6 @@ MineMusic
 PlayLists
 .env
 log
-*.log
 session_cache.json
+Radar/blocks
+Radar/mobs
