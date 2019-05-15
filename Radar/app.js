@@ -73,22 +73,31 @@ $(function () {
 
     io.on('vital', function (msg) {
         // $('#vital').text("[health] " + msg.health + " [food] " + msg.food)
-        $('#vital').html('<img src="misc/Health_' + Math.min(msg.health,20) + '.png"> <img src="misc/Hunger_' + Math.min(msg.food,20) + '.png">')
+        $('#vital').html('<img src="misc/Health_' + Math.min(msg.health, 20) + '.png"> <img src="misc/Hunger_' + Math.min(msg.food, 20) + '.png">')
     })
 
     io.on('myentity', function (player) {
-        if (me && (me.position.x != player.position.x || me.position.z != player.position.z)) {
-            drawAll();
+        if (me) {
+            if (me.position.x != player.position.x || me.position.z != player.position.z) {
+                drawAll();
+                $('#position').text("[pos] " + Math.round(me.position.x) + ", " + Math.round(me.position.y) + ", " + Math.round(me.position.z))
+            }
+            if (me.heldItem != player.heldItem) {
+                if (me.heldItem)
+                    $('#hand').text("[hand] " + me.heldItem.displayName)
+                else
+                    $('#hand').text("[hand] null")
+            }
+            me = player;
+        } else {//init            
+            me = player;
             $('#position').text("[pos] " + Math.round(me.position.x) + ", " + Math.round(me.position.y) + ", " + Math.round(me.position.z))
-        } else if(!me){//init
-            $('#position').text("[pos] " + Math.round(player.position.x) + ", " + Math.round(player.position.y) + ", " + Math.round(player.position.z))
+            if (me.heldItem)
+                $('#hand').text("[hand] " + me.heldItem.displayName)
+            else
+                $('#hand').text("[hand] null")
+            drawAll();
         }
-        me = player;
-        draw(me)
-        if (me.heldItem)
-            $('#hand').text("[hand] " + me.heldItem.displayName)
-        else
-            $('#hand').text("[hand] null")
     });
 
     io.on('entityapper', function (entity) {
@@ -133,5 +142,6 @@ $(function () {
         for (var i = 0; i < entities.length; i++) {
             draw(entities[i]);
         }
+        draw(me)
     }
 });
