@@ -6,3 +6,5 @@ log
 session_cache.json
 Radar/blocks
 Radar/mobs
+Radar/misc
+test.js

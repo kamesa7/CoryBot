@@ -14,7 +14,7 @@ isSame = require("./isSameObject");
 var steveNum = "";
 
 glob = {
-  debug: true,
+  debug: false,
   useCache: true,
   LOCAL: "localhost",
   LOCALPORT: "51899",

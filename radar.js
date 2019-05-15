@@ -20,6 +20,7 @@ io.on('connection', function (client) {
             host: bot._client.socket._host,
             username: bot.username,
         })
+        bodyManage();
     });
     client.on('map', function (x, z) {
         client.json.emit('map', mapAt(x, z))

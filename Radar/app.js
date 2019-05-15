@@ -72,16 +72,19 @@ $(function () {
     });
 
     io.on('vital', function (msg) {
-        $('#vital').text("[health] " + msg.health + " [food] " + msg.food)
+        // $('#vital').text("[health] " + msg.health + " [food] " + msg.food)
+        $('#vital').html('<img src="misc/Health_' + Math.min(msg.health,20) + '.png"> <img src="misc/Hunger_' + Math.min(msg.food,20) + '.png">')
     })
 
     io.on('myentity', function (player) {
         if (me && (me.position.x != player.position.x || me.position.z != player.position.z)) {
             drawAll();
-            draw(me)
+            $('#position').text("[pos] " + Math.round(me.position.x) + ", " + Math.round(me.position.y) + ", " + Math.round(me.position.z))
+        } else if(!me){//init
+            $('#position').text("[pos] " + Math.round(player.position.x) + ", " + Math.round(player.position.y) + ", " + Math.round(player.position.z))
         }
         me = player;
-        $('#position').text("[pos] " + Math.round(me.position.x) + ", " + Math.round(me.position.y) + ", " + Math.round(me.position.z))
+        draw(me)
         if (me.heldItem)
             $('#hand').text("[hand] " + me.heldItem.displayName)
         else
@@ -106,15 +109,21 @@ $(function () {
 
     function draw(entity) {
         if (me == null) return;
+        if (prop == null) return;
         var px = (entity.position.x - me.position.x) * rate + innerWidth / 2 - point / 2 + left;
         var pz = (entity.position.z - me.position.z) * rate + innerHeight / 2 - point / 2 + top;
-        if ($('#entity' + entity.id).length) {
-            $('#entity' + entity.id).css("left", px + 'px')
-            $('#entity' + entity.id).css("top", pz + 'px')
+        var target = '#entity' + entity.id;
+        if ($(target).length) {
+            $(target).css("left", px + 'px')
+            $(target).css("top", pz + 'px')
         } else {
             $('.radar').append('<div class="entity" id="entity' + entity.id + '" style="left: ' + px + 'px; top: ' + pz + 'px;"></div>')
             if (entity.type == "player")
-                $('#entity' + entity.id).html('<img src="http://' + prop.host + ':8123/tiles/faces/16x16/' + entity.username + '.png"></div>')
+                $(target).html('<img class="playerimg" src="http://' + prop.host + ':8123/tiles/faces/16x16/' + entity.username + '.png"></div>')
+            else if (entity.type == "mob" && entity.name) {
+                var name = entity.name;
+                $(target).html('<img class="entityimg" src="mobs/16x16_' + name + '.png"></div>')
+            }
         }
     }
 

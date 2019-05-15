@@ -332,7 +332,7 @@ bot.randomchat = (messages, delay_ms = 800) => {
 
 bot.log = (str) => {
     str = timestamp(str)
-    console.log(str);
+    console.log('\u001b[0m'+str);
     glob.event.emit("log", str)
 }
 
@@ -341,7 +341,7 @@ bot.on("message", (jmes) => {
     var str = timestamp(jmes.toString());
     var motd = timestamp(jmes.toMotd());
     logfile_out(str);
-    console.log(ansi);
+    console.log('\u001b[0m'+ansi);
     glob.event.emit("log", motd)
     // console.log(jmes);
     // console.log(jmes.toAnsi())

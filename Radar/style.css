@@ -23,20 +23,21 @@
 	background: black;
 }
 
-.myentity{
-	height: 8px;
-	width: 8px;
-	background-color: greenyellow;
-	position: relative;
-	top: 19.5vw;
-	left: 19.5vw;
-}
-
 .entity{
 	height: 8px;
 	width: 8px;
 	background-color: wheat;
-	position: absolute
+	position: absolute;
+}
+
+.playerimg{
+	margin-bottom:4px;
+	margin-left:-4px;
+}
+
+.entityimg{
+	margin-bottom:4px;
+	margin-left:-4px;
 }
 
 /* .info{
@@ -69,7 +70,7 @@ color: #AA0000
 }.§5{
 color: #AA00AA
 }.§6{
-color: #FFAA00
+color: orange
 }.§7{
 color: #AAAAAA	
 }.§8{
@@ -85,7 +86,7 @@ color: #FF5555
 }.§d{
 color: #FF55FF
 }.§e{
-color: #eeee56	
+color: gold
 }.§f{
 color: black
 }
