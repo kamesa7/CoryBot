@@ -12,7 +12,7 @@ var seconds = clock.getSeconds();
 glob.isAuctioning = false;
 glob.isAnnounceDeathMode = true;
 
-const keyNames = ["コリドラ", "こりどら", "コリちゃん", "こりちゃん", "Cory", "Corydoras81"];
+const keyNames = ["コリドラ", "こりどら", "コリちゃん", "こりちゃん", "Cory"];
 var str = "^(" + keyNames[0];
 for (var i = 1; i < keyNames.length; i++)str += "|" + keyNames[i];
 str += ")";

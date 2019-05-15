@@ -20,7 +20,7 @@
 	height: 40vw;
 	width: 40vw;
 
-	background: black;
+	background: dimgray;
 }
 
 .entity{
@@ -40,9 +40,9 @@
 	margin-left:-4px;
 }
 
-/* .info{
-
-} */
+.info{
+	background: mintcream
+}
 
 .cat2{
 	background:ghostwhite;
