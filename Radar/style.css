@@ -19,8 +19,8 @@
 .radar{
 	height: 40vw;
 	width: 40vw;
-
 	background: dimgray;
+	position: relative;
 }
 
 .entity{
@@ -38,6 +38,10 @@
 .entityimg{
 	margin-bottom:4px;
 	margin-left:-4px;
+}
+
+.block{
+	position: absolute;
 }
 
 .info{

@@ -3,7 +3,6 @@ entities = [];
 me = null;
 prop = null;
 map = [];
-img = {};
 $(function () {
     var top = $(".radar").offset().top;
     var left = $(".radar").offset().left;
@@ -18,11 +17,16 @@ $(function () {
         left = $(".radar").offset().left;
         innerWidth = $(".radar").width()
         innerHeight = $(".radar").height()
-        rate = innerWidth * 0.01;
+        var nextrate = innerWidth * 0.01;
+        if (rate != nextrate) {
+            $(".block").css("width", rate + 'px')
+            $(".block").css("height", rate + 'px')
+        }
+        rate = nextrate;
     }
 
     update();
-    setInterval(update, 100);
+    setInterval(update, 1000);
 
     $('#message_form').submit(function () {
         io.emit('message', $('#input_msg').val());
@@ -79,8 +83,12 @@ $(function () {
     io.on('myentity', function (player) {
         if (me) {
             if (me.position.x != player.position.x || me.position.z != player.position.z) {
-                drawAll();
+                if (Math.abs(player.position.x - me.position.x) + Math.abs(player.position.z - me.position.z) >= 16) {
+                    removeAll();
+                }
+                drawAllEntity();
                 $('#position').text("[pos] " + Math.round(me.position.x) + ", " + Math.round(me.position.y) + ", " + Math.round(me.position.z))
+                io.emit("map");
             }
             if (me.heldItem != player.heldItem) {
                 if (me.heldItem)
@@ -96,19 +104,19 @@ $(function () {
                 $('#hand').text("[hand] " + me.heldItem.displayName)
             else
                 $('#hand').text("[hand] null")
-            drawAll();
+            drawAllEntity();
         }
     });
 
     io.on('entityapper', function (entity) {
         entities.push(entity);
-        draw(entity);
+        drawEntity(entity);
     });
 
     io.on('entity', function (entity) {
         entities = entities.filter(element => element.id !== entity.id);
         entities.push(entity);
-        draw(entity)
+        drawEntity(entity)
     });
 
     io.on('entitydisapper', function (entity) {
@@ -116,7 +124,18 @@ $(function () {
         $('#entity' + entity.id).remove();
     });
 
-    function draw(entity) {
+    io.on('map', function (chunk) {
+        for (var i = 0; i < chunk.data.length; i++) {
+            var block = chunk.data[i];
+            if (!block) continue;
+            if (!map[block.position.x])
+                map[block.position.x] = []
+            map[block.position.x][block.position.z] = block;
+            drawBlock(block)
+        }
+    })
+
+    function drawEntity(entity) {
         if (me == null) return;
         if (prop == null) return;
         var px = (entity.position.x - me.position.x) * rate + innerWidth / 2 - point / 2 + left;
@@ -136,12 +155,53 @@ $(function () {
         }
     }
 
-    function drawAll() {
+    function drawAllEntity() {
         if (me == null) return;
-        $('.entity').remove();
+        // $('.entity').remove();
         for (var i = 0; i < entities.length; i++) {
-            draw(entities[i]);
+            drawEntity(entities[i]);
         }
-        draw(me)
+        drawEntity(me)
+    }
+
+    function drawBlock(block) {
+        if (me == null) return;
+        var px = (block.position.x - me.position.x) * rate + innerWidth / 2 - point / 2 + left;
+        var pz = (block.position.z - me.position.z) * rate + innerHeight / 2 - point / 2 + top;
+        var target = '#block' + block.position.x + 'x' + block.position.z + 'z';
+        if ($(target).length) {
+            $(target).css("left", px + 'px')
+            $(target).css("top", pz + 'px')
+        } else {
+            var name = block.name;
+            const img = [
+                "beacon", "shulker", "door", "farm", "cactus",
+                "glowstone", "lamp", "lantern",
+                "concrete", "terracotta", "brick", "glass", "hardened_clay", "wool",
+                "ice", "snow", "nether", "end",
+                "ore", "diamond", "gold", "iron", "emerald", "lapis", "redstone", "quartz",
+                "sandstone", "sand",
+                "log", "planks",
+                "stone", "grass", "dirt", "gravel", "leaves", "clay",
+                "lava", "water"
+            ]
+            var src = ""
+            for (var i = 0; i < img.length; i++) {
+                if (name.match(new RegExp(img[i]))) {
+                    src = img[i];
+                    break;
+                }
+            }
+            if (src != "") {
+                $('.radar').prepend('<img class="block" id="block' + block.position.x + 'x' + block.position.z + 'z"'
+                    + ' src="blocks/' + src + '.png"'
+                    + ' style="left: ' + px + 'px; top: ' + pz + 'px; width:' + rate + 'px; height:' + rate + 'px"></div>')
+            }
+        }
+    }
+
+    function removeAll() {
+        $('.entity').remove()
+        $('.block').remove()
     }
 });

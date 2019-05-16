@@ -21,10 +21,31 @@ io.on('connection', function (client) {
             username: bot.username,
         })
         bodyManage();
+        emitMap();
     });
-    client.on('map', function (x, z) {
-        client.json.emit('map', mapAt(x, z))
+    client.on('map', function () {
+        emitMap();
     });
+
+    function emitMap() {
+        const range = 48;
+        var me = bot.entity;
+        var data = [];
+        var i = 0;
+        for (var x = me.position.x - range; x < me.position.x + range; x++) {
+            for (var z = me.position.z - range; z < me.position.z + range; z++) {
+                var block = mapAt(x, z);
+                if (block) {
+                    data[i++] = {
+                        position: block.position,
+                        name: block.name,
+                        material: block.material
+                    };
+                }
+            }
+        }
+        client.json.emit('map', { data: data })
+    }
 });
 
 glob.event.on("log", (msg) => {
@@ -64,11 +85,15 @@ function bodyManage() {
 }
 
 function mapAt(x, z) {
-    for (var y = bot.entity.position.y + 2; y >= 1; y--) {
+    var initialY = Math.floor(bot.entity.position.y) + 2;
+    if (bot.blockAt(new Vec3(x, initialY, z)).boundingBox != 'empty')
+        return null;
+    for (var y = initialY; y >= 1; y--) {
         var block = bot.blockAt(new Vec3(x, y, z))
-        if (block.id != 0 && block.boundingBox != 'empty')
+        if (block.boundingBox != 'empty')
             return block
     }
+    // console.log("err")
     return null;
 }
 
