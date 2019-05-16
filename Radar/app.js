@@ -3,6 +3,7 @@ entities = [];
 me = null;
 prop = null;
 map = [];
+prevmappos = null;
 $(function () {
     var top = $(".radar").offset().top;
     var left = $(".radar").offset().left;
@@ -88,7 +89,10 @@ $(function () {
                 }
                 drawAllEntity();
                 $('#position').text("[pos] " + Math.round(me.position.x) + ", " + Math.round(me.position.y) + ", " + Math.round(me.position.z))
-                io.emit("map");
+                if (Math.abs(prevmappos.x - me.position.x) + Math.abs(prevmappos.z - me.position.z) > 0.6) {
+                    io.emit("mapedge");
+                    prevmappos = me.position;
+                }
             }
             if (me.heldItem != player.heldItem) {
                 if (me.heldItem)
@@ -105,6 +109,8 @@ $(function () {
             else
                 $('#hand').text("[hand] null")
             drawAllEntity();
+            prevmappos = me.position;
+            io.emit("mapall");
         }
     });
 
@@ -131,8 +137,8 @@ $(function () {
             if (!map[block.position.x])
                 map[block.position.x] = []
             map[block.position.x][block.position.z] = block;
-            drawBlock(block)
         }
+        drawAllBlock()
     })
 
     function drawEntity(entity) {
@@ -162,6 +168,18 @@ $(function () {
             drawEntity(entities[i]);
         }
         drawEntity(me)
+    }
+
+    function drawAllBlock() {
+        if (me == null) return;
+        // $('.entity').remove();
+        const range = 48;
+        for (var x = Math.floor(me.position.x - range); x < me.position.x + range; x++) {
+            for (var z = Math.floor(me.position.z - range); z < me.position.z + range; z++) {
+                if (map[x] && map[x][z])
+                    drawBlock(map[x][z]);
+            }
+        }
     }
 
     function drawBlock(block) {

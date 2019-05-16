@@ -5,6 +5,8 @@ var io = require('socket.io')(http);
 
 const PORT = 7000;
 
+glob.map = [];
+
 app.use(express.static(__dirname + "/Radar"));
 
 app.get('/', function (req, res) {
@@ -12,22 +14,29 @@ app.get('/', function (req, res) {
 });
 
 io.on('connection', function (client) {
+
     client.on('message', function (msg) {
         bot.safechat(msg);
     });
     client.on('server', function () {
+        emitServer();
+    });
+    client.on('mapall', function () {
+        emitMapAll();
+    });
+    client.on('mapedge', function (x, z) {
+        emitMapEdge(x, z);
+    });
+
+    function emitServer() {
         client.json.emit('server', {
             host: bot._client.socket._host,
             username: bot.username,
         })
         bodyManage();
-        emitMap();
-    });
-    client.on('map', function () {
-        emitMap();
-    });
+    }
 
-    function emitMap() {
+    function emitMapAll() {
         const range = 48;
         var me = bot.entity;
         var data = [];
@@ -38,10 +47,50 @@ io.on('connection', function (client) {
                 if (block) {
                     data[i++] = {
                         position: block.position,
-                        name: block.name,
-                        material: block.material
+                        name: block.name
                     };
                 }
+            }
+        }
+        client.json.emit('map', { data: data })
+    }
+
+    function emitMapEdge(dx, dz) {
+        const range = 48;
+        var me = bot.entity;
+        var data = [];
+        var i = 0;
+        var block;
+        for (var x = me.position.x - range; x < me.position.x + range; x++) {
+            block = mapAt(x, me.position.z + range);
+            if (block) {
+                data[i++] = {
+                    position: block.position,
+                    name: block.name
+                };
+            }
+            block = mapAt(x, me.position.z - range);
+            if (block) {
+                data[i++] = {
+                    position: block.position,
+                    name: block.name
+                };
+            }
+        }
+        for (var z = me.position.z - range; z < me.position.z + range; z++) {
+            block = mapAt(me.position.x + range, z);
+            if (block) {
+                data[i++] = {
+                    position: block.position,
+                    name: block.name
+                };
+            }
+            block = mapAt(me.position.x - range, z);
+            if (block) {
+                data[i++] = {
+                    position: block.position,
+                    name: block.name
+                };
             }
         }
         client.json.emit('map', { data: data })
@@ -86,14 +135,20 @@ function bodyManage() {
 
 function mapAt(x, z) {
     var initialY = Math.floor(bot.entity.position.y) + 2;
+    var map = glob.map;
     if (bot.blockAt(new Vec3(x, initialY, z)).boundingBox != 'empty')
         return null;
+    if (map[x] && map[x][z])
+        return map[x][z];
     for (var y = initialY; y >= 1; y--) {
         var block = bot.blockAt(new Vec3(x, y, z))
-        if (block.boundingBox != 'empty')
-            return block
+        if (block.boundingBox != 'empty') {
+            if (!map[x])
+                map[x] = [];
+            map[x][z] = block;
+            return block;
+        }
     }
-    // console.log("err")
     return null;
 }
 
