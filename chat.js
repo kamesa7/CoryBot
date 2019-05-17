@@ -1,8 +1,5 @@
 
-const delay = require('delay');
 const dateformat = require('dateformat');
-const readline = require('readline');
-const fs = require('fs');
 
 var clock = new Date;
 var minutes = clock.getMinutes();
@@ -314,25 +311,25 @@ function safechat(text) {
     bot.chat(text);
 }
 
-bot.safechat = (text, delay_ms = 100) => {
-    delay(delay_ms).then(() => { safechat(text); });
+bot.safechat = (message, delay = 100) => {
+    setTimeout(safechat, delay, message);
 }
 
 // 配列で定義された複数の文言のうちの一つをランダム選択してチャット送信する
-bot.randomchat = (messages, delay_ms = 800) => {
+bot.randomchat = (messages, delay = 800) => {
     var message;
     if (Array.isArray(messages)) {
         message = messages[Math.floor(Math.random() * messages.length)]
     } else {
         message = messages;
     }
-    delay(delay_ms).then(() => { safechat(message); });
+    setTimeout(safechat, delay, message);
 }
 
 
 bot.log = (str) => {
     str = timestamp(str)
-    console.log('\u001b[0m'+str);
+    console.log('\u001b[0m' + str);
     glob.event.emit("log", str)
 }
 
@@ -341,12 +338,8 @@ bot.on("message", (jmes) => {
     var str = timestamp(jmes.toString());
     var motd = timestamp(jmes.toMotd());
     logfile_out(str);
-    console.log('\u001b[0m'+ansi);
+    console.log('\u001b[0m' + ansi);
     glob.event.emit("log", motd)
-    // console.log(jmes);
-    // console.log(jmes.toAnsi())
-    // console.log(jmes.toString())
-    // console.log(jmes.toMotd())
 });
 
 bot.on("actionBar", (jmes) => {

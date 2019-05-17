@@ -22,6 +22,8 @@ $(function () {
         if (rate != nextrate) {
             $(".block").css("width", rate + 'px')
             $(".block").css("height", rate + 'px')
+            drawAllEntity()
+            drawAllBlock()
         }
         rate = nextrate;
     }
