@@ -4,6 +4,7 @@ me = null;
 prop = null;
 map = [];
 prevmappos = null;
+rate = 1;
 $(function () {
     var top = $(".radar").offset().top;
     var left = $(".radar").offset().left;
@@ -11,7 +12,7 @@ $(function () {
     var innerHeight = $(".radar").height()
 
     const point = 8;
-    var rate = innerWidth * 0.01;
+    rate = innerWidth * 0.01;
 
     function update() {
         top = $(".radar").offset().top;
@@ -20,16 +21,17 @@ $(function () {
         innerHeight = $(".radar").height()
         var nextrate = innerWidth * 0.01;
         if (rate != nextrate) {
-            $(".block").css("width", rate + 'px')
-            $(".block").css("height", rate + 'px')
             drawAllEntity()
             drawAllBlock()
+
+            $(".block").css("width", rate + 'px')
+            $(".block").css("height", rate + 'px')
         }
         rate = nextrate;
     }
 
     update();
-    setInterval(update, 1000);
+    setInterval(update, 500);
 
     $('#message_form').submit(function () {
         io.emit('message', $('#input_msg').val());
@@ -88,13 +90,13 @@ $(function () {
             if (me.position.x != player.position.x || me.position.z != player.position.z) {
                 if (Math.abs(player.position.x - me.position.x) + Math.abs(player.position.z - me.position.z) >= 16) {
                     removeAll();
-                }
-                drawAllEntity();
-                $('#position').text("[pos] " + Math.round(me.position.x) + ", " + Math.round(me.position.y) + ", " + Math.round(me.position.z))
-                if (Math.abs(prevmappos.x - me.position.x) + Math.abs(prevmappos.z - me.position.z) > 0.6) {
+                    io.emit("mapall");
+                } else if (Math.abs(prevmappos.x - me.position.x) + Math.abs(prevmappos.z - me.position.z) > 0.6) {
                     io.emit("mapedge");
                     prevmappos = me.position;
                 }
+                drawAllEntity();
+                $('#position').text("[pos] " + Math.round(me.position.x) + ", " + Math.round(me.position.y) + ", " + Math.round(me.position.z))
             }
             if (me.heldItem != player.heldItem) {
                 if (me.heldItem)
@@ -174,12 +176,22 @@ $(function () {
 
     function drawAllBlock() {
         if (me == null) return;
-        // $('.entity').remove();
         const range = 48;
         for (var x = Math.floor(me.position.x - range); x < me.position.x + range; x++) {
             for (var z = Math.floor(me.position.z - range); z < me.position.z + range; z++) {
                 if (map[x] && map[x][z])
                     drawBlock(map[x][z]);
+            }
+        }
+
+        for (var edge = range + 1; edge < range + 4; edge++) {
+            for (var x = me.position.x - edge; x < me.position.x + edge; x++) {
+                removeBlockAt(x, me.position.z + edge);
+                removeBlockAt(x, me.position.z - edge);
+            }
+            for (var z = me.position.z - edge; z < me.position.z + edge; z++) {
+                removeBlockAt(me.position.x + edge, z);
+                removeBlockAt(me.position.x - edge, z);
             }
         }
     }
@@ -223,5 +235,12 @@ $(function () {
     function removeAll() {
         $('.entity').remove()
         $('.block').remove()
+        entities = [];
+    }
+
+    function removeBlockAt(x, z) {
+        x = Math.floor(x)
+        z = Math.floor(z)
+        $('#block' + x + 'x' + z + 'z').remove();
     }
 });

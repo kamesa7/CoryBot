@@ -136,11 +136,11 @@ function bodyManage() {
 function mapAt(x, z) {
     var initialY = Math.floor(bot.entity.position.y) + 2;
     var map = glob.map;
-    if (bot.blockAt(new Vec3(x, initialY, z)).boundingBox != 'empty')
-        return null;
-    if (map[x] && map[x][z])
-        return map[x][z];
-    for (var y = initialY; y >= 1; y--) {
+    var initialblock = bot.blockAt(new Vec3(x, initialY, z))
+    if (!initialblock) return null;
+    if (initialblock.boundingBox != 'empty') return null;
+    if (map[x] && map[x][z]) return map[x][z];
+    for (var y = initialY; y >= initialY - 16 && y >= 1; y--) {
         var block = bot.blockAt(new Vec3(x, y, z))
         if (block.boundingBox != 'empty') {
             if (!map[x])

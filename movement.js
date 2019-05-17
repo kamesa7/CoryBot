@@ -28,7 +28,7 @@ glob.randomWait = 50;
 glob.randomCostLimit = 100;
 
 glob.logMove = false;
-glob.logInterest = true;
+glob.logInterest = false;
 
 var finalDestination;
 
