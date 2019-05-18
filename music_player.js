@@ -7,10 +7,10 @@ glob.logNote = false;
 glob.initTempo = 90;
 glob.tuneTempo = 90;
 
-glob.isEndlessing = false;
-glob.endlessPlaylist = "";
-glob.endlessFilelist = [];
-glob.endlessIndex = 0;
+glob.isPlayingPlaylist = false;
+glob.Playlist = "";
+glob.PlaylistFiles = [];
+glob.PlaylistIndex = 0;
 
 glob.currentMusic = null;
 glob.validNoteDistance = 10;
@@ -36,7 +36,7 @@ glob.initNote = initNote;
 glob.tuneNote = tuneNote;
 glob.playMusic = playMusic;
 glob.createMusic = createMusic;
-glob.endlessMusic = endlessMusic;
+glob.playPlaylist = playPlaylist;
 
 var prePosition;
 var preTune = 0;
@@ -56,7 +56,7 @@ var playedNote = 0;
 
 function stopMusic() {
   glob.isPlayingMusic = false;
-  glob.isEndlessing = false;
+  glob.isPlayingPlaylist = false;
   glob.isTuning = false;
 }
 
@@ -394,36 +394,36 @@ function getJTune(pitch) {
   }
 }
 
-function endlessMusic(playlist, shuffle = false) {
-  if (glob.isEndlessing) {
-    bot.log("[note] [Endless] aborted")
+function playPlaylist(playlist, shuffle = false) {
+  if (glob.isPlayingPlaylist) {
+    bot.log("[note] [Playlist] aborted")
     stopMusic();
-    setTimeout(endlessMusic, 1000, playlist, shuffle)
+    setTimeout(playPlaylist, 1000, playlist, shuffle)
     return;
   }
-  glob.isEndlessing = true;
-  glob.endlessPlaylist = playlist;
-  glob.endlessFilelist = [];
+  glob.isPlayingPlaylist = true;
+  glob.Playlist = playlist;
+  glob.PlaylistFiles = [];
 
-  bot.log("[note] [Endless] playlist " + playlist);
+  bot.log("[note] [Playlist] playlist " + playlist);
 
   // NOT SYNC
   fs.readFile("./PlayLists/" + playlist, 'utf-8', function (err, text) {
     if (err) {
       console.log(err);
-      glob.isEndlessing = false;
+      glob.isPlayingPlaylist = false;
       return;
     }
-    glob.endlessFilelist = text.split("\r\n");
-    glob.endlessFilelist.splice(glob.endlessFilelist.length - 1, 1);
+    glob.PlaylistFiles = text.split("\r\n");
+    glob.PlaylistFiles.splice(glob.PlaylistFiles.length - 1, 1);
 
     if (shuffle) {
-      bot.log("[note] [Endless] shuffle playlist")
-      for (var i = glob.endlessFilelist.length - 1; i > 0; i--) {
+      bot.log("[note] [Playlist] shuffle playlist")
+      for (var i = glob.PlaylistFiles.length - 1; i > 0; i--) {
         var r = Math.floor(Math.random() * (i + 1));
-        var tmp = glob.endlessFilelist[i];
-        glob.endlessFilelist[i] = glob.endlessFilelist[r];
-        glob.endlessFilelist[r] = tmp;
+        var tmp = glob.PlaylistFiles[i];
+        glob.PlaylistFiles[i] = glob.PlaylistFiles[r];
+        glob.PlaylistFiles[r] = tmp;
       }
     }
   });
@@ -431,20 +431,20 @@ function endlessMusic(playlist, shuffle = false) {
   var musicPlayer;
   try {
     musicPlayer = setInterval(function () {
-      if (glob.endlessIndex >= glob.endlessFilelist.length) {
-        glob.isEndlessing = false;
+      if (glob.PlaylistIndex >= glob.PlaylistFiles.length) {
+        glob.isPlayingPlaylist = false;
       }
 
-      if (!glob.isEndlessing) {
+      if (!glob.isPlayingPlaylist) {
         clearInterval(musicPlayer);
-        bot.log("[note] [Endless] END");
+        bot.log("[note] [Playlist] END");
         return;
       }
       if (glob.isPlayingMusic) return;
-      bot.log("[note] [Endless] " + glob.endlessFilelist[glob.endlessIndex] + " : " + glob.endlessIndex + "/" + glob.endlessFilelist.length);
-      playMusic(glob.endlessFilelist[glob.endlessIndex].split("\t")[0]);
-      glob.endlessIndex++;
-      glob.endlessIndex %= glob.endlessFilelist.length;
+      bot.log("[note] [Playlist] " + glob.PlaylistFiles[glob.PlaylistIndex] + " : " + glob.PlaylistIndex + "/" + glob.PlaylistFiles.length);
+      playMusic(glob.PlaylistFiles[glob.PlaylistIndex].split("\t")[0]);
+      glob.PlaylistIndex++;
+      glob.PlaylistIndex %= glob.PlaylistFiles.length;
     }, 5000);
   } catch (e) {
     console.log(e);

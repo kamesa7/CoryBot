@@ -107,34 +107,34 @@ bot.on('chat', (username, message) => {
 
     //Music
     if (message.match(/^Music info/i) && glob.isPlayingMusic) {
-        if (glob.isEndlessing) {
-            bot.safechat("今はプレイリスト" + glob.endlessPlaylist + ":" + glob.endlessIndex + "/" + glob.endlessFilelist.length + "曲目の" + glob.currentMusic.title
+        if (glob.isPlayingPlaylist) {
+            bot.safechat("今はプレイリスト" + glob.Playlist + ":" + glob.PlaylistIndex + "/" + glob.PlaylistFiles.length + "曲目の" + glob.currentMusic.title
                 + "(" + glob.currentMusic.duration + "秒)を演奏中です。");
         } else {
             bot.safechat("今は" + glob.currentMusic.title + "を演奏中です。");
         }
     }
-    if (message.match(/^Music skip/i) && glob.isEndlessing) {
+    if (message.match(/^Music skip/i) && glob.isPlayingPlaylist) {
         glob.isPlayingMusic = false;
-        bot.safechat("スキップ:" + glob.endlessFilelist[glob.endlessIndex - 1] + " => " + glob.endlessFilelist[glob.endlessIndex]);
+        bot.safechat("スキップ:" + glob.PlaylistFiles[glob.PlaylistIndex - 1] + " => " + glob.PlaylistFiles[glob.PlaylistIndex]);
     }
-    if (message.match(/^Music restart/i) && glob.isEndlessing) {
+    if (message.match(/^Music restart/i) && glob.isPlayingPlaylist) {
         glob.isPlayingMusic = false;
-        bot.safechat("最初から:" + glob.endlessFilelist[glob.endlessIndex - 1]);
-        glob.endlessIndex--;
+        bot.safechat("最初から:" + glob.PlaylistFiles[glob.PlaylistIndex - 1]);
+        glob.PlaylistIndex--;
     }
-    if (message.match(/^Music pre/i) && glob.isEndlessing) {
+    if (message.match(/^Music pre/i) && glob.isPlayingPlaylist) {
         glob.isPlayingMusic = false;
-        bot.safechat("前の曲:" + glob.endlessFilelist[glob.endlessIndex - 2]);
-        glob.endlessIndex -= 2;
-        if (glob.endlessIndex < 0) {
-            glob.endlessIndex = 0;
+        bot.safechat("前の曲:" + glob.PlaylistFiles[glob.PlaylistIndex - 2]);
+        glob.PlaylistIndex -= 2;
+        if (glob.PlaylistIndex < 0) {
+            glob.PlaylistIndex = 0;
         }
     }
-    if (message.match(/^Music set (\d+)/i) && glob.isEndlessing) {
-        glob.isisPlayingMusic = false;
-        bot.safechat("リクエスト:" + glob.endlessFilelist[Number(RegExp.$1)]);
-        glob.endlessIndex = Number(RegExp.$1);
+    if (message.match(/^Music set (\d+)/i) && glob.isPlayingPlaylist) {
+        glob.isPlayingMusic = false;
+        bot.safechat("リクエスト:" + glob.PlaylistFiles[Number(RegExp.$1)]);
+        glob.PlaylistIndex = Number(RegExp.$1);
     }
 
     //combat

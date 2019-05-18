@@ -35,11 +35,11 @@ start()
 glob.blockFinderPlugin = require('mineflayer-blockfinder')(mineflayer);
 require("./chat")
 require("./calculator")
-require("./musicPlayer")
+require("./music_player")
 require("./movement")
-require("./inventoryManager")
+require("./inventory_manager")
 require("./combat")
-require("./eventManager")
+require("./event_manager")
 require("./radar")
 
 function start() {
