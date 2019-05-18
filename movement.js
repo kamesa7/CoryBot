@@ -3,7 +3,7 @@ glob.isMoving = false;
 glob.isFollowing = false;
 glob.isWaiting = false;
 glob.isLightingMode = false;
-glob.isRandomWalk = false;
+glob.isRandomWalking = false;
 glob.isPlacingLight = false;
 glob.isChasing = false;
 
@@ -35,7 +35,7 @@ var finalDestination;
 //functions
 glob.goToPos = goToPos;
 glob.stopMoving = stopMoving;
-glob.random = random;
+glob.randomWalk = randomWalk;
 glob.follow = follow;
 glob.chase = chase;
 
@@ -67,7 +67,7 @@ function stopMoving() {
     glob.isMoving = false;
     glob.isFollowing = false;
     glob.isWaiting = false;
-    glob.isRandomWalk = false;
+    glob.isRandomWalking = false;
     glob.isChasing = false;
     glob.targetEntity = null;
     bot.clearControlStates();
@@ -160,7 +160,7 @@ function reviceTarget(path) {
     }
 }
 
-function random() {
+function randomWalk() {
     if (glob.isMoving) {
         stopMoving();
         bot.log("[move] aborted");
@@ -195,8 +195,8 @@ function reRandom(path) {
         path.push([goal[0], goal[1], goal[2], "wait", Math.floor(Math.random() * glob.randomWait)]);
         path.push([goal[0], goal[1], goal[2], "random"]);
     }
-    if (!glob.isRandomWalk) {
-        glob.isRandomWalk = true;
+    if (!glob.isRandomWalking) {
+        glob.isRandomWalking = true;
         followPath(path);
     }
 }
@@ -529,7 +529,7 @@ function followPath(path) {
                     } else {
                         glob.isFollowing = false;
                     }
-                } else if (glob.isRandomWalk) {
+                } else if (glob.isRandomWalking) {
                     path[0][3] = "revice";
                     reRandom(path);
                 } else {

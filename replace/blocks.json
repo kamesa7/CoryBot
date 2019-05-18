@@ -2777,7 +2777,7 @@
     "hardness": 2,
     "stackSize": 64,
     "diggable": true,
-    "boundingBox": "block",
+    "boundingBox": "door",
     "material": "wood",
     "drops": [
       {
@@ -4932,7 +4932,7 @@
     "hardness": 0,
     "stackSize": 64,
     "diggable": true,
-    "boundingBox": "block",
+    "boundingBox": "door",
     "material": "wood",
     "drops": [
       {
@@ -4950,7 +4950,7 @@
     "hardness": 0,
     "stackSize": 64,
     "diggable": true,
-    "boundingBox": "block",
+    "boundingBox": "door",
     "material": "wood",
     "drops": [
       {
@@ -4968,7 +4968,7 @@
     "hardness": 0,
     "stackSize": 64,
     "diggable": true,
-    "boundingBox": "block",
+    "boundingBox": "door",
     "material": "wood",
     "drops": [
       {
@@ -4986,7 +4986,7 @@
     "hardness": 2,
     "stackSize": 64,
     "diggable": true,
-    "boundingBox": "block",
+    "boundingBox": "door",
     "material": "wood",
     "drops": [
       {
@@ -5004,7 +5004,7 @@
     "hardness": 0,
     "stackSize": 64,
     "diggable": true,
-    "boundingBox": "block",
+    "boundingBox": "door",
     "material": "wood",
     "drops": [
       {
