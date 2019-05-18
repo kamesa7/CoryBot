@@ -6,8 +6,6 @@ map = [];
 prevmappos = null;
 rate = 1;
 $(function () {
-    var top = $(".radar").offset().top;
-    var left = $(".radar").offset().left;
     var innerWidth = $(".radar").width()
     var innerHeight = $(".radar").height()
 
@@ -15,8 +13,6 @@ $(function () {
     rate = innerWidth * 0.01;
 
     function update() {
-        top = $(".radar").offset().top;
-        left = $(".radar").offset().left;
         innerWidth = $(".radar").width()
         innerHeight = $(".radar").height()
         var nextrate = innerWidth * 0.01;
@@ -39,11 +35,18 @@ $(function () {
         return false;
     });
 
+    $('#refresh').click(function () {
+        removeAll();
+        io.emit('server');
+        io.emit("mapall");
+        drawAllEntity();
+    })
+
+    io.emit('server');
     io.on('server', function (msg) {
         prop = msg;
         $('#host').text(msg.host + "   " + msg.username)
     })
-    io.emit('server');
 
     io.on('message', function (msg) {
         msg = msg.replace(/</g, '[')
@@ -148,8 +151,8 @@ $(function () {
     function drawEntity(entity) {
         if (me == null) return;
         if (prop == null) return;
-        var px = (entity.position.x - me.position.x) * rate + innerWidth / 2 - point / 2 + left;
-        var pz = (entity.position.z - me.position.z) * rate + innerHeight / 2 - point / 2 + top;
+        var px = (entity.position.x - me.position.x) * rate + innerWidth / 2 - point / 2;
+        var pz = (entity.position.z - me.position.z) * rate + innerHeight / 2 - point / 2;
         var target = '#entity' + entity.id;
         if ($(target).length) {
             $(target).css("left", px + 'px')
@@ -198,8 +201,8 @@ $(function () {
 
     function drawBlock(block) {
         if (me == null) return;
-        var px = (block.position.x - me.position.x) * rate + innerWidth / 2 - point / 2 + left;
-        var pz = (block.position.z - me.position.z) * rate + innerHeight / 2 - point / 2 + top;
+        var px = (block.position.x - me.position.x) * rate + innerWidth / 2 - point / 2;
+        var pz = (block.position.z - me.position.z) * rate + innerHeight / 2 - point / 2;
         var target = '#block' + block.position.x + 'x' + block.position.z + 'z';
         if ($(target).length) {
             $(target).css("left", px + 'px')

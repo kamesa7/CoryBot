@@ -1,9 +1,9 @@
-.body{
+.body {
 	height: 95vh;
 	overflow-y: hidden;
 }
 
-.wrapper{
+.wrapper {
 	display: flex;
 }
 
@@ -12,98 +12,142 @@
 	width: 100vw;
 }
 
-.cat1{
+.cat1 {
+	position: relative;
 	width: 40vw;
 }
- 
-.radar{
+
+#refresh {
+	position: absolute;
+	right: 0px;
+}
+
+.radar {
 	height: 40vw;
 	width: 40vw;
 	background: dimgray;
 	position: relative;
 }
 
-.entity{
+.entity {
 	height: 8px;
 	width: 8px;
 	background-color: wheat;
 	position: absolute;
 }
 
-.playerimg{
-	margin-bottom:4px;
-	margin-left:-4px;
+.playerimg {
+	margin-bottom: 4px;
+	margin-left: -4px;
 }
 
-.entityimg{
-	margin-bottom:4px;
-	margin-left:-4px;
+.entityimg {
+	margin-bottom: 4px;
+	margin-left: -4px;
 }
 
-.block{
+.block {
 	position: absolute;
 }
 
-.info{
+.info {
 	background: mintcream
 }
 
-.cat2{
-	background:ghostwhite;
+.cat2 {
+	position: relative;
+	background: ghostwhite;
 }
 
-.chat{
-	height:95%;
-	overflow-y:auto;
-}
- 
-.chat-sender{
-	color:#ffffff;
+.chat {
+	height: 95%;
+	overflow-y: auto;
 }
 
-.§0{
-color: black
-}.§1{
-color: #0000AA
-}.§2{
-color: #00AA00	
-}.§3{
-color: #00AAAA
-}.§4{
-color: #AA0000
-}.§5{
-color: #AA00AA
-}.§6{
-color: orange
-}.§7{
-color: #AAAAAA	
-}.§8{
-color: #555555
-}.§9{
-color: #5555FF
-}.§a{
-color: #55FF55
-}.§b{
-color: #55FFFF	
-}.§c{
-color: #FF5555	
-}.§d{
-color: #FF55FF
-}.§e{
-color: gold
-}.§f{
-color: black
+.chat-sender {
+	color: #ffffff;
 }
 
-.§l{
+.§0 {
+	color: black
+}
+
+.§1 {
+	color: #0000AA
+}
+
+.§2 {
+	color: #00AA00
+}
+
+.§3 {
+	color: #00AAAA
+}
+
+.§4 {
+	color: #AA0000
+}
+
+.§5 {
+	color: #AA00AA
+}
+
+.§6 {
+	color: orange
+}
+
+.§7 {
+	color: #AAAAAA
+}
+
+.§8 {
+	color: #555555
+}
+
+.§9 {
+	color: #5555FF
+}
+
+.§a {
+	color: #55FF55
+}
+
+.§b {
+	color: #55FFFF
+}
+
+.§c {
+	color: #FF5555
+}
+
+.§d {
+	color: #FF55FF
+}
+
+.§e {
+	color: gold
+}
+
+.§f {
+	color: black
+}
+
+.§l {
 	font-weight: bold
-}.§o{
+}
+
+.§o {
 	font-style: italic
-}.§n{
+}
+
+.§n {
 	text-decoration: underline
-}.§m{
+}
+
+.§m {
 	text-decoration: line-through
-}.§k{
+}
+
+.§k {
 	text-decoration: none
 }
-
