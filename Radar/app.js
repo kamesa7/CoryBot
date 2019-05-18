@@ -199,6 +199,21 @@ $(function () {
         }
     }
 
+    const colorimg = [
+        "concrete", "terracotta", "stained_hardened_clay", "wool"
+    ]
+
+    const img = [
+        "beacon", "shulker", "door", "farm", "cactus",
+        "glowstone", "lamp", "lantern",
+        "brick", "glass",
+        "ice", "snow", "nether", "end",
+        "ore", "diamond", "gold", "iron", "emerald", "lapis", "redstone", "quartz",
+        "sandstone", "sand",
+        "log", "planks", "slab",
+        "stone", "grass", "dirt", "gravel", "leaves", "hardened_clay", "clay", "bedrock",
+        "lava", "water"
+    ]
     function drawBlock(block) {
         if (me == null) return;
         var px = (block.position.x - me.position.x) * rate + innerWidth / 2 - point / 2;
@@ -209,21 +224,16 @@ $(function () {
             $(target).css("top", pz + 'px')
         } else {
             var name = block.name;
-            const img = [
-                "beacon", "shulker", "door", "farm", "cactus",
-                "glowstone", "lamp", "lantern",
-                "concrete", "terracotta", "brick", "glass", "hardened_clay", "wool",
-                "ice", "snow", "nether", "end",
-                "ore", "diamond", "gold", "iron", "emerald", "lapis", "redstone", "quartz",
-                "sandstone", "sand",
-                "log", "planks",
-                "stone", "grass", "dirt", "gravel", "leaves", "clay",
-                "lava", "water"
-            ]
             var src = ""
             for (var i = 0; i < img.length; i++) {
                 if (name.match(new RegExp(img[i]))) {
                     src = img[i];
+                    break;
+                }
+            }
+            for (var i = 0; i < colorimg.length; i++) {
+                if (name.match(new RegExp(colorimg[i]))) {
+                    src = 'color/'+colorimg[i] + ' (' + (block.metadata + 1) + ')';
                     break;
                 }
             }

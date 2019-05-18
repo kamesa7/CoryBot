@@ -5,8 +5,6 @@ var io = require('socket.io')(http);
 
 const PORT = 7000;
 
-glob.map = [];
-
 app.use(express.static(__dirname + "/Radar"));
 
 app.get('/', function (req, res) {
@@ -47,7 +45,8 @@ io.on('connection', function (client) {
                 if (block) {
                     data[i++] = {
                         position: block.position,
-                        name: block.name
+                        name: block.name,
+                        metadata: block.metadata
                     };
                 }
             }
@@ -66,14 +65,16 @@ io.on('connection', function (client) {
             if (block) {
                 data[i++] = {
                     position: block.position,
-                    name: block.name
+                    name: block.name,
+                    metadata: block.metadata
                 };
             }
             block = mapAt(x, me.position.z - range);
             if (block) {
                 data[i++] = {
                     position: block.position,
-                    name: block.name
+                    name: block.name,
+                    metadata: block.metadata
                 };
             }
         }
@@ -82,14 +83,16 @@ io.on('connection', function (client) {
             if (block) {
                 data[i++] = {
                     position: block.position,
-                    name: block.name
+                    name: block.name,
+                    metadata: block.metadata
                 };
             }
             block = mapAt(me.position.x - range, z);
             if (block) {
                 data[i++] = {
                     position: block.position,
-                    name: block.name
+                    name: block.name,
+                    metadata: block.metadata
                 };
             }
         }
@@ -134,18 +137,13 @@ function bodyManage() {
 }
 
 function mapAt(x, z) {
-    var initialY = Math.floor(bot.entity.position.y) + 2;
-    var map = glob.map;
+    var initialY = Math.floor(bot.entity.position.y) + 1;
     var initialblock = bot.blockAt(new Vec3(x, initialY, z))
     if (!initialblock) return null;
     if (initialblock.boundingBox != 'empty') return null;
-    if (map[x] && map[x][z]) return map[x][z];
     for (var y = initialY; y >= initialY - 16 && y >= 1; y--) {
         var block = bot.blockAt(new Vec3(x, y, z))
         if (block.boundingBox != 'empty') {
-            if (!map[x])
-                map[x] = [];
-            map[x][z] = block;
             return block;
         }
     }
