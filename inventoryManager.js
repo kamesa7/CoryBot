@@ -17,7 +17,6 @@ glob.findItem = findItem;
 glob.clearInventory = clearInventory;
 glob.equipArmor = equipArmor;
 glob.equipHead = equipHead;
-glob.unEquipArmor = unEquipArmor;
 
 bot.on('health', function () {
     bodyManage();
@@ -29,50 +28,29 @@ bot.on('food', function () {
 });
 
 function bodyManage() {
-    if (eatTime == undefined) bot.unequip("hand");
-    eatTime = new Date();
     bot.log("[body] health: " + Math.round(bot.health) + ", food: " + Math.round(bot.food));
+    if (glob.isEating) return;
     if (bot.health < 20 && bot.food < 19) {
         startEat();
     } else if (bot.food <= 10) {
         startEat();
     } else if (bot.health < 10 && bot.food < 20) {
         startEat();
-    } else {
-        if (glob.isEating && bot.food != eatSatu) {
-            bot.deactivateItem();
-            glob.isEating = false;
-        } else {
-            //bot.unequip("hand");
-        }
     }
 }
 
-var eatTime;
-var eatSatu = 20;
 function startEat() {
-    eatTime = new Date();
-    eatSatu = bot.food;
     var item = findItem(foods);
     if (item != null) {
         glob.isEating = true;
         bot.equip(item, "hand", function () {
-            bot.activateItem()
+            bot.consume(function () {
+                glob.isEating = false;
+            });
         });
         bot.log("[eat] eat: " + item.name);
-        setTimeout(eating, 500);
     } else {
         bot.log("[eat] no food")
-    }
-
-    function eating() {
-        if (glob.isEating) {
-            if (new Date().getTime() - 3100 > eatTime.getTime()) {
-                bodyManage();
-            } else {
-                setTimeout(eating, 300);
-            }
-        }
     }
 }
 
@@ -136,12 +114,4 @@ function equipHead() {
     if (item != null) {
         bot.equip(item, "head");
     }
-}
-
-function unEquipArmor() {
-    setTimeout(function () { bot.unequip("head") }, 1000)
-    setTimeout(function () { bot.unequip("torso") }, 2000)
-    setTimeout(function () { bot.unequip("legs") }, 3000)
-    setTimeout(function () { bot.unequip("feet") }, 4000)
-    setTimeout(function () { bot.unequip("hand") }, 5000)
 }

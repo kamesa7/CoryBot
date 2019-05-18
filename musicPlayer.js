@@ -133,9 +133,7 @@ function initNote() {
         var i = 0;
         var initter = setInterval(function () {
           if (i < blocks.length) {
-            if (blocks[i].position.distanceTo(bot.entity.position) <= glob.validNoteDistance) {
-              punchNote(blocks[i]);
-            }
+            punchNote(blocks[i]);
             i++;
           } else {
             clearInterval(initter);
@@ -332,7 +330,7 @@ function playMusic(MusicObj) {
     playedNote = 0;
     glob.currentMusic = MusicObj;
 
-    bot.log("[note] playMusic " + MusicObj.title + " length: " + MusicObj.seqData.length + " sounds: " + MusicObj.soundCount + " tempo: " + MusicObj.tempo + " seconds: " + MusicObj.duration + "/" + MusicObj.baseduration + " score: " + MusicObj.score + " perfection: "+MusicObj.perfection);
+    bot.log("[note] playMusic " + MusicObj.title + " length: " + MusicObj.seqData.length + " sounds: " + MusicObj.soundCount + " tempo: " + MusicObj.tempo + " seconds: " + MusicObj.duration + "/" + MusicObj.baseduration + " score: " + MusicObj.score + " perfection: " + MusicObj.perfection);
     musicCode = 0;
     musician = setInterval(function () {
       if (MusicObj.seqData[musicCode])

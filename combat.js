@@ -26,20 +26,6 @@ var swords = [276, 267, 272, 283, 268]; //強い順
 var arrows = [262, 439, 440];
 
 glob.hostiles = [];
-// var previousPosition = [];
-
-// bot.on( "entitySwingArm", (entity)=> {console.log(new Date().getTime()+" arm"+entity.id)})
-// bot.on( "entityHurt", (entity)=> {console.log(new Date().getTime()+" hur"+entity.id)})
-// bot.on( "entityWake", (entity)=> {console.log(new Date().getTime()+" wak"+entity.id)})
-// bot.on( "entityEat", (entity)=> {console.log(new Date().getTime()+" eat"+entity.id)})
-// bot.on( "entityCrouch", (entity)=> {console.log(new Date().getTime()+" cro"+entity.id)})
-// bot.on( "entityUncrouch", (entity)=> {console.log(new Date().getTime()+" ucr"+entity.id)})
-// bot.on( "entityEquipmentChange", (entity)=> {console.log(new Date().getTime()+" equ"+entity.id)})
-// bot.on( "entitySleep", (entity)=> {console.log(new Date().getTime()+" sle"+entity.id)})
-// bot.on( "entitySpawn", (entity)=> {console.log(new Date().getTime()+" spa"+entity.id)})
-// bot.on( "entityGone", (entity)=> {console.log(new Date().getTime()+" gon"+entity.id)})
-// bot.on( "entityMoved", (entity)=> {console.log(new Date().getTime()+" mov"+entity.id)})
-// bot.on( "entityUpdate", (entity)=> {console.log(new Date().getTime()+" up"+entity.id)})
 
 function doNothing() {
     if (!glob.isGuarding && !glob.isEating && !glob.isShootingArrow) return true;
@@ -218,11 +204,3 @@ function contains(arr, val) {
 function getXZL2(x, z) {
     return Math.sqrt((x * x) + (z * z));
 }
-
-// function canShoot(name){
-//     if(
-//         name.match("enderman") ||
-//         name.match("zombie_pigman")
-//     ) return false;
-//     return true
-// }
