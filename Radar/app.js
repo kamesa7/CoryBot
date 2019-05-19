@@ -10,23 +10,20 @@ $(function () {
     var innerHeight = $(".radar").height()
 
     const point = 8;
-    rate = innerWidth * 0.01;
+    const range = 50;
+    const canvasSize = 400;
+    rate = innerWidth/range/2;
 
     function update() {
         innerWidth = $(".radar").width()
         innerHeight = $(".radar").height()
-        var nextrate = innerWidth * 0.01;
+        var nextrate = innerWidth/range/2;
         if (rate != nextrate) {
             drawAllEntity()
-            drawAllBlock()
-
-            $(".block").css("width", rate + 'px')
-            $(".block").css("height", rate + 'px')
         }
-        rate = nextrate;
+        rate = nextrate
     }
 
-    update();
     setInterval(update, 500);
 
     $('#message_form').submit(function () {
@@ -35,22 +32,21 @@ $(function () {
     });
 
     $('#refresh').click(function () {
-        removeAll();
         io.emit('server');
         io.emit("mapall");
         drawAllEntity();
     })
 
     $('#goto').click(function () {
-        io.emit('goto',$('#target_player').val());
+        io.emit('goto', $('#target_player').val());
     })
 
     $('#follow').click(function () {
-        io.emit('follow',$('#target_player').val());
+        io.emit('follow', $('#target_player').val());
     })
 
     $('#chase').click(function () {
-        io.emit('chase',$('#target_player').val());
+        io.emit('chase', $('#target_player').val());
     })
 
     $('#stopmove').click(function () {
@@ -107,7 +103,6 @@ $(function () {
         if (me) {
             if (me.position.x != player.position.x || me.position.z != player.position.z) {
                 if (Math.abs(player.position.x - me.position.x) + Math.abs(player.position.z - me.position.z) >= 16) {
-                    removeAll();
                     io.emit("mapall");
                 } else if (Math.abs(prevmappos.x - me.position.x) + Math.abs(prevmappos.z - me.position.z) > 0.7) {
                     io.emit("mapedge");
@@ -176,10 +171,10 @@ $(function () {
             if (entity.type == "player") {
                 $('.radar').append('<div class="entity player" id="entity' + entity.id + '" style="left: ' + px + 'px; top: ' + pz + 'px;"></div>')
                 $(target).html('<img class="playerimg" src="http://' + prop.host + ':8123/tiles/faces/16x16/' + entity.username + '.png"></div>')
-                $(target).click(function(){
+                $(target).click(function () {
                     $('#target_player').val(entity.username);
                 })
-                
+
             } else if (entity.type == "mob" && entity.name) {
                 $('.radar').append('<div class="entity mob" id="entity' + entity.id + '" style="left: ' + px + 'px; top: ' + pz + 'px;"></div>')
                 $(target).html('<img class="entityimg" src="mobs/16x16_' + entity.name + '.png"></div>')
@@ -199,28 +194,6 @@ $(function () {
         drawEntity(me)
     }
 
-    function drawAllBlock() {
-        if (me == null) return;
-        const range = 48;
-        for (var x = Math.floor(me.position.x - range); x < me.position.x + range; x++) {
-            for (var z = Math.floor(me.position.z - range); z < me.position.z + range; z++) {
-                if (map[x] && map[x][z])
-                    drawBlock(map[x][z]);
-            }
-        }
-
-        for (var edge = range + 1; edge < range + 4; edge++) {
-            for (var x = me.position.x - edge; x < me.position.x + edge; x++) {
-                removeBlockAt(x, me.position.z + edge);
-                removeBlockAt(x, me.position.z - edge);
-            }
-            for (var z = me.position.z - edge; z < me.position.z + edge; z++) {
-                removeBlockAt(me.position.x + edge, z);
-                removeBlockAt(me.position.x - edge, z);
-            }
-        }
-    }
-
     const colorimg = [
         "concrete", "terracotta", "stained_hardened_clay", "wool"
     ]
@@ -236,46 +209,52 @@ $(function () {
         "stone", "grass", "dirt", "gravel", "leaves", "hardened_clay", "clay", "bedrock",
         "lava", "water"
     ]
-    function drawBlock(block) {
+    blockimg = { img: {}, colorimg: {} };
+    for (var i = 0; i < img.length; i++) {
+        blockimg.img[img[i]] = new Image();
+        blockimg.img[img[i]].src = "blocks/" + img[i] + ".png";
+    }
+    for (var i = 0; i < colorimg.length; i++) {
+        blockimg.colorimg[colorimg[i]] = [];
+        for (var j = 0; j < 16; j++) {
+            blockimg.colorimg[colorimg[i]][j] = new Image();
+            blockimg.colorimg[colorimg[i]][j].src = "blocks/color/" + colorimg[i] + " (" + (j + 1) + ").png";
+        }
+    }
+
+    function drawAllBlock() {
         if (me == null) return;
-        var px = (block.position.x - me.position.x) * rate + innerWidth / 2 - point / 2;
-        var pz = (block.position.z - me.position.z) * rate + innerHeight / 2 - point / 2;
-        var target = '#block' + block.position.x + 'x' + block.position.z + 'z';
-        if ($(target).length) {
-            $(target).css("left", px + 'px')
-            $(target).css("top", pz + 'px')
-        } else {
-            var name = block.name;
-            var src = ""
-            for (var i = 0; i < img.length; i++) {
-                if (name.match(new RegExp(img[i]))) {
-                    src = img[i];
-                    break;
-                }
-            }
-            for (var i = 0; i < colorimg.length; i++) {
-                if (name.match(new RegExp(colorimg[i]))) {
-                    src = 'color/'+colorimg[i] + ' (' + (block.metadata + 1) + ')';
-                    break;
-                }
-            }
-            if (src != "") {
-                $('.radar').prepend('<img class="block" id="block' + block.position.x + 'x' + block.position.z + 'z"'
-                    + ' src="blocks/' + src + '.png"'
-                    + ' style="left: ' + px + 'px; top: ' + pz + 'px; width:' + rate + 'px; height:' + rate + 'px"></div>')
+        $("#canvas")[0].getContext('2d').clearRect(0, 0, canvasSize, canvasSize)
+        for (var x = Math.floor(me.position.x - range); x < me.position.x + range; x++) {
+            for (var z = Math.floor(me.position.z - range); z < me.position.z + range; z++) {
+                if (map[x] && map[x][z])
+                    drawBlock(map[x][z]);
             }
         }
     }
 
-    function removeAll() {
-        $('.entity').remove()
-        $('.block').remove()
-        entities = [];
-    }
+    function drawBlock(block) {
+        if (me == null) return;
+        var canvas = $("#canvas")[0]
 
-    function removeBlockAt(x, z) {
-        x = Math.floor(x)
-        z = Math.floor(z)
-        $('#block' + x + 'x' + z + 'z').remove();
+        /* 2Dコンテキスト */
+        var ctx = canvas.getContext('2d');
+
+        var px = (block.position.x - me.position.x) * canvasSize / 100 + canvasSize / 2
+        var pz = (block.position.z - me.position.z) * canvasSize / 100 + canvasSize / 2
+        var name = block.name;
+
+        for (var i = 0; i < img.length; i++) {
+            if (name.match(new RegExp(img[i]))) {
+                ctx.drawImage(blockimg.img[img[i]], px, pz)
+                return;
+            }
+        }
+        for (var i = 0; i < colorimg.length; i++) {
+            if (name.match(new RegExp(colorimg[i]))) {
+                ctx.drawImage(blockimg.colorimg[colorimg[i]][block.metadata], px, pz)
+                return;
+            }
+        }
     }
 });

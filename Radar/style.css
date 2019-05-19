@@ -29,6 +29,11 @@
 	position: relative;
 }
 
+#canvas {	
+	height: 40vw;
+	width: 40vw;
+}
+
 .entity {
 	position: absolute;
 }
@@ -57,10 +62,6 @@
 .entityimg {
 	margin-top: 0px;
 	margin-left: 0px;
-}
-
-.block {
-	position: absolute;
 }
 
 .info {
