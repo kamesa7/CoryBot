@@ -30,20 +30,33 @@
 }
 
 .entity {
-	height: 8px;
-	width: 8px;
-	background-color: wheat;
 	position: absolute;
 }
 
+.player {
+	height: 16px;
+	width: 16px;
+}
+
+.mob {
+	height: 16px;
+	width: 16px;
+}
+
+.other {
+	height: 5px;
+	width: 5px;
+	background-color: wheat;
+}
+
 .playerimg {
-	margin-bottom: 4px;
-	margin-left: -4px;
+	margin-top: 0px;
+	margin-left: 0px;
 }
 
 .entityimg {
-	margin-bottom: 4px;
-	margin-left: -4px;
+	margin-top: 0px;
+	margin-left: 0px;
 }
 
 .block {

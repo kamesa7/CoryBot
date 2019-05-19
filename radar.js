@@ -25,6 +25,21 @@ io.on('connection', function (client) {
     client.on('mapedge', function (x, z) {
         emitMapEdge(x, z);
     });
+    client.on('goto', function (username) {
+        if(bot.players[username] && bot.players[username].entity)
+            glob.goToPos(bot.players[username].entity.position)
+    });
+    client.on('follow', function (username) {
+        if(bot.players[username] && bot.players[username].entity)
+            glob.follow(bot.players[username].entity)
+    });
+    client.on('chase', function (username) {
+        if(bot.players[username] && bot.players[username].entity)
+            glob.chase(bot.players[username].entity)
+    });
+    client.on('stopmove', function () {
+        glob.stopMoving()
+    });
 
     function emitServer() {
         client.json.emit('server', {

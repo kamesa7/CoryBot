@@ -32,7 +32,6 @@ $(function () {
     $('#message_form').submit(function () {
         io.emit('message', $('#input_msg').val());
         $('#input_msg').val('');
-        return false;
     });
 
     $('#refresh').click(function () {
@@ -40,6 +39,22 @@ $(function () {
         io.emit('server');
         io.emit("mapall");
         drawAllEntity();
+    })
+
+    $('#goto').click(function () {
+        io.emit('goto',$('#target_player').val());
+    })
+
+    $('#follow').click(function () {
+        io.emit('follow',$('#target_player').val());
+    })
+
+    $('#chase').click(function () {
+        io.emit('chase',$('#target_player').val());
+    })
+
+    $('#stopmove').click(function () {
+        io.emit('stopmove');
     })
 
     io.emit('server');
@@ -94,7 +109,7 @@ $(function () {
                 if (Math.abs(player.position.x - me.position.x) + Math.abs(player.position.z - me.position.z) >= 16) {
                     removeAll();
                     io.emit("mapall");
-                } else if (Math.abs(prevmappos.x - me.position.x) + Math.abs(prevmappos.z - me.position.z) > 0.6) {
+                } else if (Math.abs(prevmappos.x - me.position.x) + Math.abs(prevmappos.z - me.position.z) > 0.7) {
                     io.emit("mapedge");
                     prevmappos = me.position;
                 }
@@ -158,12 +173,19 @@ $(function () {
             $(target).css("left", px + 'px')
             $(target).css("top", pz + 'px')
         } else {
-            $('.radar').append('<div class="entity" id="entity' + entity.id + '" style="left: ' + px + 'px; top: ' + pz + 'px;"></div>')
-            if (entity.type == "player")
+            if (entity.type == "player") {
+                $('.radar').append('<div class="entity player" id="entity' + entity.id + '" style="left: ' + px + 'px; top: ' + pz + 'px;"></div>')
                 $(target).html('<img class="playerimg" src="http://' + prop.host + ':8123/tiles/faces/16x16/' + entity.username + '.png"></div>')
-            else if (entity.type == "mob" && entity.name) {
-                var name = entity.name;
-                $(target).html('<img class="entityimg" src="mobs/16x16_' + name + '.png"></div>')
+                $(target).click(function(){
+                    $('#target_player').val(entity.username);
+                })
+                
+            } else if (entity.type == "mob" && entity.name) {
+                $('.radar').append('<div class="entity mob" id="entity' + entity.id + '" style="left: ' + px + 'px; top: ' + pz + 'px;"></div>')
+                $(target).html('<img class="entityimg" src="mobs/16x16_' + entity.name + '.png"></div>')
+
+            } else {
+                $('.radar').append('<div class="entity other" id="entity' + entity.id + '" style="left: ' + px + 'px; top: ' + pz + 'px;"></div>')
             }
         }
     }
