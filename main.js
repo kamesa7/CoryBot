@@ -17,7 +17,7 @@ glob = {
   debug: false,
   useCache: true,
   LOCAL: "localhost",
-  LOCALPORT: "51899",
+  LOCALPORT: "54876",
   event: new events.EventEmitter()
 };
 
@@ -33,14 +33,15 @@ console.log("repl to debug");
 start()
 
 glob.blockFinderPlugin = require('mineflayer-blockfinder')(mineflayer);
+require("./state_controler")
+require("./inventory_manager")
+require("./event_manager")
 require("./chat")
+require("./movement")
+require("./combat")
+require("./radar")
 require("./calculator")
 require("./music_player")
-require("./movement")
-require("./inventory_manager")
-require("./combat")
-require("./event_manager")
-require("./radar")
 
 function start() {
   if (glob.debug) {

@@ -1,13 +1,12 @@
-glob.isPlayingMusic = false;
-glob.isTuning = false;
-glob.isMusicArm = false;
+glob.isMusicArmMode = false;
+
 glob.notes = [[], [], [], [], [], [], [], [], [], []];
 glob.logNote = false;
 
 glob.initTempo = 90;
 glob.tuneTempo = 90;
 
-glob.isPlayingPlaylist = false;
+glob.isPlaylistMode = false;
 glob.Playlist = "";
 glob.PlaylistFiles = [];
 glob.PlaylistIndex = 0;
@@ -55,13 +54,12 @@ var playedNote = 0;
 */
 
 function stopMusic() {
-  glob.isPlayingMusic = false;
-  glob.isPlayingPlaylist = false;
-  glob.isTuning = false;
+  glob.finishState("music")
+  glob.isPlaylistMode = false;
 }
 
 function skip() {
-  glob.isPlayingMusic = false;
+  glob.finishState("music")
 }
 
 bot.on('noteHeard', (block, instrument, pitch) => {
@@ -73,7 +71,7 @@ bot.on('noteHeard', (block, instrument, pitch) => {
       bot.log("[note] " + getJTune(pitch) + " " + block.position + " " + instrument.id);
     }
 
-    if (glob.isPlayingMusic) {
+    if (glob.getState() == "music") {
       playedNote++;
       return;
     }
@@ -144,10 +142,8 @@ function initNote() {
 
       } else {
         bot.log("I couldn't find within " + glob.validNoteDistance);
-        return;
       }
     });
-
 }
 
 function tuneNote() {
@@ -299,34 +295,30 @@ function createMusic(MusicObj) {
 }
 
 function playMusic(MusicObj) {
-  var musician;
-  var musicCode;
-  var startTime = new Date().getTime();
-  try {
-    if (glob.isPlayingMusic) {
-      bot.log("[note] aborted")
-      glob.isPlayingMusic = false;
-      setTimeout(playMusic, 1000, MusicObj)
-      return;
-    }
+  glob.queueState("music", function (MusicObj) {
+    var musician;
+    var musicCode;
+    var startTime = new Date().getTime();
     if (typeof (MusicObj) == "string") {
-      // bot.log("[note] load " + MusicObj);
+      var baseTitle = MusicObj;
+      if (glob.logNote)
+        bot.log("[note] load " + baseTitle);
       try {
-        var objson = jsonfile.readFileSync("MineMusic/" + MusicObj);
+        MusicObj = jsonfile.readFileSync("MineMusic/" + baseTitle);
       } catch (e) {
         console.log(e)
       }
-      if (objson) {
-        objson.baseTitle = MusicObj;
-        playMusic(objson);
+      if (!MusicObj) {
+        finishState("music");
+        return;
       }
-      return;
+      if (MusicObj && !MusicObj.baseTitle)
+        MusicObj.baseTitle = baseTitle;
     }
     if (MusicObj.seqData == undefined) {
       if (glob.logNote) bot.log("[note] New Music");
       createMusic(MusicObj);
     }
-    glob.isPlayingMusic = true;
     playedNote = 0;
     glob.currentMusic = MusicObj;
 
@@ -335,22 +327,19 @@ function playMusic(MusicObj) {
     musician = setInterval(function () {
       if (MusicObj.seqData[musicCode])
         punchNote(MusicObj.seqData[musicCode].block);
-      if (++musicCode >= MusicObj.seqData.length || !glob.isPlayingMusic) {
+      if (++musicCode >= MusicObj.seqData.length || glob.getState() != "music") {
         clearInterval(musician);
         bot.log("[note] MusicEnd " + ((playedNote / MusicObj.soundCount) * 100) + "% missing: " + (MusicObj.soundCount - playedNote) + " seconds: " + (new Date().getTime() - startTime) / 1000 + "s");
         glob.currentMusic = null;
-        glob.isPlayingMusic = false;
+        glob.finishState("music")
       }
     }, MusicObj.tempo);
-
-  } catch (e) {
-    console.log(e);
-  }
+  }, MusicObj);
 };
 
 
 function punchNote(block) {
-  if (glob.isMusicArm)
+  if (glob.isMusicArmMode)
     bot.lookAt(block.position.offset(0.5, 0.5, 0.5), true);//, () => {
   bot._client.write('block_dig', {
     status: 0, // start digging
@@ -358,9 +347,8 @@ function punchNote(block) {
     face: 1 // hard coded to always dig from the top
   })
   bot.targetDigBlock = block
-  if (glob.isMusicArm)
+  if (glob.isMusicArmMode)
     bot._client.write('arm_animation', { hand: 0 });
-  // });
 }
 
 function getJTune(pitch) {
@@ -395,13 +383,13 @@ function getJTune(pitch) {
 }
 
 function playPlaylist(playlist, shuffle = false) {
-  if (glob.isPlayingPlaylist) {
+  if (glob.isPlaylistMode) {
     bot.log("[note] [Playlist] aborted")
     stopMusic();
     setTimeout(playPlaylist, 1000, playlist, shuffle)
     return;
   }
-  glob.isPlayingPlaylist = true;
+  glob.isPlaylistMode = true;
   glob.Playlist = playlist;
   glob.PlaylistFiles = [];
 
@@ -411,7 +399,7 @@ function playPlaylist(playlist, shuffle = false) {
   fs.readFile("./PlayLists/" + playlist, 'utf-8', function (err, text) {
     if (err) {
       console.log(err);
-      glob.isPlayingPlaylist = false;
+      glob.isPlaylistMode = false;
       return;
     }
     glob.PlaylistFiles = text.split("\r\n");
@@ -428,23 +416,25 @@ function playPlaylist(playlist, shuffle = false) {
     }
   });
 
-  var musicPlayer;
+  var playlistPlayer;
   try {
-    musicPlayer = setInterval(function () {
+    playlistPlayer = setInterval(function () {
       if (glob.PlaylistIndex >= glob.PlaylistFiles.length) {
-        glob.isPlayingPlaylist = false;
+        glob.isPlaylistMode = false;
       }
 
-      if (!glob.isPlayingPlaylist) {
-        clearInterval(musicPlayer);
+      if (!glob.isPlaylistMode) {
+        clearInterval(playlistPlayer);
         bot.log("[note] [Playlist] END");
         return;
       }
-      if (glob.isPlayingMusic) return;
-      bot.log("[note] [Playlist] " + glob.PlaylistFiles[glob.PlaylistIndex] + " : " + glob.PlaylistIndex + "/" + glob.PlaylistFiles.length);
-      playMusic(glob.PlaylistFiles[glob.PlaylistIndex].split("\t")[0]);
-      glob.PlaylistIndex++;
-      glob.PlaylistIndex %= glob.PlaylistFiles.length;
+
+      if (glob.doNothing()) {
+        bot.log("[note] [Playlist] " + glob.PlaylistFiles[glob.PlaylistIndex] + " : " + glob.PlaylistIndex + "/" + glob.PlaylistFiles.length);
+        playMusic(glob.PlaylistFiles[glob.PlaylistIndex].split("\t")[0]);
+        glob.PlaylistIndex++;
+        glob.PlaylistIndex %= glob.PlaylistFiles.length;
+      }
     }, 5000);
   } catch (e) {
     console.log(e);

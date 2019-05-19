@@ -5,11 +5,8 @@ glob.isSniperMode = false;
 glob.isHighAngleMode = true;
 glob.isArrowDefenceMode = true;
 
-glob.isShootingArrow = false;
-glob.isGuarding = false;
-
 glob.bowDamageLimit = 350;
-glob.snipeDistance=96;
+glob.snipeDistance = 96;
 
 glob.logCombat = false;
 
@@ -27,53 +24,54 @@ var arrows = [262, 439, 440];
 
 glob.hostiles = [];
 
-function doNothing() {
-    if (!glob.isGuarding && !glob.isEating && !glob.isShootingArrow) return true;
-    else return false;
-}
-
 bot.on('entityMoved', (entity) => {
     var distance = bot.entity.position.distanceTo(entity.position);
-    if (doNothing() && ((entity.kind && entity.kind == "Hostile mobs") || (entity.username && contains(glob.hostiles, entity.username)))) {//hostile
-        bot.updateHeldItem()
+    if (((entity.kind && entity.kind == "Hostile mobs") || (entity.username && contains(glob.hostiles, entity.username)))) {//hostile
         if (glob.isSelfDefenceMode && distance < 4 && new Date().getTime() - preAttackTime > swordInterval) {//punch
-            if (entity.name != undefined) bot.log("[combat] punch: " + entity.name);
-            else bot.log("[combat] punch: " + entity.username);
-            var item = glob.findItem(swords);
-            if (item != null) {
-                bot.equip(item, "hand", function () {
-                    bot.attack(entity)//,true);
-                });
-            } else bot.attack(entity,true);
-            preAttackTime = new Date().getTime();
+            glob.queueOnceState("punching", function (entity) {
+                if (entity.name) bot.log("[combat] punch: " + entity.name);
+                else bot.log("[combat] punch: " + entity.username);
+                var item = glob.findItem(swords);
+                if (item != null) {
+                    bot.equip(item, "hand", function () {
+                        bot.attack(entity);
+                    });
+                } else {
+                    bot.attack(entity, true);
+                }
+                preAttackTime = new Date().getTime();
+                glob.finishState("punching")
+            }, entity);
         } else if (glob.isSniperMode && distance < glob.snipeDistance && !(entity.name && entity.name == "enderman")) {//shoot
             if (canSeeDirectly(entity.position.offset(0, eyeHeight, 0))) {
-                shootArrow(entity, false);
+                glob.queueOnceState("shooting", function (entity, isHigh) {
+                    shootArrow(entity, isHigh);
+                }, entity, false);
             } else if (glob.isHighAngleMode && bot.blockAt(bot.entity.position).skyLight == 15 && bot.blockAt(entity.position).skyLight == 15) {
-                shootArrow(entity, true);
+                glob.queueOnceState("shooting", function (entity, isHigh) {
+                    shootArrow(entity, isHigh);
+                }, entity, true);
             }
         }
     }
-    // previousPosition[entity.id] = [entity.position.clone(), new Date().getTime()]
 });
 
 bot.on("entitySpawn", (entity) => {
-    // previousPosition[entity.id] = [entity.position.clone(), new Date().getTime()]
     var distance = bot.entity.position.distanceTo(entity.position);
+
     if (glob.isArrowDefenceMode && entity.name && entity.name == "arrow" && distance > 4) {
         var target = entity.position;
         var x = bot.entity.position.x - target.x;
         var z = bot.entity.position.z - target.z;
         var rad = -Math.atan2(x, z);
+
         if (glob.logCombat) bot.log("[combat] rad:" + (rad / Math.PI * 180) + " yaw:" + (entity.yaw / Math.PI * 180 - 180) + " pitch:" + entity.pitch / Math.PI * 180)
         if (Math.abs(rad - (entity.yaw - Math.PI)) > Math.PI / 18) return;
+
         bot.log("[combat] detecting an approaching arrow")
         var shield = glob.findItem(442); //shield id
         if (shield != null) {
-            
-            glob.isGuarding = true;
-            glob.isShootingArrow = false;
-            glob.isEating = false;
+            glob.changeState("guarding")
 
             bot.lookAt(entity.position.plus(new Vec3(0, 1, 0)), true);
             bot.activateItem();
@@ -82,7 +80,7 @@ bot.on("entitySpawn", (entity) => {
                 bot.lookAt(entity.position, true);
                 setTimeout(function () {
                     bot.deactivateItem();
-                    glob.isGuarding = false;
+                    glob.finishState("guarding");
                 }, Math.max(distance / maxArrowSpeed * 3000, 1000));
             });
         } else {
@@ -92,8 +90,6 @@ bot.on("entitySpawn", (entity) => {
 });
 
 function shootArrow(entity, isHigh) {
-    if (glob.isShootingArrow) return;
-    glob.isShootingArrow = true;
     var bow = glob.findItem(261); // bow id
     var arrow = glob.findItem(arrows);
     var previousPosition;
@@ -111,8 +107,7 @@ function shootArrow(entity, isHigh) {
         });;
     } else {
         bot.log("[combat] no bow or arrow");
-        glob.isShootingArrow = false;
-        //glob.isSniperMode = false;
+        glob.finishState("shooting");
     }
 
     function release() {
@@ -122,34 +117,30 @@ function shootArrow(entity, isHigh) {
             var x = target.x - bot.entity.position.x;
             var z = target.z - bot.entity.position.z;
             var dist = getXZL2(x, z);
-            if (isHigh && canSeeDirectly(target.offset(0, eyeHeight, 0))) { isHigh = false }
+            if (isHigh && canSeeDirectly(target.offset(0, eyeHeight, 0))) isHigh = false
 
             var t = timeToShoot(target, isHigh);
             target = target.plus(velocity.scaled(t))
             t = timeToShoot(target, isHigh);
 
-            //var heightAdjust = entity.height * 0.8 + (distance * 0.15) + angle * 3.0 + Math.random() * 3 - 1.0;
-            //var heightAdjust = entity.height * 0.8 + (distance * distance) * 0.003 //+ angle * 3.0 //+ Math.random() * 3 - 1.0;
             var heightAdjust = 0.5 * Gravity * t * t;
             heightAdjust += t * airResistance;
             heightAdjust += dist * 0.005
             if (isHigh) heightAdjust *= highAngleAdjust;
+
             if (isNaN(heightAdjust)) {
                 bot.unequip("hand");
-                glob.isShootingArrow = false;
                 bot.log("[combat] can't shoot there")
-                return
+            } else {
+                bot.lookAt(target.offset(0, heightAdjust + eyeHeight, 0), true, function () {
+                    bot.deactivateItem();
+                });
             }
-
-            bot.lookAt(target.offset(0, heightAdjust + eyeHeight, 0), true, function () {
-                bot.deactivateItem();
-                glob.isShootingArrow = false;
-            });
         } else {
-            //bot.deactivateItem();
             bot.unequip("hand");
-            glob.isShootingArrow = false;
+
         }
+        glob.finishState("shooting");
     }
 }
 

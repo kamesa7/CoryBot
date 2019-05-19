@@ -9,7 +9,6 @@ const armorSlots = {
   feet: 8
 }
 */
-glob.isEating = false;
 
 //functions
 glob.startEat = startEat;
@@ -29,7 +28,6 @@ bot.on('food', function () {
 
 function bodyManage() {
     bot.log("[body] health: " + Math.round(bot.health) + ", food: " + Math.round(bot.food));
-    if (glob.isEating) return;
     if (bot.health < 20 && bot.food < 19) {
         startEat();
     } else if (bot.food <= 10) {
@@ -42,13 +40,14 @@ function bodyManage() {
 function startEat() {
     var item = findItem(foods);
     if (item != null) {
-        glob.isEating = true;
-        bot.equip(item, "hand", function () {
-            bot.consume(function () {
-                glob.isEating = false;
+        glob.queueOnceState("eating", function () {
+            bot.equip(item, "hand", function () {
+                bot.consume(function () {
+                    glob.finishState("eating");
+                });
             });
+            bot.log("[eat] eat: " + item.name);
         });
-        bot.log("[eat] eat: " + item.name);
     } else {
         bot.log("[eat] no food")
     }
