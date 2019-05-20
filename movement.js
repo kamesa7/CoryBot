@@ -106,7 +106,8 @@ function goToPos(point) {
 
     var path = [];
     var cost = bestFirstSearch(path, start, goal);
-    bot.log("[move] cost: " + cost);
+    if(glob.logMove)
+        bot.log("[move] cost: " + cost);
     if (cost < Infinity) {
         glob.tryState("move", followPath, path)
     } else {
@@ -145,7 +146,8 @@ function reviceTarget(path) {
         bot.log("[move] follow revice " + goal);
     }
     var cost = bestFirstSearch(path, start, goal, glob.allowFollow);
-
+    if(glob.logMove)
+    bot.log("[move] cost: " + cost);
     if (entity.position.distanceTo(bot.entity.position) < glob.allowFollow) {
         path.push([start[0], start[1], start[2], "wait", Math.floor(Math.random() * glob.followWait)]);
     }
@@ -182,6 +184,8 @@ function reRandom(path) {
         bot.log("[move] random revice " + goal);
     }
     var cost = bestFirstSearch(path, start, goal);
+    if(glob.logMove)
+        bot.log("[move] cost: " + cost);
     if (glob.randomCostLimit < cost) {
         reRandom(path);
         return;
@@ -218,6 +222,7 @@ function chase(entity) {
         function reChase() {
             if (entity == undefined || !entity.isValid) {
                 bot.log("[move] cannot find entity");
+                stopMoving();
                 return;
             }
             bot.lookAt(entity.position.offset(0, eyeHeight, 0), true);
@@ -703,7 +708,6 @@ function followPath(path) {
                 }
             }
         } else {
-            clearInterval(mover);
             stopMoving();
             bot.log("[move] path end")
         }

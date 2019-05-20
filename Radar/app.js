@@ -12,12 +12,12 @@ $(function () {
     const point = 8;
     const range = 50;
     const canvasSize = 400;
-    rate = innerWidth/range/2;
+    rate = innerWidth / range / 2;
 
     function update() {
         innerWidth = $(".radar").width()
         innerHeight = $(".radar").height()
-        var nextrate = innerWidth/range/2;
+        var nextrate = innerWidth / range / 2;
         if (rate != nextrate) {
             drawAllEntity()
         }
@@ -99,7 +99,7 @@ $(function () {
         $('#vital').html('<img src="misc/Health_' + Math.min(msg.health, 20) + '.png"> <img src="misc/Hunger_' + Math.min(msg.food, 20) + '.png">')
     })
 
-    io.on('myentity', function (player) {
+    io.on('myentity', function (player, state) {
         if (me) {
             if (me.position.x != player.position.x || me.position.z != player.position.z) {
                 if (Math.abs(player.position.x - me.position.x) + Math.abs(player.position.z - me.position.z) >= 16) {
@@ -117,14 +117,10 @@ $(function () {
                 else
                     $('#hand').text("[hand] null")
             }
+            $('#state').text("[state] " + state)
             me = player;
         } else {//init            
             me = player;
-            $('#position').text("[pos] " + Math.round(me.position.x) + ", " + Math.round(me.position.y) + ", " + Math.round(me.position.z))
-            if (me.heldItem)
-                $('#hand').text("[hand] " + me.heldItem.displayName)
-            else
-                $('#hand').text("[hand] null")
             drawAllEntity();
             prevmappos = me.position;
             io.emit("mapall");
@@ -240,19 +236,20 @@ $(function () {
         /* 2Dコンテキスト */
         var ctx = canvas.getContext('2d');
 
-        var px = (block.position.x - me.position.x) * canvasSize / 100 + canvasSize / 2
-        var pz = (block.position.z - me.position.z) * canvasSize / 100 + canvasSize / 2
+        var grid = canvasSize / range / 2;
+        var px = (block.position.x - me.position.x) * grid + canvasSize / 2
+        var pz = (block.position.z - me.position.z) * grid + canvasSize / 2
         var name = block.name;
 
         for (var i = 0; i < img.length; i++) {
             if (name.match(new RegExp(img[i]))) {
-                ctx.drawImage(blockimg.img[img[i]], px, pz)
+                ctx.drawImage(blockimg.img[img[i]], px, pz, grid, grid)
                 return;
             }
         }
         for (var i = 0; i < colorimg.length; i++) {
             if (name.match(new RegExp(colorimg[i]))) {
-                ctx.drawImage(blockimg.colorimg[colorimg[i]][block.metadata], px, pz)
+                ctx.drawImage(blockimg.colorimg[colorimg[i]][block.metadata], px, pz, grid, grid)
                 return;
             }
         }

@@ -24,9 +24,9 @@ function queueState(str, cb, ...args) {
         return true
     } else {
         queue.add({
-            state: state,
+            state: str,
             cb: cb,
-            args:args
+            args: args
         })
         return false
     }

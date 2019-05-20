@@ -120,7 +120,7 @@ glob.event.on("log", (msg) => {
 })
 
 bot.on("move", () => {
-    io.json.emit("myentity", bot.entity)
+    io.json.emit("myentity", bot.entity, glob.getState())
 })
 
 bot.on("entitySpawn", (entity) => {

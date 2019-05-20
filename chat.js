@@ -70,20 +70,20 @@ bot.on('chat', (username, message) => {
     if (message.match(nameCall)) {
         if (message.match(/おいで$/)) {
             if (bot.players[username] && bot.players[username].entity) {
-                glob.goToPos(bot.players[username].entity.position);
                 bot.log("[move] chat goto " + username);
+                glob.goToPos(bot.players[username].entity.position);
             }
         }
         if (message.match(/ついてきて$/)) {
             if (bot.players[username] && bot.players[username].entity) {
-                glob.follow(bot.players[username].entity);
                 bot.log("[move] chat follow " + username);
+                glob.follow(bot.players[username].entity);
             }
         }
         if (message.match(/走ってきて$/)) {
             if (bot.players[username] && bot.players[username].entity) {
-                glob.chase(bot.players[username].entity);
                 bot.log("[move] chat chase " + username);
+                glob.chase(bot.players[username].entity);
             }
         }
         if (message.match(/止まれ$/) || message.match(/とまれ$/)) {
