@@ -26,7 +26,8 @@ glob.hostiles = [];
 
 bot.on('entityMoved', (entity) => {
     var distance = bot.entity.position.distanceTo(entity.position);
-    if (((entity.kind && entity.kind == "Hostile mobs") || (entity.username && contains(glob.hostiles, entity.username)))) {//hostile
+    if ((entity.kind && entity.kind == "Hostile mobs" && !(entity.metadata[2] && entity.metadata[2] != ""))//hostile mob //name recognize is not working
+        || (entity.username && contains(glob.hostiles, entity.username))) {//hostile player
         if (glob.isSelfDefenceMode && distance < 4 && new Date().getTime() - preAttackTime > swordInterval) {//punch
             glob.queueOnceState("punching", function (entity) {
                 if (entity.name) bot.log("[combat] punch: " + entity.name);

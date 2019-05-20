@@ -1,5 +1,6 @@
 io = io();
 entities = [];
+players = [];
 me = null;
 prop = null;
 map = [];
@@ -37,20 +38,39 @@ $(function () {
         drawAllEntity();
     })
 
-    $('#goto').click(function () {
-        io.emit('goto', $('#target_player').val());
-    })
-
-    $('#follow').click(function () {
-        io.emit('follow', $('#target_player').val());
-    })
-
-    $('#chase').click(function () {
-        io.emit('chase', $('#target_player').val());
+    $('#target_player').submit(function () {
+        if(players[$('#target_player_input').val()] && players[$('#target_player_input').val()].entity)
+            $('#target_entity').val(players[$('#target_player_input').val()].entity.id);
+        else
+            $('#target_entity').val("")
     })
 
     $('#stopmove').click(function () {
         io.emit('stopmove');
+    })    
+
+    $('#dismount').click(function () {
+        io.emit('dismount');
+    })
+
+    $('#goto').click(function () {
+        io.emit('goto', $('#target_entity').val());
+    })
+
+    $('#follow').click(function () {
+        io.emit('follow', $('#target_entity').val());
+    })
+
+    $('#chase').click(function () {
+        io.emit('chase', $('#target_entity').val());
+    })
+
+    $('#mount').click(function () {
+        io.emit('mount', $('#target_entity').val());
+    })
+
+    $('#punch').click(function () {
+        io.emit('punch', $('#target_entity').val());
     })
 
     io.emit('server');
@@ -127,6 +147,10 @@ $(function () {
         }
     });
 
+    io.on('players', function (newplayers) {
+        players = newplayers;
+    });
+
     io.on('entityapper', function (entity) {
         entities.push(entity);
         drawEntity(entity);
@@ -164,20 +188,32 @@ $(function () {
             $(target).css("left", px + 'px')
             $(target).css("top", pz + 'px')
         } else {
+            var style = 'style="left: ' + px + 'px; top: ' + pz + 'px;"'
             if (entity.type == "player") {
-                $('.radar').append('<div class="entity player" id="entity' + entity.id + '" style="left: ' + px + 'px; top: ' + pz + 'px;"></div>')
+                $('.radar').append('<div class="entity player" id="entity' + entity.id + '" ' + style + '>')
                 $(target).html('<img class="playerimg" src="http://' + prop.host + ':8123/tiles/faces/16x16/' + entity.username + '.png"></div>')
                 $(target).click(function () {
-                    $('#target_player').val(entity.username);
+                    $('#target_player_input').val(entity.username);
                 })
 
-            } else if (entity.type == "mob" && entity.name) {
-                $('.radar').append('<div class="entity mob" id="entity' + entity.id + '" style="left: ' + px + 'px; top: ' + pz + 'px;"></div>')
-                $(target).html('<img class="entityimg" src="mobs/16x16_' + entity.name + '.png"></div>')
+            } else if (entity.type == "mob" || (entity.type == "object" && entity.kind == "Vehicles")) {
+                $('.radar').append('<div class="entity mob" id="entity' + entity.id + '" ' + style + '></div>')
+
+                if (entity.type == "mob")
+                    $(target).html('<img class="entityimg" src="mobs/16x16_' + entity.name + '.png"></div>')
+                else if (entity.name.match(/minecart/))
+                    $(target).html('<img class="entityimg" src="mobs/minecart.png"></div>')
+                else if (entity.name.match(/boat/))
+                    $(target).html('<img class="entityimg" src="mobs/boat.png"></div>')
 
             } else {
-                $('.radar').append('<div class="entity other" id="entity' + entity.id + '" style="left: ' + px + 'px; top: ' + pz + 'px;"></div>')
+                $('.radar').append('<div class="entity other" id="entity' + entity.id + '" ' + style + '></div>')
+
             }
+            
+            $(target).click(function () {
+                $('#target_entity').val(entity.id);
+            })
         }
     }
 

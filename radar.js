@@ -18,6 +18,7 @@ io.on('connection', function (client) {
     });
     client.on('server', function () {
         emitServer();
+        client.json.emit('players', bot.players)
     });
     client.on('mapall', function () {
         emitMapAll();
@@ -25,21 +26,33 @@ io.on('connection', function (client) {
     client.on('mapedge', function (x, z) {
         emitMapEdge(x, z);
     });
-    client.on('goto', function (username) {
-        if(bot.players[username] && bot.players[username].entity)
-            glob.goToPos(bot.players[username].entity.position)
-    });
-    client.on('follow', function (username) {
-        if(bot.players[username] && bot.players[username].entity)
-            glob.follow(bot.players[username].entity)
-    });
-    client.on('chase', function (username) {
-        if(bot.players[username] && bot.players[username].entity)
-            glob.chase(bot.players[username].entity)
-    });
     client.on('stopmove', function () {
         glob.stopMoving()
     });
+    client.on('dismount', function () {
+        bot.dismount();
+    });
+    client.on('goto', function (ID) {
+        if(bot.entities[ID])
+            glob.goToPos(bot.entities[ID].position)
+    });
+    client.on('follow', function (ID) {
+        if(bot.entities[ID])
+            glob.follow(bot.entities[ID])
+    });
+    client.on('chase', function (ID) {
+        if(bot.entities[ID])
+            glob.chase(bot.entities[ID])
+    });
+    client.on('mount', function (ID) {
+        if(bot.entities[ID])
+            bot.mount(bot.entities[ID]);
+    });
+    client.on('punch', function (ID) {
+        if(bot.entities[ID])
+            bot.attack(bot.entities[ID])
+    });
+    
 
     function emitServer() {
         client.json.emit('server', {
@@ -121,6 +134,13 @@ glob.event.on("log", (msg) => {
 
 bot.on("move", () => {
     io.json.emit("myentity", bot.entity, glob.getState())
+})
+
+bot.on("playerJoined", (player) => {
+    io.json.emit('players', bot.players)
+})
+bot.on("playerLeft", (player) => {
+    io.json.emit('players', bot.players)
 })
 
 bot.on("entitySpawn", (entity) => {

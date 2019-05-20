@@ -15,24 +15,30 @@
     <div class="column cat1">
       <span id='position'></span><input id='refresh' type="button" value="refresh"><br>
       <div class="radar">
-          <canvas id="canvas" width="400" height="400"></canvas>
+        <canvas id="canvas" width="400" height="400"></canvas>
       </div>
       <div class="info">
         <div class="myinfo">
-            <span id='host'></span><br>
-            <span id='vital'></span><br>
-            <span id='hand'></span><br>
-            <span id='state'></span><br>
+          <span id='host'></span><br>
+          <span id='vital'></span><br>
+          <span id='hand'></span><br>
+          <span id='state'></span><br>
         </div>
         <br>
         <div class="control">
-            <form id="move">
-              <input id="target_player" >
-              <input id='goto' type="button" value="Goto">
-              <input id='follow' type="button" value="Follow">
-              <input id='chase' type="button" value="Chase">
-              <input id='stopmove' type="button" value="Stop">
-            </form>
+          <input id='stopmove' type="button" value="StopMovement">
+          <input id='dismount' type="button" value="Dismount">
+          <form id="target_player">
+            <input id="target_player_input" /><button>get</button>
+          </form>
+          <form id="select">
+            <input id="target_entity" autocomplete="off">
+            <input id='goto' type="button" value="Goto">
+            <input id='follow' type="button" value="Follow">
+            <input id='chase' type="button" value="Chase">
+            <input id='mount' type="button" value="Mount">
+            <input id='punch' type="button" value="Punch">
+          </form>
         </div>
       </div>
     </div>
