@@ -14,10 +14,9 @@ isSame = require("./isSameObject");
 var steveNum = "";
 
 glob = {
-  debug: false,
+  debug: process.env.MC_DEBUG == "TRUE" ? true : false,
+  RADAR_PORT: process.env.MC_RADAR_PORT,
   useCache: true,
-  LOCAL: "localhost",
-  LOCALPORT: "54876",
   event: new events.EventEmitter()
 };
 
@@ -46,8 +45,8 @@ require("./music_player")
 function start() {
   if (glob.debug) {
     bot = mineflayer.createBot({
-      host: glob.LOCAL,
-      port: glob.LOCALPORT,
+      host: process.env.MC_LOCAL_HOST,
+      port: process.env.MC_LOCAL_PORT,
       username: "Steve" + steveNum,
       verbose: true
     });

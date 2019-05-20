@@ -3,7 +3,7 @@ var app = express();
 var http = require('http').Server(app);
 var io = require('socket.io')(http);
 
-const PORT = 7000;
+const PORT = glob.RADAR_PORT;
 
 app.use(express.static(__dirname + "/Radar"));
 
