@@ -12,13 +12,13 @@ app.get('/', function (req, res) {
 });
 
 io.on('connection', function (client) {
+    emitServer()
 
     client.on('message', function (msg) {
         bot.safechat(msg);
     });
     client.on('server', function () {
         emitServer();
-        client.json.emit('players', bot.players)
     });
     client.on('mapall', function () {
         emitMapAll();
@@ -33,32 +33,33 @@ io.on('connection', function (client) {
         bot.dismount();
     });
     client.on('goto', function (ID) {
-        if(bot.entities[ID])
+        if (bot.entities[ID])
             glob.goToPos(bot.entities[ID].position)
     });
     client.on('follow', function (ID) {
-        if(bot.entities[ID])
+        if (bot.entities[ID])
             glob.follow(bot.entities[ID])
     });
     client.on('chase', function (ID) {
-        if(bot.entities[ID])
+        if (bot.entities[ID])
             glob.chase(bot.entities[ID])
     });
     client.on('mount', function (ID) {
-        if(bot.entities[ID])
+        if (bot.entities[ID])
             bot.mount(bot.entities[ID]);
     });
     client.on('punch', function (ID) {
-        if(bot.entities[ID])
+        if (bot.entities[ID])
             bot.attack(bot.entities[ID])
     });
-    
+
 
     function emitServer() {
         client.json.emit('server', {
             host: bot._client.socket._host,
             username: bot.username,
         })
+        client.json.emit('players', bot.players)
         bodyManage();
     }
 
@@ -145,6 +146,8 @@ bot.on("playerLeft", (player) => {
 
 bot.on("entitySpawn", (entity) => {
     io.json.emit('entityapper', entity)
+    if (entity.username)
+        io.json.emit('players', bot.players)
 })
 bot.on("entityMoved", (entity) => {
     io.json.emit('entity', entity)

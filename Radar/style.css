@@ -68,6 +68,16 @@
 	background: mintcream
 }
 
+#playerlist {
+	display: flex;
+	flex-wrap: wrap;
+}
+
+.playerlistimg {
+	margin-top: 5px;
+	margin-left: 5px;
+}
+
 .cat2 {
 	position: relative;
 	background: ghostwhite;

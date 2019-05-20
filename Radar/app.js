@@ -5,27 +5,10 @@ me = null;
 prop = null;
 map = [];
 prevmappos = null;
-rate = 1;
 $(function () {
-    var innerWidth = $(".radar").width()
-    var innerHeight = $(".radar").height()
-
-    const point = 8;
+    const pointVW = 0.5;
     const range = 50;
     const canvasSize = 400;
-    rate = innerWidth / range / 2;
-
-    function update() {
-        innerWidth = $(".radar").width()
-        innerHeight = $(".radar").height()
-        var nextrate = innerWidth / range / 2;
-        if (rate != nextrate) {
-            drawAllEntity()
-        }
-        rate = nextrate
-    }
-
-    setInterval(update, 500);
 
     $('#message_form').submit(function () {
         io.emit('message', $('#input_msg').val());
@@ -38,16 +21,9 @@ $(function () {
         drawAllEntity();
     })
 
-    $('#target_player').submit(function () {
-        if(players[$('#target_player_input').val()] && players[$('#target_player_input').val()].entity)
-            $('#target_entity').val(players[$('#target_player_input').val()].entity.id);
-        else
-            $('#target_entity').val("")
-    })
-
     $('#stopmove').click(function () {
         io.emit('stopmove');
-    })    
+    })
 
     $('#dismount').click(function () {
         io.emit('dismount');
@@ -73,7 +49,7 @@ $(function () {
         io.emit('punch', $('#target_entity').val());
     })
 
-    io.emit('server');
+
     io.on('server', function (msg) {
         prop = msg;
         $('#host').text(msg.host + "   " + msg.username)
@@ -115,7 +91,6 @@ $(function () {
     });
 
     io.on('vital', function (msg) {
-        // $('#vital').text("[health] " + msg.health + " [food] " + msg.food)
         $('#vital').html('<img src="misc/Health_' + Math.min(msg.health, 20) + '.png"> <img src="misc/Hunger_' + Math.min(msg.food, 20) + '.png">')
     })
 
@@ -141,14 +116,27 @@ $(function () {
             me = player;
         } else {//init            
             me = player;
-            drawAllEntity();
             prevmappos = me.position;
+            io.emit('server');
             io.emit("mapall");
+            drawAllEntity();
         }
     });
 
     io.on('players', function (newplayers) {
         players = newplayers;
+        if (prop == null) return;
+        $("#playerlist").empty();
+        Object.keys(players).forEach(function (key) {
+            var name = players[key].username;
+            $("#playerlist").append('<span id="player' + name + '"><img class="playerlistimg" src="http://' + prop.host + ':8123/tiles/faces/16x16/' + name + '.png"> ' + name + '</span> ')
+            $('#player' + players[key].username).click(function () {
+                if (players[key].entity)
+                    $('#target_entity').val(players[key].entity.id);
+                else
+                    $('#target_entity').val("");
+            })
+        });
     });
 
     io.on('entityapper', function (entity) {
@@ -181,20 +169,17 @@ $(function () {
     function drawEntity(entity) {
         if (me == null) return;
         if (prop == null) return;
-        var px = (entity.position.x - me.position.x) * rate + innerWidth / 2 - point / 2;
-        var pz = (entity.position.z - me.position.z) * rate + innerHeight / 2 - point / 2;
+        var px = (entity.position.x - me.position.x) / range * 20 + 20 - pointVW;
+        var pz = (entity.position.z - me.position.z) / range * 20 + 20 - pointVW;
         var target = '#entity' + entity.id;
         if ($(target).length) {
-            $(target).css("left", px + 'px')
-            $(target).css("top", pz + 'px')
+            $(target).css("left", px + 'vw')
+            $(target).css("top", pz + 'vw')
         } else {
-            var style = 'style="left: ' + px + 'px; top: ' + pz + 'px;"'
+            var style = 'style="left: ' + px + 'vw; top: ' + pz + 'vw;"'
             if (entity.type == "player") {
                 $('.radar').append('<div class="entity player" id="entity' + entity.id + '" ' + style + '>')
                 $(target).html('<img class="playerimg" src="http://' + prop.host + ':8123/tiles/faces/16x16/' + entity.username + '.png"></div>')
-                $(target).click(function () {
-                    $('#target_player_input').val(entity.username);
-                })
 
             } else if (entity.type == "mob" || (entity.type == "object" && entity.kind == "Vehicles")) {
                 $('.radar').append('<div class="entity mob" id="entity' + entity.id + '" ' + style + '></div>')
@@ -210,7 +195,7 @@ $(function () {
                 $('.radar').append('<div class="entity other" id="entity' + entity.id + '" ' + style + '></div>')
 
             }
-            
+
             $(target).click(function () {
                 $('#target_entity').val(entity.id);
             })
@@ -219,7 +204,6 @@ $(function () {
 
     function drawAllEntity() {
         if (me == null) return;
-        // $('.entity').remove();
         for (var i = 0; i < entities.length; i++) {
             drawEntity(entities[i]);
         }
