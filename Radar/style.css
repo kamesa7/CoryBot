@@ -29,7 +29,7 @@
 	position: relative;
 }
 
-#canvas {	
+#canvas {
 	height: 40vw;
 	width: 40vw;
 }
@@ -68,6 +68,48 @@
 	background: mintcream
 }
 
+/* .button-input {
+	display: none;
+}
+
+.button-parts {
+	background: #eee;
+	border-radius: 3px;
+}
+
+.button-input+.button-parts {
+	position: relative;
+	vertical-align: middle;
+	border: 1px solid #999;
+} */
+
+.checkbox-input {
+	display: none;
+}
+
+.checkbox-parts {
+	background: #eee;
+	border-radius: 6px;
+}
+
+.checkbox-input+.checkbox-parts {
+	position: relative;
+	vertical-align: middle;
+	border: 1px solid #999;
+}
+
+.checkbox-input+.checkbox-parts:before {
+	content: "□";
+	color: #ccc;
+	font-size: 18px;
+}
+
+.checkbox-input:checked+.checkbox-parts:before {
+	content: "■";
+	color: #17bcdf;
+	font-size: 18px;
+}
+
 #playerlist {
 	display: flex;
 	flex-wrap: wrap;
@@ -89,6 +131,8 @@
 }
 
 .chat-sender {
+	position: absolute;
+	left: 16px;
 	color: #ffffff;
 }
 

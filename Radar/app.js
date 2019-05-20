@@ -95,7 +95,7 @@ $(function () {
     })
 
     io.on('myentity', function (player, state) {
-        if (me) {
+        if (me) {            
             if (me.position.x != player.position.x || me.position.z != player.position.z) {
                 if (Math.abs(player.position.x - me.position.x) + Math.abs(player.position.z - me.position.z) >= 16) {
                     io.emit("mapall");
@@ -104,7 +104,6 @@ $(function () {
                     prevmappos = me.position;
                 }
                 drawAllEntity();
-                $('#position').text("[pos] " + Math.round(me.position.x) + ", " + Math.round(me.position.y) + ", " + Math.round(me.position.z))
             }
             if (me.heldItem != player.heldItem) {
                 if (me.heldItem)
@@ -112,6 +111,7 @@ $(function () {
                 else
                     $('#hand').text("[hand] null")
             }
+            $('#position').text("[pos] " + Math.round(me.position.x) + ", " + Math.round(me.position.y) + ", " + Math.round(me.position.z))
             $('#state').text("[state] " + state)
             me = player;
         } else {//init            

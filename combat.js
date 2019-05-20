@@ -1,6 +1,6 @@
 
 
-glob.isSelfDefenceMode = true;
+glob.isCloseDefenceMode = true;
 glob.isSniperMode = false;
 glob.isHighAngleMode = true;
 glob.isArrowDefenceMode = true;
@@ -9,6 +9,9 @@ glob.bowDamageLimit = 350;
 glob.snipeDistance = 96;
 
 glob.logCombat = false;
+
+// glob.punch = punch;
+// glob.shoot = shoot;
 
 const airResistance = 0;
 const highAngleAdjust = 0.58;
@@ -28,7 +31,7 @@ bot.on('entityMoved', (entity) => {
     var distance = bot.entity.position.distanceTo(entity.position);
     if ((entity.kind && entity.kind == "Hostile mobs" && !(entity.metadata[2] && entity.metadata[2] != ""))//hostile mob //name recognize is not working
         || (entity.username && contains(glob.hostiles, entity.username))) {//hostile player
-        if (glob.isSelfDefenceMode && distance < 4 && new Date().getTime() - preAttackTime > swordInterval) {//punch
+        if (glob.isCloseDefenceMode && distance < 4 && new Date().getTime() - preAttackTime > swordInterval) {//punch
             glob.queueOnceState("punching", function (entity) {
                 if (entity.name) bot.log("[combat] punch: " + entity.name);
                 else bot.log("[combat] punch: " + entity.username);
@@ -46,11 +49,11 @@ bot.on('entityMoved', (entity) => {
         } else if (glob.isSniperMode && distance < glob.snipeDistance && !(entity.name && entity.name == "enderman")) {//shoot
             if (canSeeDirectly(entity.position.offset(0, eyeHeight, 0))) {
                 glob.queueOnceState("shooting", function (entity, isHigh) {
-                    shootArrow(entity, isHigh);
+                    shoot(entity, isHigh);
                 }, entity, false);
             } else if (glob.isHighAngleMode && bot.blockAt(bot.entity.position).skyLight == 15 && bot.blockAt(entity.position).skyLight == 15) {
                 glob.queueOnceState("shooting", function (entity, isHigh) {
-                    shootArrow(entity, isHigh);
+                    shoot(entity, isHigh);
                 }, entity, true);
             }
         }
@@ -90,7 +93,7 @@ bot.on("entitySpawn", (entity) => {
     }
 });
 
-function shootArrow(entity, isHigh) {
+function shoot(entity, isHigh) {
     var bow = glob.findItem(261); // bow id
     var arrow = glob.findItem(arrows);
     var previousPosition;
