@@ -5,10 +5,11 @@ me = null;
 prop = null;
 map = [];
 $(function () {
-    const pointVW = 0.5;
-    const radarRange = 48;
-    const blockRange = 32;
-    const canvasSize = 400;
+    const pointVW = 0.5;//view width
+    const radarSize = 20;//view width / 2
+    const radarRange = 48;//blocks
+    const blockRange = 32;//blocks
+    const canvasSize = 400;//pixel
 
     $('#message_form').submit(function () {
         io.emit('message', $('#input_msg').val());
@@ -188,11 +189,19 @@ $(function () {
         drawAllBlock()
     })
 
+    function drawAllEntity() {
+        if (me == null) return;
+        for (var i = 0; i < entities.length; i++) {
+            drawEntity(entities[i]);
+        }
+        drawEntity(me)
+    }
+
     function drawEntity(entity) {
         if (me == null) return;
         if (prop == null) return;
-        var px = (entity.position.x - me.position.x) / radarRange * 20 + 20 - pointVW;
-        var pz = (entity.position.z - me.position.z) / radarRange * 20 + 20 - pointVW;
+        var px = (entity.position.x - me.position.x) / radarRange * radarSize + radarSize - pointVW;
+        var pz = (entity.position.z - me.position.z) / radarRange * radarSize + radarSize - pointVW;
         var target = '#entity' + entity.id;
         if ($(target).length) {
             $(target).css("left", px + 'vw')
@@ -222,14 +231,6 @@ $(function () {
                 $('#target_entity').val(entity.id);
             })
         }
-    }
-
-    function drawAllEntity() {
-        if (me == null) return;
-        for (var i = 0; i < entities.length; i++) {
-            drawEntity(entities[i]);
-        }
-        drawEntity(me)
     }
 
     const colorimg = [

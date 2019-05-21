@@ -25,6 +25,8 @@
 .radar {
 	height: 40vw;
 	width: 40vw;
+	/* max-height: 800px;
+	max-width: 800px; */
 	background: dimgray;
 	position: relative;
 }
