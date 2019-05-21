@@ -4,10 +4,10 @@ players = [];
 me = null;
 prop = null;
 map = [];
-prevmappos = null;
 $(function () {
     const pointVW = 0.5;
-    const range = 50;
+    const radarRange = 48;
+    const blockRange = 32;
     const canvasSize = 400;
 
     $('#message_form').submit(function () {
@@ -17,7 +17,6 @@ $(function () {
 
     $('#refresh').click(function () {
         io.emit('server');
-        io.emit("mapall");
         drawAllEntity();
     })
 
@@ -95,14 +94,8 @@ $(function () {
     })
 
     io.on('myentity', function (player, state) {
-        if (me) {            
+        if (me) {
             if (me.position.x != player.position.x || me.position.z != player.position.z) {
-                if (Math.abs(player.position.x - me.position.x) + Math.abs(player.position.z - me.position.z) >= 16) {
-                    io.emit("mapall");
-                } else if (Math.abs(prevmappos.x - me.position.x) + Math.abs(prevmappos.z - me.position.z) > 0.7) {
-                    io.emit("mapedge");
-                    prevmappos = me.position;
-                }
                 drawAllEntity();
             }
             if (me.heldItem != player.heldItem) {
@@ -116,9 +109,7 @@ $(function () {
             me = player;
         } else {//init            
             me = player;
-            prevmappos = me.position;
             io.emit('server');
-            io.emit("mapall");
             drawAllEntity();
         }
     });
@@ -169,8 +160,8 @@ $(function () {
     function drawEntity(entity) {
         if (me == null) return;
         if (prop == null) return;
-        var px = (entity.position.x - me.position.x) / range * 20 + 20 - pointVW;
-        var pz = (entity.position.z - me.position.z) / range * 20 + 20 - pointVW;
+        var px = (entity.position.x - me.position.x) / radarRange * 20 + 20 - pointVW;
+        var pz = (entity.position.z - me.position.z) / radarRange * 20 + 20 - pointVW;
         var target = '#entity' + entity.id;
         if ($(target).length) {
             $(target).css("left", px + 'vw')
@@ -241,8 +232,8 @@ $(function () {
     function drawAllBlock() {
         if (me == null) return;
         $("#canvas")[0].getContext('2d').clearRect(0, 0, canvasSize, canvasSize)
-        for (var x = Math.floor(me.position.x - range); x < me.position.x + range; x++) {
-            for (var z = Math.floor(me.position.z - range); z < me.position.z + range; z++) {
+        for (var x = Math.floor(me.position.x - blockRange); x < me.position.x + blockRange; x++) {
+            for (var z = Math.floor(me.position.z - blockRange); z < me.position.z + blockRange; z++) {
                 if (map[x] && map[x][z])
                     drawBlock(map[x][z]);
             }
@@ -256,7 +247,7 @@ $(function () {
         /* 2Dコンテキスト */
         var ctx = canvas.getContext('2d');
 
-        var grid = canvasSize / range / 2;
+        var grid = canvasSize / radarRange / 2;
         var px = (block.position.x - me.position.x) * grid + canvasSize / 2
         var pz = (block.position.z - me.position.z) * grid + canvasSize / 2
         var name = block.name;

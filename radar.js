@@ -12,19 +12,14 @@ app.get('/', function (req, res) {
 });
 
 io.on('connection', function (client) {
-    emitServer()
 
     client.on('message', function (msg) {
         bot.safechat(msg);
     });
     client.on('server', function () {
         emitServer();
-    });
-    client.on('mapall', function () {
         emitMapAll();
-    });
-    client.on('mapedge', function (x, z) {
-        emitMapEdge(x, z);
+        emitVital();
     });
     client.on('stopmove', function () {
         glob.stopMoving()
@@ -51,81 +46,90 @@ io.on('connection', function (client) {
     client.on('punch', function (ID) {
         if (bot.entities[ID])
             bot.attack(bot.entities[ID])
+            //glob.punch(bot.entities[ID])
     });
 
-
-    function emitServer() {
-        client.json.emit('server', {
-            host: bot._client.socket._host,
-            username: bot.username,
-        })
-        client.json.emit('players', bot.players)
-        bodyManage();
-    }
-
+    var sentMap = [];
     function emitMapAll() {
         const range = 48;
-        var me = bot.entity;
+        var me = bot.entity.position.floored();
         var data = [];
-        var i = 0;
-        for (var x = me.position.x - range; x < me.position.x + range; x++) {
-            for (var z = me.position.z - range; z < me.position.z + range; z++) {
-                var block = mapAt(x, z);
-                if (block) {
-                    data[i++] = {
-                        position: block.position,
-                        name: block.name,
-                        metadata: block.metadata
-                    };
-                }
+        sentMap = []
+        for (var x = me.x - range; x < me.x + range; x++) {
+            for (var z = me.z - range; z < me.z + range; z++) {
+                container(data, x, z);
             }
         }
         client.json.emit('map', { data: data })
     }
 
-    function emitMapEdge(dx, dz) {
-        const range = 48;
-        var me = bot.entity;
+    function container(data, x, z) {
+        var block = mapAt(x, z);
+        if (block) {
+            data.push({
+                position: block.position,
+                name: block.name,
+                metadata: block.metadata
+            });
+        }
+
+        if (!sentMap[x]) sentMap[x] = []
+        sentMap[x][z] = true;
+    }
+
+    var prevPos;
+    bot.on("move", () => {
+        if (prevPos)
+            if (bot.entity.position.distanceTo(prevPos) > 16.0) {
+                emitMapAll()
+            } else if (bot.entity.position.distanceTo(prevPos) > 0.0) {
+                emitMapEdge()
+            }
+        prevPos = bot.entity.position.clone();
+    })
+
+    function emitMapEdge() {
+        const range = 32;
+        var me = bot.entity.position.floored();
         var data = [];
-        var i = 0;
-        var block;
-        for (var x = me.position.x - range; x < me.position.x + range; x++) {
-            block = mapAt(x, me.position.z + range);
-            if (block) {
-                data[i++] = {
-                    position: block.position,
-                    name: block.name,
-                    metadata: block.metadata
-                };
-            }
-            block = mapAt(x, me.position.z - range);
-            if (block) {
-                data[i++] = {
-                    position: block.position,
-                    name: block.name,
-                    metadata: block.metadata
-                };
-            }
+        var s1 = me.x - range;
+        var s2 = me.x + range;
+        var s3 = me.z - range;
+        var s4 = me.z + range;
+        for (var x = s1; x < me.x; x++) {
+            if (sentMap[x] && sentMap[x][me.z])
+                break;
+            else
+                for (var z = s3; z < s4; z++)
+                    container(data, x, z)
         }
-        for (var z = me.position.z - range; z < me.position.z + range; z++) {
-            block = mapAt(me.position.x + range, z);
-            if (block) {
-                data[i++] = {
-                    position: block.position,
-                    name: block.name,
-                    metadata: block.metadata
-                };
-            }
-            block = mapAt(me.position.x - range, z);
-            if (block) {
-                data[i++] = {
-                    position: block.position,
-                    name: block.name,
-                    metadata: block.metadata
-                };
-            }
+        for (var x = s2; x >= me.x; --x) {
+            if (sentMap[x] && sentMap[x][me.z])
+                break;
+            else
+                for (var z = s3; z < s4; z++)
+                    container(data, x, z)
         }
-        client.json.emit('map', { data: data })
+        for (var z = s3; z < me.z; z++) {
+            if (sentMap[me.x] && sentMap[me.x][z])
+                break;
+            else
+                for (var x = s1; x < s2; x++)
+                    container(data, x, z)
+        }
+        for (var z = s4; z >= me.z; --z) {
+            if (sentMap[me.x] && sentMap[me.x][z])
+                break;
+            else
+                for (var x = s1; x < s2; x++)
+                    container(data, x, z)
+        }
+        
+        if(data.length > 0) {
+            client.json.emit('map', { data: data })
+        } else if(Math.random() > 0.7) {
+            client.json.emit('map', { data: data })
+        }
     }
 });
 
@@ -160,14 +164,22 @@ bot.on("entityGone", (entity) => {
 })
 
 bot.on('health', function () {
-    bodyManage();
+    emitVital();
 });
 
 bot.on('food', function () {
-    bodyManage();
+    emitVital();
 });
 
-function bodyManage() {
+function emitServer() {
+    io.json.emit('server', {
+        host: bot._client.socket._host,
+        username: bot.username,
+    })
+    io.json.emit('players', bot.players)
+}
+
+function emitVital() {
     io.json.emit('vital', {
         health: Math.round(bot.health),
         food: Math.round(bot.food)

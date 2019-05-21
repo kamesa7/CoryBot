@@ -324,6 +324,11 @@ bot.on("actionBar", (jmes) => {
     console.log(jmes.toAnsi());
 });
 
+
+bot.on('error', function (err) {
+    bot.log("[Error] " + err.message);
+})
+
 function timestamp(str) {
     return '[' + dateformat(new Date(), 'isoTime') + '] ' + str;
 }
