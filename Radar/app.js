@@ -28,6 +28,18 @@ $(function () {
         io.emit('dismount');
     })
 
+    $('#isclosedefencemode').click(function () {
+        emitFlags();
+    })
+
+    $('#issnipermode').click(function () {
+        emitFlags();
+    })
+
+    $('#isarrowdefencemode').click(function () {
+        emitFlags();
+    })
+
     $('#goto').click(function () {
         io.emit('goto', $('#target_entity').val());
     })
@@ -46,6 +58,10 @@ $(function () {
 
     $('#punch').click(function () {
         io.emit('punch', $('#target_entity').val());
+    })
+
+    $('#shoot').click(function () {
+        io.emit('shoot', $('#target_entity').val());
     })
 
 
@@ -112,6 +128,21 @@ $(function () {
             io.emit('server');
             drawAllEntity();
         }
+    });
+
+    function emitFlags() {
+        var flags = {
+            isCloseDefenceMode: $('#isclosedefencemode').prop("checked"),
+            isSniperMode: $('#issnipermode').prop("checked"),
+            isArrowDefenceMode: $('#isarrowdefencemode').prop("checked")
+        }
+        io.json.emit('flags', flags)
+    }
+
+    io.on('flags', function (flags) {
+        $('#isclosedefencemode').prop("checked", flags.isCloseDefenceMode)
+        $('#issnipermode').prop("checked", flags.isSniperMode)
+        $('#isarrowdefencemode').prop("checked", flags.isArrowDefenceMode)
     });
 
     io.on('players', function (newplayers) {

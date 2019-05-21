@@ -46,8 +46,17 @@ io.on('connection', function (client) {
     client.on('punch', function (ID) {
         if (bot.entities[ID])
             bot.attack(bot.entities[ID])
-            //glob.punch(bot.entities[ID])
+        //glob.punch(bot.entities[ID])
     });
+    client.on('shoot', function (ID) {
+        if (bot.entities[ID])
+            glob.shoot(bot.entities[ID])
+    });
+    client.on('flags', function (flags) {
+        glob.isCloseDefenceMode = flags.isCloseDefenceMode
+        glob.isSniperMode = flags.isSniperMode
+        glob.isArrowDefenceMode = flags.isArrowDefenceMode
+    })
 
     var sentMap = [];
     function emitMapAll() {
@@ -124,10 +133,10 @@ io.on('connection', function (client) {
                 for (var x = s1; x < s2; x++)
                     container(data, x, z)
         }
-        
-        if(data.length > 0) {
+
+        if (data.length > 0) {
             client.json.emit('map', { data: data })
-        } else if(Math.random() > 0.7) {
+        } else if (Math.random() > 0.7) {
             client.json.emit('map', { data: data })
         }
     }
@@ -177,6 +186,11 @@ function emitServer() {
         username: bot.username,
     })
     io.json.emit('players', bot.players)
+    io.json.emit('flags', {
+        isCloseDefenceMode: glob.isCloseDefenceMode,
+        isSniperMode: glob.isSniperMode,
+        isArrowDefenceMode: glob.isArrowDefenceMode
+    })
 }
 
 function emitVital() {
