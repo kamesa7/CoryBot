@@ -5,8 +5,8 @@ me = null;
 prop = null;
 map = [];
 $(function () {
-    const pointVW = 0.5;//view width
-    const radarSize = 20;//view width / 2
+    const pointVW = 0.5;//%
+    const radarSize = 50;//100/2%
     const radarRange = 48;//blocks
     const blockRange = 32;//blocks
     const canvasSize = 400;//pixel
@@ -29,15 +29,15 @@ $(function () {
         io.emit('dismount');
     })
 
-    $('#isclosedefencemode').click(function () {
+    $('#is-close-defence-mode').click(function () {
         emitFlags();
     })
 
-    $('#issnipermode').click(function () {
+    $('#is-sniper-mode').click(function () {
         emitFlags();
     })
 
-    $('#isarrowdefencemode').click(function () {
+    $('#is-arrow-defence-mode').click(function () {
         emitFlags();
     })
 
@@ -133,17 +133,17 @@ $(function () {
 
     function emitFlags() {
         var flags = {
-            isCloseDefenceMode: $('#isclosedefencemode').prop("checked"),
-            isSniperMode: $('#issnipermode').prop("checked"),
-            isArrowDefenceMode: $('#isarrowdefencemode').prop("checked")
+            isCloseDefenceMode: $('#is-close-defence-mode').prop("checked"),
+            isSniperMode: $('#is-sniper-mode').prop("checked"),
+            isArrowDefenceMode: $('#is-arrow-defence-mode').prop("checked")
         }
         io.json.emit('flags', flags)
     }
 
     io.on('flags', function (flags) {
-        $('#isclosedefencemode').prop("checked", flags.isCloseDefenceMode)
-        $('#issnipermode').prop("checked", flags.isSniperMode)
-        $('#isarrowdefencemode').prop("checked", flags.isArrowDefenceMode)
+        $('#is-close-defence-mode').prop("checked", flags.isCloseDefenceMode)
+        $('#is-sniper-mode').prop("checked", flags.isSniperMode)
+        $('#is-arrow-defence-mode').prop("checked", flags.isArrowDefenceMode)
     });
 
     io.on('players', function (newplayers) {
@@ -152,7 +152,7 @@ $(function () {
         $("#playerlist").empty();
         Object.keys(players).forEach(function (key) {
             var name = players[key].username;
-            $("#playerlist").append('<span id="player' + name + '"><img class="playerlistimg" src="http://' + prop.host + ':8123/tiles/faces/16x16/' + name + '.png"> ' + name + '</span> ')
+            $("#playerlist").append('<span id="player' + name + '" class="playerlist-element"><img class="playerlistimg" src="http://' + prop.host + ':8123/tiles/faces/16x16/' + name + '.png"> ' + name + '</span> ')
             $('#player' + players[key].username).click(function () {
                 if (players[key].entity)
                     $('#target_entity').val(players[key].entity.id);
@@ -204,10 +204,10 @@ $(function () {
         var pz = (entity.position.z - me.position.z) / radarRange * radarSize + radarSize - pointVW;
         var target = '#entity' + entity.id;
         if ($(target).length) {
-            $(target).css("left", px + 'vw')
-            $(target).css("top", pz + 'vw')
+            $(target).css("left", px + '%')
+            $(target).css("top", pz + '%')
         } else {
-            var style = 'style="left: ' + px + 'vw; top: ' + pz + 'vw;"'
+            var style = 'style="left: ' + px + '%; top: ' + pz + '%;"'
             if (entity.type == "player") {
                 $('.radar').append('<div class="entity player" id="entity' + entity.id + '" ' + style + '>')
                 $(target).html('<img class="playerimg" src="http://' + prop.host + ':8123/tiles/faces/16x16/' + entity.username + '.png"></div>')
