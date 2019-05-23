@@ -74,6 +74,12 @@ $(function () {
     io.on('message', function (msg) {
         msg = msg.replace(/</g, '[')
         msg = msg.replace(/>/g, ']')
+
+        var url = msg.match(/(?:https?|ftp):\/\/[^\s　]+/);
+        if (url) {
+            msg = msg.replace(url, '<a href="' + url + '"  target="_blank">' + url + '</a>')
+        }
+
         const codes = [
             '§0', '§1', '§2',
             '§3', '§4', '§5',
@@ -280,7 +286,7 @@ $(function () {
         ctx.beginPath();
         ctx.arc(canvasSize / 2, canvasSize / 2, 64 * grid, 0, Math.PI * 2, false);
         ctx.stroke();
-        
+
         for (var x = Math.floor(me.position.x - blockRange); x < me.position.x + blockRange; x++) {
             for (var z = Math.floor(me.position.z - blockRange); z < me.position.z + blockRange; z++) {
                 if (map[x] && map[x][z])
