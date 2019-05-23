@@ -6,10 +6,10 @@ prop = null;
 map = [];
 $(function () {
     const pointVW = 0.5;//%
-    const radarSize = 50;//100/2%
     const radarRange = 48;//blocks
     const blockRange = 32;//blocks
     const canvasSize = 400;//pixel
+    const grid = canvasSize / radarRange / 2;
 
     $('#message_form').submit(function () {
         io.emit('message', $('#input_msg').val());
@@ -200,8 +200,8 @@ $(function () {
     function drawEntity(entity) {
         if (me == null) return;
         if (prop == null) return;
-        var px = (entity.position.x - me.position.x) / radarRange * radarSize + radarSize - pointVW;
-        var pz = (entity.position.z - me.position.z) / radarRange * radarSize + radarSize - pointVW;
+        var px = (entity.position.x - me.position.x) / radarRange * 50 + 50 - pointVW;
+        var pz = (entity.position.z - me.position.z) / radarRange * 50 + 50 - pointVW;
         var target = '#entity' + entity.id;
         if ($(target).length) {
             $(target).css("left", px + '%')
@@ -263,7 +263,24 @@ $(function () {
 
     function drawAllBlock() {
         if (me == null) return;
-        $("#canvas")[0].getContext('2d').clearRect(0, 0, canvasSize, canvasSize)
+        var ctx = $("#canvas")[0].getContext('2d')
+        ctx.clearRect(0, 0, canvasSize, canvasSize)
+        ctx.strokeRect(canvasSize / 2 - blockRange * grid, canvasSize / 2 - blockRange * grid, blockRange * 2 * grid, blockRange * 2 * grid)
+
+        ctx.strokeStyle = 'rgb(128, 100, 162)'
+        ctx.beginPath();
+        ctx.arc(canvasSize / 2, canvasSize / 2, 16 * grid, 0, Math.PI * 2, false);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.arc(canvasSize / 2, canvasSize / 2, 32 * grid, 0, Math.PI * 2, false);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.arc(canvasSize / 2, canvasSize / 2, 48 * grid, 0, Math.PI * 2, false);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.arc(canvasSize / 2, canvasSize / 2, 64 * grid, 0, Math.PI * 2, false);
+        ctx.stroke();
+        
         for (var x = Math.floor(me.position.x - blockRange); x < me.position.x + blockRange; x++) {
             for (var z = Math.floor(me.position.z - blockRange); z < me.position.z + blockRange; z++) {
                 if (map[x] && map[x][z])
@@ -279,7 +296,6 @@ $(function () {
         /* 2Dコンテキスト */
         var ctx = canvas.getContext('2d');
 
-        var grid = canvasSize / radarRange / 2;
         var px = (block.position.x - me.position.x) * grid + canvasSize / 2
         var pz = (block.position.z - me.position.z) * grid + canvasSize / 2
         var name = block.name;
