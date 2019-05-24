@@ -88,7 +88,6 @@ function goToPos(point) {
     if (glob.getState() == "move") {
         stopMoving();
         bot.log("[move] aborted");
-        return;
     }
     var goal;
     if (Array.isArray(point)) {
@@ -106,7 +105,7 @@ function goToPos(point) {
 
     var path = [];
     var cost = bestFirstSearch(path, start, goal);
-    if(glob.logMove)
+    if (glob.logMove)
         bot.log("[move] cost: " + cost);
     if (cost < Infinity) {
         glob.tryState("move", followPath, path)
@@ -119,7 +118,6 @@ function follow(entity) {
     if (glob.getState() == "move") {
         stopMoving();
         bot.log("[move] aborted");
-        return;
     }
     if (entity == undefined || !entity.isValid) {
         bot.log("[move] cannot find entity");
@@ -146,8 +144,8 @@ function reviceTarget(path) {
         bot.log("[move] follow revice " + goal);
     }
     var cost = bestFirstSearch(path, start, goal, glob.allowFollow);
-    if(glob.logMove)
-    bot.log("[move] cost: " + cost);
+    if (glob.logMove)
+        bot.log("[move] cost: " + cost);
     if (entity.position.distanceTo(bot.entity.position) < glob.allowFollow) {
         path.push([start[0], start[1], start[2], "wait", Math.floor(Math.random() * glob.followWait)]);
     }
@@ -165,7 +163,6 @@ function randomWalk() {
     if (glob.getState() == "move") {
         stopMoving();
         bot.log("[move] aborted");
-        return;
     }
     bot.log("[move] random walk ");
     var path = [];
@@ -184,7 +181,7 @@ function reRandom(path) {
         bot.log("[move] random revice " + goal);
     }
     var cost = bestFirstSearch(path, start, goal);
-    if(glob.logMove)
+    if (glob.logMove)
         bot.log("[move] cost: " + cost);
     if (glob.randomCostLimit < cost) {
         reRandom(path);
@@ -207,7 +204,6 @@ function chase(entity) {
     if (glob.getState() == "move") {
         stopMoving();
         bot.log("[move] aborted");
-        return;
     }
     if (entity == undefined || !entity.isValid) {
         bot.log("[move] cannot find entity");
@@ -217,6 +213,7 @@ function chase(entity) {
     glob.tryState("move", function (entity) {
         bot.log("[move] chase entity " + entity.position.floored());
         bot.setControlState("sprint", true);
+        bot.setControlState("forward", true);
         glob.targetEntity = entity;
         chaser = setInterval(reChase, glob.stepTime);
         function reChase() {
@@ -227,15 +224,20 @@ function chase(entity) {
             }
             bot.lookAt(entity.position.offset(0, eyeHeight, 0), true);
             if (entity.position.distanceTo(bot.entity.position) < glob.allowGoal) {
+                bot.setControlState("sprint", false);
                 bot.setControlState("forward", false);
-                return;
-            }
-            bot.setControlState("forward", true);
-            var direct = entity.position.minus(bot.entity.position);
-            direct.scaled(1 / entity.position.distanceTo(bot.entity.position))
-            if (bot.blockAt(bot.entity.position.offset(direct.x, 0, direct.z)).boundingBox == "block") {
-                bot.setControlState("jump", true)
-                bot.setControlState("jump", false)
+                glob.finishState("move");
+            } else {
+                glob.tryState("move", function () {
+                    bot.setControlState("sprint", true);
+                    bot.setControlState("forward", true);
+                    var direct = entity.position.minus(bot.entity.position);
+                    direct.scaled(1 / entity.position.distanceTo(bot.entity.position))
+                    if (bot.blockAt(bot.entity.position.offset(direct.x, 0, direct.z)).boundingBox == "block") {
+                        bot.setControlState("jump", true)
+                        bot.setControlState("jump", false)
+                    }
+                });
             }
         }
     }, entity);
@@ -693,10 +695,13 @@ function followPath(path) {
                         if (indexCount == 0) {
                             bot.clearControlStates();
                             glob.isWaiting = true;
+                            glob.finishState("move")
                             waitCount = path[index][4];
                         } else if (indexCount >= waitCount) {
-                            index++;
-                            glob.isWaiting = false;
+                            glob.queueOnceState("move", function () {
+                                index++;
+                                glob.isWaiting = false;
+                            });
                             break;
                         }
                         indexCount++;
