@@ -21,8 +21,8 @@ glob.followInterval = 25;
 glob.targetEntity = null;
 glob.followWait = 50;
 
-glob.randomDistance = 16;
-glob.randomHeight = 4;
+glob.randomDistance = 10;
+glob.randomHeight = 3;
 glob.randomWait = 50;
 glob.randomCostLimit = 100;
 
@@ -66,14 +66,25 @@ moves:
 function stopMoving() {
     glob.finishState("move")
     glob.isFollowing = false;
-    glob.isWaiting = false;
     glob.isRandomWalking = false;
+    glob.isWaiting = false;
     glob.targetEntity = null;
     clearInterval(chaser)
     clearInterval(mover);
     bot.clearControlStates();
-    //bot.log("[move] stop ");
+    if (glob.logMove)
+        bot.log("[move] Full Stop ");
 }
+
+function stopPath() {
+    glob.finishState("move")
+    glob.isWaiting = false;
+    clearInterval(mover);
+    bot.clearControlStates();
+    if (glob.logMove)
+        bot.log("[move] stop ");
+}
+
 bot.on('death', () => {
     stopMoving()
 });
@@ -125,13 +136,13 @@ function follow(entity) {
         return;
     }
     bot.log("[move] follow entity " + entity.position.floored());
-    var path = [];
     glob.targetEntity = entity;
-    reviceTarget(path);
+    glob.isFollowing = true;
+    reFollow(entity);
 }
 
-function reviceTarget(path) {
-    var entity = glob.targetEntity;
+function reFollow(entity) {
+    if (!glob.isFollowing) return
     var start = getMyPos();
     var goal = getPosFromVec3(entity.position);
     floor(start);
@@ -139,24 +150,25 @@ function reviceTarget(path) {
     setStandable(start);
     setStandable(goal);
 
-    path.splice(0, path.length);
     if (glob.logMove) {
         bot.log("[move] follow revice " + goal);
     }
-    var cost = bestFirstSearch(path, start, goal, glob.allowFollow);
-    if (glob.logMove)
-        bot.log("[move] cost: " + cost);
-    if (entity.position.distanceTo(bot.entity.position) < glob.allowFollow) {
-        path.push([start[0], start[1], start[2], "wait", Math.floor(Math.random() * glob.followWait)]);
-    }
 
-    if (glob.followInterval < path.length) {
-        path[glob.followInterval][3] = "follow";
+    if (entity.position.distanceTo(bot.entity.position) < glob.allowFollow) {
+        setTimeout(reFollow, Math.floor(Math.random() * glob.followWait * glob.stepTime), entity)
     } else {
-        path.push([start[0], start[1], start[2], "follow"]);
+        var path = [];
+        var cost = bestFirstSearch(path, start, goal);
+        if (glob.logMove)
+            bot.log("[move] cost: " + cost);
+
+        if (glob.followInterval < path.length) {
+            path[glob.followInterval][3] = "follow"
+        } else {
+            path.push([start[0], start[1], start[2], "follow"]);
+        }
+        glob.queueOnceState("move", followPath, path)
     }
-    glob.isFollowing = true;
-    glob.tryState("move", followPath, path)
 }
 
 function randomWalk() {
@@ -165,21 +177,22 @@ function randomWalk() {
         bot.log("[move] aborted");
     }
     bot.log("[move] random walk ");
-    var path = [];
-    reRandom(path);
+    glob.isRandomWalking = true;
+    reRandom();
 }
 
-function reRandom(path) {
+function reRandom() {
+    if (!glob.isRandomWalking) return;
     var start = getMyPos();
     setStandable(start);
     var goal = getRandomPos(start, glob.randomDistance, glob.randomHeight);
     floor(start);
     floor(goal);
 
-    path.splice(0, path.length);
     if (glob.logMove) {
         bot.log("[move] random revice " + goal);
     }
+    var path = [];
     var cost = bestFirstSearch(path, start, goal);
     if (glob.logMove)
         bot.log("[move] cost: " + cost);
@@ -188,15 +201,13 @@ function reRandom(path) {
         return;
     }
     if (glob.randomInterval < path.length) {
-        path[glob.randomInterval - 1][3] = "wait";
-        path[glob.randomInterval - 1][4] = Math.floor(Math.random() * glob.randomWait * 2);
         path[glob.randomInterval][3] = "random";
     } else {
-        path.push([goal[0], goal[1], goal[2], "wait", Math.floor(Math.random() * glob.randomWait)]);
         path.push([goal[0], goal[1], goal[2], "random"]);
     }
-    glob.isRandomWalking = true;
-    glob.tryState("move", followPath, path)
+    setTimeout(function () {
+        glob.queueOnceState("move", followPath, path)
+    }, Math.floor(Math.random() * glob.randomWait * glob.stepTime));
 }
 
 var chaser;
@@ -210,11 +221,11 @@ function chase(entity) {
         stopMoving();
         return;
     }
-    glob.tryState("move", function (entity) {
+    glob.targetEntity = entity;
+    glob.queueOnceState("move", function () {
         bot.log("[move] chase entity " + entity.position.floored());
         bot.setControlState("sprint", true);
         bot.setControlState("forward", true);
-        glob.targetEntity = entity;
         chaser = setInterval(reChase, glob.stepTime);
         function reChase() {
             if (entity == undefined || !entity.isValid) {
@@ -240,7 +251,7 @@ function chase(entity) {
                 });
             }
         }
-    }, entity);
+    });
 }
 
 
@@ -408,12 +419,11 @@ function convertNode(path, node) {
     }
     path.reverse();
     return sum;
-    // console.log(path);
 }
 
 function optimize(path) {
-    var start = floor(getMyPos());
-    path.splice(0, 0, [start[0], start[1], start[2], "strict"]);
+    // var start = floor(getMyPos());
+    // path.splice(0, 0, [start[0], start[1], start[2], "strict"]);
     for (var i = 0; i < path.length; i++) {
         if (bot.blockAt(posToVec(path[i])).boundingBox == "door") {
             var doorFront = path[i - 1];
@@ -511,28 +521,24 @@ function followPath(path) {
             }
             prePos = floor(getMyPos())
 
-            if (err || ((path[index][3] != "revice" && path[index][3] != "wait") && stopCount > glob.stepError)) {
+            if (err || (path[index][3] != "wait" && stopCount > glob.stepError)) {
                 bot.clearControlStates();
                 bot.log("[move] path error end : " + path[index] + " stops: " + stopCount);
                 if (glob.isFollowing) {
-                    if (glob.targetEntity != null && glob.targetEntity.isValid) {
-                        path[0][3] = "revice";
-                        reviceTarget(path);
+                    if (glob.targetEntity && glob.targetEntity.isValid) {
+                        stopPath();
+                        reFollow(glob.targetEntity);
                     } else {
-                        glob.isFollowing = false;
                         stopMoving();
                     }
                 } else if (glob.isRandomWalking) {
-                    path[0][3] = "revice";
-                    reRandom(path);
+                    stopPath();
+                    reRandom();
                 } else {
-                    stopMoving();
-                    glob.queueOnceState("move", goToPos, finalDestination)
+                    stopPath();
+                    goToPos(finalDestination)
                 }
-                index = 0;
-                indexCount = 0;
-                stopCount = 0;
-                err = false;
+                return
             } else {
                 var target = mid([path[index][0], path[index][1], path[index][2], path[index][3]]);
                 var distance = getXZL2(getMyPos(), target);
@@ -666,30 +672,17 @@ function followPath(path) {
                         }
                         break;
                     case "follow":
-                        bot.clearControlStates();
-                        if (glob.targetEntity != undefined && glob.targetEntity.isValid) {
-                            bot.lookAt(glob.targetEntity.position.offset(0, eyeHeight, 0), false);
-                            path[0][3] = "revice";
-                            reviceTarget(path);
-                            index = 0;
-                            indexCount = 0;
-                            stopCount = 0;
+                        if (glob.targetEntity && glob.targetEntity.isValid) {
+                            bot.lookAt(glob.targetEntity.position.offset(0, eyeHeight, 0), false)
+                            stopPath()
+                            reFollow(glob.targetEntity);
                         } else {
                             stopMoving()
                         }
                         break;
                     case "random":
-                        bot.clearControlStates();
-                        path[0][3] = "revice";
-                        reRandom(path);
-                        index = 0;
-                        indexCount = 0;
-                        stopCount = 0;
-                        break;
-                    case "revice":
-                        index = 0;
-                        indexCount = 0;
-                        stopCount = 0;
+                        stopPath()
+                        reRandom()
                         break;
                     case "wait":
                         if (indexCount == 0) {
