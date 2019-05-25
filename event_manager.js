@@ -63,8 +63,10 @@ var newLightCnt;
 function expand(root, rootLight, pos) {
 
     var posDist = getL1(pos, root);
-    if (!mcData.blocks[bot.blockAt(pos).type].transparent) return;
-    if (bot.blockAt(pos).light >= rootLight - posDist) return;
+    var block = bot.blockAt(pos);
+    if (!block) return;
+    if (!mcData.blocks[block.type].transparent) return;
+    if (block.light >= rootLight - posDist) return;
 
     applyLight(pos, rootLight - posDist);
     for (var i = 0; i < round.length; i++) {

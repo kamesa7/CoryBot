@@ -222,36 +222,34 @@ function chase(entity) {
         return;
     }
     glob.targetEntity = entity;
-    glob.queueOnceState("move", function () {
-        bot.log("[move] chase entity " + entity.position.floored());
-        bot.setControlState("sprint", true);
-        bot.setControlState("forward", true);
-        chaser = setInterval(reChase, glob.stepTime);
-        function reChase() {
-            if (entity == undefined || !entity.isValid) {
-                bot.log("[move] cannot find entity");
-                stopMoving();
-                return;
-            }
-            bot.lookAt(entity.position.offset(0, eyeHeight, 0), true);
-            if (entity.position.distanceTo(bot.entity.position) < glob.allowGoal) {
-                bot.setControlState("sprint", false);
-                bot.setControlState("forward", false);
-                glob.finishState("move");
-            } else {
-                glob.tryState("move", function () {
-                    bot.setControlState("sprint", true);
-                    bot.setControlState("forward", true);
-                    var direct = entity.position.minus(bot.entity.position);
-                    direct.scaled(1 / entity.position.distanceTo(bot.entity.position))
-                    if (bot.blockAt(bot.entity.position.offset(direct.x, 0, direct.z)).boundingBox == "block") {
-                        bot.setControlState("jump", true)
-                        bot.setControlState("jump", false)
-                    }
-                });
-            }
+    bot.log("[move] chase entity " + entity.position.floored());
+    chaser = setInterval(reChase, glob.stepTime);
+    function reChase() {
+        if (entity == undefined || !entity.isValid) {
+            bot.log("[move] cannot find entity");
+            stopMoving();
+            return;
         }
-    });
+
+        if (entity.position.distanceTo(bot.entity.position) < glob.allowGoal) {
+            bot.setControlState("sprint", false);
+            bot.setControlState("forward", false);
+            glob.finishState("move");
+        } else {
+            glob.letState("move", function () {
+                bot.lookAt(entity.position.offset(0, eyeHeight, 0), true);
+                bot.setControlState("sprint", true);
+                bot.setControlState("forward", true);
+                var direct
+                direct = entity.position.minus(bot.entity.position);
+                direct = direct.scaled(1.5 / entity.position.distanceTo(bot.entity.position))
+                if (bot.blockAt(bot.entity.position.plus(new Vec3(direct.x, 0, direct.z))).boundingBox != "empty") {
+                    bot.setControlState("jump", true)
+                    bot.setControlState("jump", false)
+                }
+            });
+        }
+    }
 }
 
 var mover;

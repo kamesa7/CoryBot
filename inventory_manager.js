@@ -41,6 +41,7 @@ function startEat() {
     var item = findItem(foods);
     if (item != null) {
         glob.queueOnceState("eating", function () {
+            item = findItem(foods);
             bot.equip(item, "hand", function () {
                 bot.consume(function () {
                     glob.finishState("eating");

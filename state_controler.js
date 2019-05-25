@@ -5,6 +5,7 @@ glob.queueOnceState = queueOnceState;
 glob.changeState = changeState;
 glob.finishState = finishState;
 glob.tryState = tryState;
+glob.letState = letState;
 glob.getState = getState;
 glob.doNothing = doNothing;
 
@@ -34,6 +35,16 @@ function queueState(str, cb, ...args) {
 
 function tryState(str, cb, ...args) {
     if (state == "") {
+        state = str
+        cb(...args);
+        return true
+    } else {
+        return false
+    }
+}
+
+function letState(str, cb, ...args) {
+    if (state == "" || state == str) {
         state = str
         cb(...args);
         return true

@@ -87,6 +87,10 @@ io.on('connection', function (client) {
     }
 
     var prevPos;
+    bot.on("respawn", () => {
+        emitMapAll()
+        prevPos = bot.entity.position.clone();
+    })
     bot.on("move", () => {
         if (prevPos)
             if (bot.entity.position.distanceTo(prevPos) > 16.0) {

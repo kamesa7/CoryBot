@@ -77,7 +77,7 @@ $(function () {
 
         var url = msg.match(/(?:https?|ftp):\/\/[^\s　]+/);
         if (url) {
-            msg = msg.replace(url, '<a href="' + url + '"  target="_blank">' + url + '</a>')
+            msg = msg.replace(url, '§§')
         }
 
         const codes = [
@@ -107,6 +107,9 @@ $(function () {
                 }
             }
         }
+
+        msg = msg.replace('§§', '<a href="' + url + '"  target="_blank">' + url + '</a>')
+
         $('#messages').append('<LI></LI>');
         $('#messages > LI:last').append(msg);
         $('.chat').scrollTop($('#messages').height());
@@ -218,7 +221,7 @@ $(function () {
                 $('.radar').append('<div class="entity player" id="entity' + entity.id + '" ' + style + '>')
                 $(target).html('<img class="playerimg" src="http://' + prop.host + ':8123/tiles/faces/16x16/' + entity.username + '.png"></div>')
 
-            } else if (entity.type == "mob" || (entity.type == "object" && entity.kind == "Vehicles")) {
+            } else if ((entity.type == "mob" && entity.kind != "Projectiles" && entity.kind != "Immobile") || (entity.type == "object" && entity.kind == "Vehicles")) {
                 $('.radar').append('<div class="entity mob" id="entity' + entity.id + '" ' + style + '></div>')
 
                 if (entity.type == "mob")
@@ -306,15 +309,15 @@ $(function () {
         var pz = (block.position.z - me.position.z) * grid + canvasSize / 2
         var name = block.name;
 
-        for (var i = 0; i < img.length; i++) {
-            if (name.match(new RegExp(img[i]))) {
-                ctx.drawImage(blockimg.img[img[i]], px, pz, grid, grid)
-                return;
-            }
-        }
         for (var i = 0; i < colorimg.length; i++) {
             if (name.match(new RegExp(colorimg[i]))) {
                 ctx.drawImage(blockimg.colorimg[colorimg[i]][block.metadata], px, pz, grid, grid)
+                return;
+            }
+        }
+        for (var i = 0; i < img.length; i++) {
+            if (name.match(new RegExp(img[i]))) {
+                ctx.drawImage(blockimg.img[img[i]], px, pz, grid, grid)
                 return;
             }
         }

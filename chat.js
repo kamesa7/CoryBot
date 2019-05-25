@@ -17,38 +17,34 @@ const nameCall = new RegExp(str);
 
 setInterval(time_signal, 100);
 
-var init = true;
-bot.on('spawn', () => {
-    if (init) {
-        init = false;
-        bot.log('[bot.connect]');
-        if (glob.debug == true) {
-            //bot.chatAddPattern(/^<([^ :]*)> (.*)$/, 'chat');
-            bot.log('[bot.login] localhost');
-        } else if (process.env.MC_HOST != null && ((process.env.MC_HOST == 'kenmomine.club' && process.env.MC_PORT == 25565) || process.env.MC_HOST == 'ironingot.net')) {
-            // kenmomine.club向けchat/whisperパターン
-            bot.chatAddPattern(/^(?:\[[^\]]*\])<([^ :]*)> (.*)$/, 'chat', 'kenmomine.club chat');
-            bot.chatAddPattern(/^(?:\[[^\]]*\])<Super_AI> \[([^ :]*)\] (.*)$/, 'chat', 'kenmomine.club chat');
-            bot.chatAddPattern(/^(?:\[Omikuji\]) ([^ :]*)は <(.*)>/, 'omikuji', 'kenmomine.club omikuji');
-            bot.chatAddPattern(/^([^ ]*) whispers: (.*)$/, 'whisper', 'kenmomine.club whisper(Chatco)');
-            bot.log('[bot.login] kenmomine');
-        } else if (process.env.MC_HOST != null && process.env.MC_HOST == 'pcgamemc.dip.jp') {
-            // pcgamemc.dip.jp向けchat/whisperパターン
-            bot.chatAddPattern(/^(?:\[[^\]]*\])<([^ :]*)> (.*)$/, 'chat', 'pcgamemc.dip.jp chat');
-            bot.chatAddPattern(/^([^ ]*) -> (.*)$/, 'whisper', 'pcgamemc.dip.jp whisper(Chatco)');
-            bot.log('[bot.login]PCG');
-        } else {
-            bot.log('[bot.login] unknown host');
-        }
-        bot.log('[bot.chatAdded]');
+bot.once('spawn', () => {
+    bot.log('[bot.connect]');
+    if (glob.debug == true) {
+        //bot.chatAddPattern(/^<([^ :]*)> (.*)$/, 'chat');
+        bot.log('[bot.login] localhost');
+    } else if (process.env.MC_HOST != null && ((process.env.MC_HOST == 'kenmomine.club' && process.env.MC_PORT == 25565) || process.env.MC_HOST == 'ironingot.net')) {
+        // kenmomine.club向けchat/whisperパターン
+        bot.chatAddPattern(/^(?:\[[^\]]*\])<([^ :]*)> (.*)$/, 'chat', 'kenmomine.club chat');
+        bot.chatAddPattern(/^(?:\[[^\]]*\])<Super_AI> \[([^ :]*)\] (.*)$/, 'chat', 'kenmomine.club chat');
+        bot.chatAddPattern(/^(?:\[Omikuji\]) ([^ :]*)は <(.*)>/, 'omikuji', 'kenmomine.club omikuji');
+        bot.chatAddPattern(/^([^ ]*) whispers: (.*)$/, 'whisper', 'kenmomine.club whisper(Chatco)');
+        bot.log('[bot.login] kenmomine');
+    } else if (process.env.MC_HOST != null && process.env.MC_HOST == 'pcgamemc.dip.jp') {
+        // pcgamemc.dip.jp向けchat/whisperパターン
+        bot.chatAddPattern(/^(?:\[[^\]]*\])<([^ :]*)> (.*)$/, 'chat', 'pcgamemc.dip.jp chat');
+        bot.chatAddPattern(/^([^ ]*) -> (.*)$/, 'whisper', 'pcgamemc.dip.jp whisper(Chatco)');
+        bot.log('[bot.login]PCG');
+    } else {
+        bot.log('[bot.login] unknown host');
     }
+    bot.log('[bot.chatAdded]');
 });
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 //hi
 // 自分が入ったときの挨拶
-bot.once('login', () => {
+bot.once('spawn', () => {
     // bot.safechat('hi', 1600);
 });
 // 最後に入ってきた人の hi に応答
