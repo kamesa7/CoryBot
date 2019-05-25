@@ -254,6 +254,225 @@ function chase(entity) {
     });
 }
 
+var mover;
+function followPath(path) {
+    var index = 0;
+    var err = false;
+    var preDistance = Infinity;
+    var prePos = getMyPos();
+    var preIndex = 0;
+    var indexCount = 0;
+    var waitCount = 0;
+    var stopCount = 0;
+    mover = setInterval(function () {
+        if (index < path.length) {
+
+            if (glob.isLightingMode && preLightingTime + glob.stepTime * 50 < new Date().getTime()) {
+                lighting();
+            }
+
+            if (preIndex != index) {
+                indexCount = 0;
+                preIndex = index;
+            }
+
+            if (getDiff(floor(getMyPos()), prePos) == 0) {
+                stopCount++;
+            } else {
+                stopCount = 0;
+            }
+            prePos = floor(getMyPos())
+
+            if (err || (path[index][3] != "wait" && stopCount > glob.stepError)) {
+                bot.clearControlStates();
+                bot.log("[move] path error end : " + path[index] + " stops: " + stopCount);
+                if (glob.isFollowing) {
+                    if (glob.targetEntity && glob.targetEntity.isValid) {
+                        stopPath();
+                        reFollow(glob.targetEntity);
+                    } else {
+                        stopMoving();
+                    }
+                } else if (glob.isRandomWalking) {
+                    stopPath();
+                    reRandom();
+                } else {
+                    stopPath();
+                    goToPos(finalDestination)
+                }
+                return
+            } else {
+                var target = mid([path[index][0], path[index][1], path[index][2], path[index][3]]);
+                var distance = getXZL2(getMyPos(), target);
+                var height = getMyPos()[1];
+                if (glob.logMove) bot.log("[move] " + path[index] + "  cnt: " + indexCount);
+                switch (path[index][3]) {
+                    case "walk":
+                        if (indexCount == 0) {
+                            bot.lookAt(lookToVec(target), true);
+                            bot.setControlState('forward', true);
+                            preDistance = Infinity;
+                        }
+                        indexCount++;
+                        if (indexCount > glob.stepError) {
+                            err = true;
+                            break;
+                        } else if (distance > 2) {
+                            err = true;
+                            break;
+                        } else if (preDistance <= distance || distance <= glob.onPos) {
+                            bot.clearControlStates();
+                            index++;
+                            break;
+                        }
+                        preDistance = distance;
+                        break;
+                    case "sprint":
+                        bot.lookAt(lookToVec(target), true);
+                        if (indexCount == 0) {
+                            bot.setControlState('forward', true);
+                            bot.setControlState('sprint', true);
+                            preDistance = Infinity;
+                        }
+                        indexCount++;
+                        if (preDistance <= distance || distance <= glob.onPos) {
+                            bot.clearControlStates();
+                            index++;
+                            break;
+                        }
+                        preDistance = distance;
+                        break;
+                    case "upstair":
+                        bot.lookAt(lookToVec(target), true);
+                        if (indexCount == 0) {
+                            bot.setControlState('jump', true);
+                            bot.setControlState('jump', false);
+                            bot.setControlState('forward', true);
+                            preDistance = Infinity;
+                        }
+                        indexCount++;
+                        if ((height - onGround) % 1 != 0) break;
+                        if (target[1] != height - onGround && indexCount > 1) {
+                            err = true;
+                            break;
+                        } else if (preDistance <= distance - glob.onPos || distance <= glob.onPos) {
+                            bot.clearControlStates();
+                            index++;
+                            break;
+                        }
+                        preDistance = distance;
+                        break;
+                    case "land":
+                    case "downstair":
+                        bot.lookAt(lookToVec(target), true);
+                        if (indexCount == 0) {
+                            bot.setControlState('forward', true);
+                            preDistance = Infinity;
+                        }
+                        indexCount++;
+                        if ((height - onGround) % 1 != 0) break;
+                        if (target[1] != height - onGround) {
+                            //まだ降りてない
+                        } else if (preDistance <= distance || distance <= glob.onPos) {
+                            bot.clearControlStates();
+                            index++;
+                            break;
+                        }
+                        preDistance = distance;
+                        break;
+                    case "jumpover":
+                        bot.lookAt(lookToVec(target), true);
+                        if (indexCount == 0) {
+                            bot.setControlState('jump', true);
+                            bot.setControlState('jump', false);
+                            bot.setControlState('forward', true);
+                            preDistance = Infinity;
+                        }
+                        indexCount++;
+                        if ((height - onGround) % 1 != 0) break;
+                        if (target[1] != height - onGround) {
+                            err = true;
+                            break;
+                        }
+                        if (preDistance <= distance - glob.onPos || distance <= glob.onPos) {
+                            bot.clearControlStates();
+                            index++;
+                            break;
+                        }
+                        preDistance = distance;
+                        break;
+                    case "door":
+                        bot.clearControlStates();
+                        bot.lookAt(lookToVec(target), true);
+                        bot.setControlState('forward', true);
+                        var targetVec = posToVec(target);
+                        var door = bot.blockAt(targetVec);
+                        if (door.metadata < 4 || 7 < door.metadata) {
+                            bot.lookAt(targetVec, true, function () {
+                                bot.activateBlock(door);
+                            });
+                        }
+                        index++;
+                        break;
+                    case "strict":
+                        if (indexCount == 0) {
+                            bot.clearControlStates();
+                            bot.lookAt(lookToVec(target), true, function () {
+                                bot.setControlState('sneak', true);
+                                bot.setControlState('forward', true);
+                            });
+                        }
+                        bot.lookAt(lookToVec(target), true);
+                        indexCount++;
+                        if (indexCount > glob.stepError) {
+                            err = true;
+                            break;
+                        } else if (distance <= glob.onPos) {
+                            bot.clearControlStates();
+                            index++;
+                            break;
+                        }
+                        break;
+                    case "follow":
+                        if (glob.targetEntity && glob.targetEntity.isValid) {
+                            bot.lookAt(glob.targetEntity.position.offset(0, eyeHeight, 0), false)
+                            stopPath()
+                            reFollow(glob.targetEntity);
+                        } else {
+                            stopMoving()
+                        }
+                        break;
+                    case "random":
+                        stopPath()
+                        reRandom()
+                        break;
+                    case "wait":
+                        if (indexCount == 0) {
+                            bot.clearControlStates();
+                            glob.isWaiting = true;
+                            glob.finishState("move")
+                            waitCount = path[index][4];
+                        } else if (indexCount >= waitCount) {
+                            glob.queueOnceState("move", function () {
+                                index++;
+                                glob.isWaiting = false;
+                            });
+                            break;
+                        }
+                        indexCount++;
+                        stopCount = 0;
+                        break;
+                    default:
+                        bot.log("[move] unknown state");
+                        stopMoving();
+                }
+            }
+        } else {
+            stopMoving();
+            bot.log("[move] path end")
+        }
+    }, glob.stepTime);
+}
 
 var walks = [
     [1, 0, 0],
@@ -490,226 +709,6 @@ function optimize(path) {
             i = startInd + 1;
         }
     }
-}
-
-var mover;
-function followPath(path) {
-    var index = 0;
-    var err = false;
-    var preDistance = Infinity;
-    var prePos = getMyPos();
-    var preIndex = 0;
-    var indexCount = 0;
-    var waitCount = 0;
-    var stopCount = 0;
-    mover = setInterval(function () {
-        if (index < path.length) {
-
-            if (glob.isLightingMode && preLightingTime + glob.stepTime * 50 < new Date().getTime()) {
-                lighting();
-            }
-
-            if (preIndex != index) {
-                indexCount = 0;
-                preIndex = index;
-            }
-
-            if (getDiff(floor(getMyPos()), prePos) == 0) {
-                stopCount++;
-            } else {
-                stopCount = 0;
-            }
-            prePos = floor(getMyPos())
-
-            if (err || (path[index][3] != "wait" && stopCount > glob.stepError)) {
-                bot.clearControlStates();
-                bot.log("[move] path error end : " + path[index] + " stops: " + stopCount);
-                if (glob.isFollowing) {
-                    if (glob.targetEntity && glob.targetEntity.isValid) {
-                        stopPath();
-                        reFollow(glob.targetEntity);
-                    } else {
-                        stopMoving();
-                    }
-                } else if (glob.isRandomWalking) {
-                    stopPath();
-                    reRandom();
-                } else {
-                    stopPath();
-                    goToPos(finalDestination)
-                }
-                return
-            } else {
-                var target = mid([path[index][0], path[index][1], path[index][2], path[index][3]]);
-                var distance = getXZL2(getMyPos(), target);
-                var height = getMyPos()[1];
-                if (glob.logMove) bot.log("[move] " + path[index] + "  cnt: " + indexCount);
-                switch (path[index][3]) {
-                    case "walk":
-                        if (indexCount == 0) {
-                            bot.lookAt(lookToVec(target), true);
-                            bot.setControlState('forward', true);
-                            preDistance = Infinity;
-                        }
-                        indexCount++;
-                        if (indexCount > glob.stepError) {
-                            err = true;
-                            break;
-                        } else if (distance > 2) {
-                            err = true;
-                            break;
-                        } else if (preDistance <= distance || distance <= glob.onPos) {
-                            bot.clearControlStates();
-                            index++;
-                            break;
-                        }
-                        preDistance = distance;
-                        break;
-                    case "sprint":
-                        bot.lookAt(lookToVec(target), true);
-                        if (indexCount == 0) {
-                            bot.setControlState('forward', true);
-                            bot.setControlState('sprint', true);
-                            preDistance = Infinity;
-                        }
-                        indexCount++;
-                        if (preDistance <= distance || distance <= glob.onPos) {
-                            bot.clearControlStates();
-                            index++;
-                            break;
-                        }
-                        preDistance = distance;
-                        break;
-                    case "upstair":
-                        bot.lookAt(lookToVec(target), true);
-                        if (indexCount == 0) {
-                            bot.setControlState('jump', true);
-                            bot.setControlState('jump', false);
-                            bot.setControlState('forward', true);
-                            preDistance = Infinity;
-                        }
-                        indexCount++;
-                        if ((height - onGround) % 1 != 0) break;
-                        if (target[1] != height - onGround && indexCount > 1) {
-                            err = true;
-                            break;
-                        } else if (preDistance <= distance - glob.onPos || distance <= glob.onPos) {
-                            bot.clearControlStates();
-                            index++;
-                            break;
-                        }
-                        preDistance = distance;
-                        break;
-                    case "land":
-                    case "downstair":
-                        bot.lookAt(lookToVec(target), true);
-                        if (indexCount == 0) {
-                            bot.setControlState('forward', true);
-                            preDistance = Infinity;
-                        }
-                        indexCount++;
-                        if ((height - onGround) % 1 != 0) break;
-                        if (target[1] != height - onGround) {
-                            //まだ降りてない
-                        } else if (preDistance <= distance || distance <= glob.onPos) {
-                            bot.clearControlStates();
-                            index++;
-                            break;
-                        }
-                        preDistance = distance;
-                        break;
-                    case "jumpover":
-                        bot.lookAt(lookToVec(target), true);
-                        if (indexCount == 0) {
-                            bot.setControlState('jump', true);
-                            bot.setControlState('jump', false);
-                            bot.setControlState('forward', true);
-                            preDistance = Infinity;
-                        }
-                        indexCount++;
-                        if ((height - onGround) % 1 != 0) break;
-                        if (target[1] != height - onGround) {
-                            err = true;
-                            break;
-                        }
-                        if (preDistance <= distance - glob.onPos || distance <= glob.onPos) {
-                            bot.clearControlStates();
-                            index++;
-                            break;
-                        }
-                        preDistance = distance;
-                        break;
-                    case "door":
-                        bot.clearControlStates();
-                        bot.lookAt(lookToVec(target), true);
-                        bot.setControlState('forward', true);
-                        var targetVec = posToVec(target);
-                        var door = bot.blockAt(targetVec);
-                        if (door.metadata < 4 || 7 < door.metadata) {
-                            bot.lookAt(targetVec, true, function () {
-                                bot.activateBlock(door);
-                            });
-                        }
-                        index++;
-                        break;
-                    case "strict":
-                        if (indexCount == 0) {
-                            bot.clearControlStates();
-                            bot.lookAt(lookToVec(target), true, function () {
-                                bot.setControlState('sneak', true);
-                                bot.setControlState('forward', true);
-                            });
-                        }
-                        bot.lookAt(lookToVec(target), true);
-                        indexCount++;
-                        if (indexCount > glob.stepError) {
-                            err = true;
-                            break;
-                        } else if (distance <= glob.onPos) {
-                            bot.clearControlStates();
-                            index++;
-                            break;
-                        }
-                        break;
-                    case "follow":
-                        if (glob.targetEntity && glob.targetEntity.isValid) {
-                            bot.lookAt(glob.targetEntity.position.offset(0, eyeHeight, 0), false)
-                            stopPath()
-                            reFollow(glob.targetEntity);
-                        } else {
-                            stopMoving()
-                        }
-                        break;
-                    case "random":
-                        stopPath()
-                        reRandom()
-                        break;
-                    case "wait":
-                        if (indexCount == 0) {
-                            bot.clearControlStates();
-                            glob.isWaiting = true;
-                            glob.finishState("move")
-                            waitCount = path[index][4];
-                        } else if (indexCount >= waitCount) {
-                            glob.queueOnceState("move", function () {
-                                index++;
-                                glob.isWaiting = false;
-                            });
-                            break;
-                        }
-                        indexCount++;
-                        stopCount = 0;
-                        break;
-                    default:
-                        bot.log("[move] unknown state");
-                        stopMoving();
-                }
-            }
-        } else {
-            stopMoving();
-            bot.log("[move] path end")
-        }
-    }, glob.stepTime);
 }
 
 function lighting() {
