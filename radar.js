@@ -56,6 +56,7 @@ io.on('connection', function (client) {
         glob.isCloseDefenceMode = flags.isCloseDefenceMode
         glob.isSniperMode = flags.isSniperMode
         glob.isArrowDefenceMode = flags.isArrowDefenceMode
+        glob.isCollisionalMode = flags.isCollisionalMode
     })
 
     var sentMap = [];
@@ -193,7 +194,8 @@ function emitServer() {
     io.json.emit('flags', {
         isCloseDefenceMode: glob.isCloseDefenceMode,
         isSniperMode: glob.isSniperMode,
-        isArrowDefenceMode: glob.isArrowDefenceMode
+        isArrowDefenceMode: glob.isArrowDefenceMode,
+        isCollisionalMode: glob.isCollisionalMode
     })
 }
 

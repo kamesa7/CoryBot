@@ -5,6 +5,7 @@ glob.isRandomWalking = false;
 glob.isWaiting = false;
 
 glob.isLightingMode = false;
+glob.isCollisionalMode = true;
 
 const onGround = 0.001;
 const eyeHeight = 1.42;
@@ -119,7 +120,7 @@ function goToPos(point) {
     if (glob.logMove)
         bot.log("[move] cost: " + cost);
     if (cost < Infinity) {
-        glob.tryState("move", followPath, path)
+        glob.queueOnceState("move", followPath, path)
     } else {
         bot.log("[move] cannot find path");
     }
@@ -406,11 +407,14 @@ function followPath(path) {
                         var targetVec = posToVec(target);
                         var door = bot.blockAt(targetVec);
                         if (door.metadata < 4 || 7 < door.metadata) {
-                            bot.lookAt(targetVec, true, function () {
-                                bot.activateBlock(door);
-                            });
-                        }
-                        index++;
+                            if (indexCount % 3 == 0)
+                                bot.lookAt(targetVec, true, function () {
+                                    bot.activateBlock(door);
+                                });
+                        } else {
+                            index++;
+                        }                        
+                        indexCount++;
                         break;
                     case "strict":
                         if (indexCount == 0) {
@@ -639,25 +643,34 @@ function convertNode(path, node) {
 }
 
 function optimize(path) {
-    // var start = floor(getMyPos());
+    if (path.length == 0) return;
+    var start = floor(getMyPos());
     // path.splice(0, 0, [start[0], start[1], start[2], "strict"]);
-    for (var i = 0; i < path.length; i++) {
+    if (bot.blockAt(posToVec(start)).boundingBox == "door") {
+        path.splice(0, 0, [start[0], start[1], start[2], "strict"]);
+        path.splice(1, 0, [start[0], start[1], start[2], "door"]);
+    }
+    var s = 0;
+    if (bot.blockAt(posToVec(path[0])).boundingBox == "door") {
+        var pathDoor = path[0];
+        path.splice(0, 0, [start[0], start[1], start[2], "strict"]);
+        path.splice(1, 0, [pathDoor[0], pathDoor[1], pathDoor[2], "door"]);
+        s += 2;
+    }
+    for (var i = s; i < path.length; i++) {
         if (bot.blockAt(posToVec(path[i])).boundingBox == "door") {
-            var doorFront = path[i - 1];
-            if (doorFront) {
-                path.splice(i - 1, 0, [doorFront[0], doorFront[1], doorFront[2], "strict"]);
-                i++;
-            }
             var pathDoor = path[i];
-            path.splice(i, 0, [pathDoor[0], pathDoor[1], pathDoor[2], "door"]);
-            i++;
-            for (var k = 0; k < walks.length; k++) {
-                var nextDoor = plus(pathDoor, walks[k]);
-                if (bot.blockAt(posToVec(nextDoor)).boundingBox == "door") {
-                    path.splice(i, 0, [nextDoor[0], nextDoor[1], nextDoor[2], "door"]);
-                    i++
-                }
-            }
+            var doorFront = path[i - 1];
+            path.splice(i, 0, [doorFront[0], doorFront[1], doorFront[2], "strict"]);
+            path.splice(i + 1, 0, [pathDoor[0], pathDoor[1], pathDoor[2], "door"]);
+            i += 2;
+            // for (var k = 0; k < walks.length; k++) {
+            //     var nextDoor = plus(pathDoor, walks[k]);
+            //     if (bot.blockAt(posToVec(nextDoor)).boundingBox == "door") {
+            //         path.splice(i, 0, [nextDoor[0], nextDoor[1], nextDoor[2], "door"]);
+            //         i++
+            //     }
+            // }
         }
     }
     var startInd;
@@ -1016,8 +1029,11 @@ function setInterestEntity(entity = null) {
 bot.on('entityMoved', (entity) => {
     var distance = bot.entity.position.distanceTo(entity.position);
 
+    var collideDistance = getXZL2(getMyPos(), getPosFromVec3(entity.position));
+    var collideHeight = Math.abs(getMyPos()[1] - getPosFromVec3(entity.position)[1])
+
     // 至近距離にプレイヤーがいる場合少し動く
-    if (entity.type === 'player' && distance < 0.8 && glob.doNothing()) {
+    if (entity.type === 'player' && collideDistance < 0.8 && collideHeight < 1.5 && glob.doNothing() && glob.isCollisionalMode) {
         var botpos = bot.entity.position.clone();
         var entpos = entity.position.clone();
         botpos.y = entpos.y = 0;

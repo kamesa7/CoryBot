@@ -41,6 +41,10 @@ $(function () {
         emitFlags();
     })
 
+    $('#is-collisional-mode').click(function () {
+        emitFlags();
+    })
+
     $('#goto').click(function () {
         io.emit('goto', $('#target_entity').val());
     })
@@ -77,6 +81,8 @@ $(function () {
 
         var url = msg.match(/(?:https?|ftp):\/\/[^\s　]+/);
         if (url) {
+            url = url[0];
+            url = url.replace(/§./g, "")
             msg = msg.replace(url, '§§')
         }
 
@@ -144,7 +150,8 @@ $(function () {
         var flags = {
             isCloseDefenceMode: $('#is-close-defence-mode').prop("checked"),
             isSniperMode: $('#is-sniper-mode').prop("checked"),
-            isArrowDefenceMode: $('#is-arrow-defence-mode').prop("checked")
+            isArrowDefenceMode: $('#is-arrow-defence-mode').prop("checked"),
+            isCollisionalMode: $('#is-collisional-mode').prop("checked")
         }
         io.json.emit('flags', flags)
     }
@@ -153,6 +160,7 @@ $(function () {
         $('#is-close-defence-mode').prop("checked", flags.isCloseDefenceMode)
         $('#is-sniper-mode').prop("checked", flags.isSniperMode)
         $('#is-arrow-defence-mode').prop("checked", flags.isArrowDefenceMode)
+        $('#is-collisional-mode').prop("checked", flags.isCollisionalMode)
     });
 
     io.on('players', function (newplayers) {
@@ -209,6 +217,7 @@ $(function () {
     function drawEntity(entity) {
         if (me == null) return;
         if (prop == null) return;
+        if (Math.sqrt((entity.position.x - me.position.x) * (entity.position.x - me.position.x) + (entity.position.z - me.position.z) * (entity.position.z - me.position.z)) > blockRange * 2) return;
         var px = (entity.position.x - me.position.x) / radarRange * 50 + 50 - pointVW;
         var pz = (entity.position.z - me.position.z) / radarRange * 50 + 50 - pointVW;
         var target = '#entity' + entity.id;
