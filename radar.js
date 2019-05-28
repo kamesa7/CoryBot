@@ -27,6 +27,10 @@ io.on('connection', function (client) {
     client.on('dismount', function () {
         bot.dismount();
     });
+    client.on('stopstate', function () {
+        glob.finishState();
+        glob.stopMoving();
+    });
     client.on('goto', function (ID) {
         if (bot.entities[ID])
             glob.goToPos(bot.entities[ID].position)
@@ -45,8 +49,8 @@ io.on('connection', function (client) {
     });
     client.on('punch', function (ID) {
         if (bot.entities[ID])
-            bot.attack(bot.entities[ID])
-        //glob.punch(bot.entities[ID])
+            glob.punch(bot.entities[ID])            
+            // bot.attack(bot.entities[ID])
     });
     client.on('shoot', function (ID) {
         if (bot.entities[ID])

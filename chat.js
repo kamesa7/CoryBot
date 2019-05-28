@@ -8,6 +8,7 @@ var seconds = clock.getSeconds();
 
 glob.isAuctioning = false;
 glob.isAnnounceDeathMode = true;
+glob.isOmikujiReactionMode = false;
 
 const keyNames = ["コリドラ", "こりどら", "コリちゃん", "こりちゃん", "Cory"];
 var str = "^(" + keyNames[0];
@@ -161,15 +162,16 @@ bot.on('whisper', (username, message) => {
 //omikuji
 bot.on('omikuji', (username, message) => {
     if (bot.username === username) return;
+    if (!glob.isOmikujiReactionMode) return;
 
-    // if (message.match(/柑橘類/)) {
-    //     bot.randomchat(['wwwww', 'ｗｗｗｗｗ', 'かわいそう', 'w', 'かw',
-    //         "キャー", "柑橘w", "黄色い", "柑橘類の日", "おめでとう！", "可哀想", "か ん き つ る い",
-    //         "いいね", "ʬʬʬ", "草", "🍊", username + "さんは柑橘類ね", "柑橘系" + username, message,
-    //         "", "柑橘…", "柑橘な日もあるよ", "www", "ｗｗｗ", "卍柑橘卍", "柑橘様だ", "かかかかかｗ",
-    //         "大吉＞中吉＞吉＞＞＞大凶＞＞＞＞＞＞＞＞＞＞＞＞柑橘類", "17333", "55", "カ ン キ ツ", "[柑橘]<" + username + ">[柑橘]",
-    //         "オレンジ様だ", "レモン様だ", "今日の運勢「柑橘類」", "(笑)", "柑橘類（笑）"]);
-    // }
+    if (message.match(/柑橘類/)) {
+        bot.randomchat(['wwwww', 'ｗｗｗｗｗ', 'かわいそう', 'w', 'かw',
+            "キャー", "柑橘w", "黄色い", "柑橘類の日", "おめでとう！", "可哀想", "か ん き つ る い",
+            "いいね", "ʬʬʬ", "草", "🍊", username + "さんは柑橘類ね", "柑橘系" + username, message,
+            "", "柑橘…", "柑橘な日もあるよ", "www", "ｗｗｗ", "卍柑橘卍", "柑橘様だ", "かかかかかｗ",
+            "大吉＞中吉＞吉＞＞＞大凶＞＞＞＞＞＞＞＞＞＞＞＞柑橘類", "17333", "55", "カ ン キ ツ", "[柑橘]<" + username + ">[柑橘]",
+            "オレンジ様だ", "レモン様だ", "今日の運勢「柑橘類」", "(笑)", "柑橘類（笑）"]);
+    }
 });
 
 //death

@@ -29,6 +29,11 @@ $(function () {
         io.emit('dismount');
     })
 
+    $('#stopstate').click(function () {
+        io.emit('stopstate');
+    })
+
+
     $('#is-close-defence-mode').click(function () {
         emitFlags();
     })
