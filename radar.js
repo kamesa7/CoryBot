@@ -49,8 +49,8 @@ io.on('connection', function (client) {
     });
     client.on('punch', function (ID) {
         if (bot.entities[ID])
-            glob.punch(bot.entities[ID])            
-            // bot.attack(bot.entities[ID])
+            glob.punch(bot.entities[ID])
+        // bot.attack(bot.entities[ID])
     });
     client.on('shoot', function (ID) {
         if (bot.entities[ID])
@@ -145,7 +145,7 @@ io.on('connection', function (client) {
 
         if (data.length > 0) {
             client.json.emit('map', { data: data })
-        } else if (Math.random() > 0.7) {
+        } else if (Math.random() > 0.8) {
             client.json.emit('map', { data: data })
         }
     }
@@ -157,6 +157,8 @@ glob.event.on("log", (msg) => {
 
 bot.on("move", () => {
     io.json.emit("myentity", bot.entity, glob.getState())
+    if (Math.random() > 0.8)
+        emitInventory()
 })
 
 bot.on("playerJoined", (player) => {
@@ -207,6 +209,13 @@ function emitVital() {
     io.json.emit('vital', {
         health: Math.round(bot.health),
         food: Math.round(bot.food)
+    })
+}
+
+function emitInventory() {
+    io.json.emit('inventory', {
+        slots: bot.inventory.slots,
+        hand: bot.quickBarSlot
     })
 }
 

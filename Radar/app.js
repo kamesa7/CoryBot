@@ -135,14 +135,21 @@ $(function () {
             if (me.position.x != player.position.x || me.position.z != player.position.z) {
                 drawAllEntity();
             }
+            var hand;
             if (me.heldItem != player.heldItem) {
                 if (me.heldItem)
-                    $('#hand').text("[hand] " + me.heldItem.displayName)
+                    hand = "[hand] " + me.heldItem.displayName
                 else
-                    $('#hand').text("[hand] null")
+                    hand = "[hand] null"
             }
-            $('#position').text("[pos] " + Math.round(me.position.x) + ", " + Math.round(me.position.y) + ", " + Math.round(me.position.z))
-            $('#state').text("[state] " + state)
+            if (hand != $('#hand').text())
+                $('#hand').text(hand)
+            var pos = "[pos] " + Math.round(me.position.x) + ", " + Math.round(me.position.y) + ", " + Math.round(me.position.z);
+            if (pos != $('#position').text())
+                $('#position').text(pos)
+            if (("[state] " + state) != $('#state').text())
+                $('#state').text("[state] " + state)
+
             me = player;
         } else {//init            
             me = player;
@@ -180,6 +187,7 @@ $(function () {
                     $('#target_entity').val(players[key].entity.id);
                 else
                     $('#target_entity').val("");
+                $('#target_entity_name').text(players[key].username)
             })
         });
     });
@@ -252,6 +260,10 @@ $(function () {
 
             $(target).click(function () {
                 $('#target_entity').val(entity.id);
+                if (entity.username)
+                    $('#target_entity_name').text(entity.username)
+                else if (entity.name)
+                    $('#target_entity_name').text(entity.name)
             })
         }
     }
@@ -287,10 +299,11 @@ $(function () {
     function drawAllBlock() {
         if (me == null) return;
         var ctx = $("#canvas")[0].getContext('2d')
+        ctx.strokeStyle = 'rgb(128, 100, 162)'
+
         ctx.clearRect(0, 0, canvasSize, canvasSize)
         ctx.strokeRect(canvasSize / 2 - blockRange * grid, canvasSize / 2 - blockRange * grid, blockRange * 2 * grid, blockRange * 2 * grid)
 
-        ctx.strokeStyle = 'rgb(128, 100, 162)'
         ctx.beginPath();
         ctx.arc(canvasSize / 2, canvasSize / 2, 16 * grid, 0, Math.PI * 2, false);
         ctx.stroke();
@@ -336,4 +349,56 @@ $(function () {
             }
         }
     }
+
+    io.on('inventory', function (inventory) {
+        const START = 9;
+        var QUICK = 36 + inventory.hand;
+        var slots = inventory.slots;
+        var table = '<tbody>';
+        var row = '<tr>';
+        for (var i = START; i < 46; i++) {
+            var name = "";
+            if (slots[i]) {
+                name += slots[i].displayName;
+                name = name.substring(0, 10) + " x" + slots[i].count;
+            }
+            if (i == QUICK) {
+                row += '<td class="quickbar">' + name + '</td>'
+            } else {
+                row += '<td>' + name + '</td>'
+            }
+
+            if ((i - START + 1) % 9 == 0) {
+                row += '</tr>'
+                table += row;
+                row = '<tr>'
+            }
+        }
+        table += '</tbody>'
+        if (table != $("#slot").html()) {
+            $("#slot").html(table);
+        }
+
+        var other_table = '<tbody>';
+        var row = '<tr>';
+        for (var i = 0; i < START; i++) {
+            if (slots[i]) {
+                var name = slots[i].displayName;
+                name = name.substring(0, 10) + " x" + slots[i].count;
+                row += '<td>' + name + '</td>'
+            } else {
+                row += '<td> </td>'
+            }
+
+            if ((i - START + 1) % 9 == 0) {
+                row += '</tr>'
+                other_table += row;
+                row = '<tr>'
+            }
+        }
+        other_table += '</tbody>'
+        if (other_table != $("#other_slot").html()) {
+            $("#other_slot").html(other_table);
+        }
+    });
 });

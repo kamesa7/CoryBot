@@ -12,8 +12,16 @@ glob.doNothing = doNothing;
 var queue = glob.queue;
 var state = "";
 
+class State {
+    constructor(str, cb, ...args) {
+        this.state = str;
+        this.cb = cb;
+        this.args = args;
+    }
+}
+
 function queueOnceState(str, cb, ...args) {
-    if (queue.contains({ state: state }, (a, b) => a.str == b.str ? true : false))
+    if (queue.contains(new State(str, cb, args), (a, b) => a.state == b.state ? true : false))
         return false
     return queueState(str, cb, ...args)
 }
@@ -24,11 +32,7 @@ function queueState(str, cb, ...args) {
         cb(...args);
         return true
     } else {
-        queue.add({
-            state: str,
-            cb: cb,
-            args: args
-        })
+        queue.add(new State(str, cb, args))
         return false
     }
 }
