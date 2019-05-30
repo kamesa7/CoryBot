@@ -413,7 +413,7 @@ function followPath(path) {
                                 });
                         } else {
                             index++;
-                        }                        
+                        }
                         indexCount++;
                         break;
                     case "strict":
@@ -1063,4 +1063,12 @@ function interest_signal() {
     } else {
         setInterestEntity();
     }
+}
+
+function openElytra() {
+    bot._client.write("entity_action", {
+        entityId: bot.entity.id,
+        actionId: 8,
+        jumpBoost: 0
+    })
 }

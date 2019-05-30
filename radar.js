@@ -62,6 +62,23 @@ io.on('connection', function (client) {
         glob.isArrowDefenceMode = flags.isArrowDefenceMode
         glob.isCollisionalMode = flags.isCollisionalMode
     })
+    client.on('equip', function (slot) {
+        var item = bot.inventory.slots[slot];
+        if (item) {
+            bot.equip(item, "hand", function (err) {
+                if (err) bot.log(err);
+            });
+        } else {
+            bot.unequip("hand", function (err) {
+                if (err) bot.log(err);
+            })
+        }
+    })
+    client.on('toss', function () {
+        var item = bot.heldItem;
+        if (item)
+            bot.tossStack(item);
+    })
 
     var sentMap = [];
     function emitMapAll() {

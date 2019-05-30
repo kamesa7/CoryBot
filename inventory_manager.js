@@ -42,7 +42,11 @@ function startEat() {
     if (item != null) {
         glob.queueOnceState("eating", function () {
             item = findItem(foods);
-            bot.equip(item, "hand", function () {
+            bot.equip(item, "hand", function (err) {
+                if (err) {
+                    glob.finishState("eating");
+                    return;
+                }
                 bot.consume(function () {
                     glob.finishState("eating");
                 });
@@ -99,10 +103,18 @@ function equipArmor(dest = 0) {
         item = findItem(helmets[index] + dest);
         if (item != null && (item.slot < 5 || 8 < item.slot)) {
             switch (dest) {
-                case 0: bot.equip(item, "head"); break;
-                case 1: bot.equip(item, "torso"); break;
-                case 2: bot.equip(item, "legs"); break;
-                case 3: bot.equip(item, "feet"); break;
+                case 0: bot.equip(item, "head", function (err) {
+                    if (err) bot.log(err)
+                }); break;
+                case 1: bot.equip(item, "torso", function (err) {
+                    if (err) bot.log(err)
+                }); break;
+                case 2: bot.equip(item, "legs", function (err) {
+                    if (err) bot.log(err)
+                }); break;
+                case 3: bot.equip(item, "feet", function (err) {
+                    if (err) bot.log(err)
+                }); break;
             }
             return;
         }
@@ -112,6 +124,8 @@ function equipArmor(dest = 0) {
 function equipHead() {
     var item = findItem(397);
     if (item != null) {
-        bot.equip(item, "head");
+        bot.equip(item, "head", function (err) {
+            if (err) bot.log(err)
+        });
     }
 }

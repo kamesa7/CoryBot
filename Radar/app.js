@@ -33,6 +33,9 @@ $(function () {
         io.emit('stopstate');
     })
 
+    $('#toss').click(function () {
+        io.emit('toss');
+    })
 
     $('#is-close-defence-mode').click(function () {
         emitFlags();
@@ -73,7 +76,6 @@ $(function () {
     $('#shoot').click(function () {
         io.emit('shoot', $('#target_entity').val());
     })
-
 
     io.on('server', function (msg) {
         prop = msg;
@@ -136,12 +138,10 @@ $(function () {
                 drawAllEntity();
             }
             var hand;
-            if (me.heldItem != player.heldItem) {
-                if (me.heldItem)
-                    hand = "[hand] " + me.heldItem.displayName
-                else
-                    hand = "[hand] null"
-            }
+            if (me.heldItem)
+                hand = "[hand] " + me.heldItem.displayName
+            else
+                hand = "[hand] null"
             if (hand != $('#hand').text())
                 $('#hand').text(hand)
             var pos = "[pos] " + Math.round(me.position.x) + ", " + Math.round(me.position.y) + ", " + Math.round(me.position.z);
@@ -363,9 +363,9 @@ $(function () {
                 name = name.substring(0, 10) + " x" + slots[i].count;
             }
             if (i == QUICK) {
-                row += '<td class="quickbar">' + name + '</td>'
+                row += '<td class="quickbar" id="slot' + i + '">' + name + '</td>'
             } else {
-                row += '<td>' + name + '</td>'
+                row += '<td id="slot' + i + '">' + name + '</td>'
             }
 
             if ((i - START + 1) % 9 == 0) {
@@ -377,6 +377,12 @@ $(function () {
         table += '</tbody>'
         if (table != $("#slot").html()) {
             $("#slot").html(table);
+            for (var i = START; i < 46; i++) {
+                const slot = i;
+                $("#slot" + slot).click(function () {
+                    io.emit("equip", slot);
+                });
+            }
         }
 
         var other_table = '<tbody>';
@@ -385,7 +391,7 @@ $(function () {
             if (slots[i]) {
                 var name = slots[i].displayName;
                 name = name.substring(0, 10) + " x" + slots[i].count;
-                row += '<td>' + name + '</td>'
+                row += '<td id="slot' + i + '">' + name + '</td>'
             } else {
                 row += '<td> </td>'
             }

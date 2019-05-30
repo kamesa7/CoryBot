@@ -62,7 +62,12 @@ bot.on("entitySpawn", (entity) => {
 
             bot.lookAt(entity.position.plus(new Vec3(0, 1, 0)), true);
             bot.activateItem();
-            bot.equip(shield, "hand", function () {
+            bot.equip(shield, "hand", function (err) {
+                if (err) {
+                    bot.log(err)
+                    glob.finishState("guarding");
+                    return;
+                }
                 bot.activateItem();
                 bot.lookAt(entity.position, true);
                 setTimeout(function () {
@@ -82,7 +87,10 @@ function punch(entity) {
         else bot.log("[combat] punch: " + entity.username);
         var item = glob.findItem(swords);
         if (item != null) {
-            bot.equip(item, "hand", function () {
+            bot.equip(item, "hand", function (err) {
+                if (err) {
+                    bot.log(err);
+                }
                 bot.attack(entity);
             });
         } else {
@@ -102,7 +110,11 @@ function shoot(entity, isHigh) {
             if (entity.name != undefined) bot.log("[combat] shoot: " + entity.name + " " + entity.position.floored());
             else bot.log("[combat] shoot: " + entity.username + " " + entity.position.floored());
             bot.equip(bow, "hand", function (err) {
-                if (err) console.log(err);
+                if (err) {
+                    bot.log(err)
+                    glob.finishState("shooting");
+                    return;
+                };
                 bot.activateItem();
                 bot.lookAt(entity.position);
                 setTimeout(function () {
