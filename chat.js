@@ -6,6 +6,7 @@ var minutes = clock.getMinutes();
 var hours = clock.getHours();
 var seconds = clock.getSeconds();
 
+glob.isIgnoreMode = true;
 glob.isAuctioning = false;
 glob.isAnnounceDeathMode = true;
 glob.isOmikujiReactionMode = false;
@@ -260,6 +261,9 @@ function safechat(text) {
     var elapsed_ms = current_time - safechat_last_send_time;
 
     if (!text)
+        return;
+
+    if (glob.isIgnoreMode)
         return;
 
     if (elapsed_ms > 1000) {

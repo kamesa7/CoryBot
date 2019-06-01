@@ -31,7 +31,7 @@ console.log("repl to debug");
 
 start()
 
-glob.blockFinderPlugin = require('mineflayer-blockfinder')(mineflayer);
+bot.loadPlugin(require('mineflayer-blockfinder')(mineflayer));
 require("./state_controler")
 require("./inventory_manager")
 require("./event_manager")
@@ -48,7 +48,8 @@ function start() {
       host: process.env.MC_LOCAL_HOST,
       port: process.env.MC_LOCAL_PORT,
       username: "Steve" + steveNum,
-      verbose: true
+      version: process.env.MC_VERSION,
+      verbose: true,      
     });
     console.log('Connecting to [localhost]');
   } else if (glob.useCache) {
@@ -59,6 +60,7 @@ function start() {
       username: process.env.MC_USERNAME,
       session: sessionCache,
       password: process.env.MC_PASSWORD,
+      version: process.env.MC_VERSION,
       verbose: true
     });
     console.log('Connecting to [' + process.env.MC_HOST + ':' + process.env.MC_PORT + ']');
@@ -69,6 +71,7 @@ function start() {
       port: process.env.MC_PORT,
       username: process.env.MC_USERNAME,
       password: process.env.MC_PASSWORD,
+      version: process.env.MC_VERSION,
       verbose: true
     });
     console.log('Connecting to [' + process.env.MC_HOST + ':' + process.env.MC_PORT + ']');

@@ -115,9 +115,6 @@ bot.on('noteHeard', (block, instrument, pitch) => {
   }
 });
 
-
-bot.loadPlugin(glob.blockFinderPlugin);
-
 function initNote() {
   bot.log("[note] Init");
   glob.notes = [[], [], [], [], [], [], [], [], [], []];

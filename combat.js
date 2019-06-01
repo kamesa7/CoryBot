@@ -102,7 +102,7 @@ function punch(entity) {
 }
 
 function shoot(entity, isHigh) {
-    glob.queueOnceState("shooting", function (entity, isHigh) {
+    glob.queueOnceState("shooting", function () {
         var bow = glob.findItem(261); // bow id
         var arrow = glob.findItem(arrows);
         var previousPosition;
@@ -157,10 +157,60 @@ function shoot(entity, isHigh) {
             bot.log("[combat] no bow or arrow");
             glob.finishState("shooting");
         }
-    }, entity, isHigh);
+    });
 }
 
 function timeToShoot(target, isHigh) {
+    var x = target.x - bot.entity.position.x;
+    var y = target.y - bot.entity.position.y;
+    var z = target.z - bot.entity.position.z;
+    var dist = getXZL2(x, z);
+    var angle = Math.atan(y / dist)
+    var ayg = maxArrowSpeed * maxArrowSpeed - y * Gravity;
+    var discriminant = (ayg * ayg - Gravity * Gravity * ((dist * dist) + (y * y)));
+    var t1 = 2 * (ayg + Math.sqrt(discriminant)) / (Gravity * Gravity);
+    var t2 = 2 * (ayg - Math.sqrt(discriminant)) / (Gravity * Gravity);
+    if (t1 < 0) t1 = t2;
+    else if (t2 < 0) t2 = t1;
+    if (!isHigh) {
+        t = Math.min(t1, t2);
+    } else {
+        t = Math.max(t1, t2)
+    }
+    t = Math.sqrt(t);
+    if (glob.logCombat) bot.log("[combat] details " + " L2:" + target.distanceTo(bot.entity.position) + " dist:" + dist + " y:" + y + " angle:" + angle / (Math.PI / 180) + " D:" + discriminant + " time:" + t + " target:" + target)
+    return t;
+}
+
+function throwIt(target) {
+    glob.queueOnceState("throwing", function () {
+        bot.log("[combat] throw: " + target.floored());
+            var x = target.x - bot.entity.position.x;
+            var z = target.z - bot.entity.position.z;
+            var dist = getXZL2(x, z);
+
+            var isHigh = true;
+            if (canSeeDirectly(target.offset(0, eyeHeight, 0))) isHigh = false
+
+            var t = timeToThrow(target, isHigh);
+
+            var heightAdjust = 0.5 * Gravity * t * t;
+            heightAdjust += t * airResistance;
+            heightAdjust += dist * 0.005
+            if (isHigh) heightAdjust *= highAngleAdjust;
+
+            if (isNaN(heightAdjust)) {
+                bot.log("[combat] can't throw there")
+            } else {
+                bot.lookAt(target.offset(0, heightAdjust + eyeHeight, 0), true, function () {
+                    bot.activateItem();
+                });
+            }
+        glob.finishState("throwing");
+    });
+}
+
+function timeToThrow(target, isHigh) {
     var x = target.x - bot.entity.position.x;
     var y = target.y - bot.entity.position.y;
     var z = target.z - bot.entity.position.z;
