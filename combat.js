@@ -12,6 +12,7 @@ glob.logCombat = false;
 
 glob.punch = punch;
 glob.shoot = shoot;
+glob.throwIt = throwIt;
 
 const airResistance = 0;
 const highAngleAdjust = 0.58;
@@ -19,6 +20,7 @@ const eyeHeight = 1.10;
 const Gravity = 18.3;
 const maxArrowSpeed = 55;
 const drawingTime = 1100;
+const maxEggSpeed = 35;
 
 var swordInterval = 625;
 var preAttackTime = new Date().getTime();
@@ -182,7 +184,7 @@ function timeToShoot(target, isHigh) {
     return t;
 }
 
-function throwIt(target) {
+function throwIt(target) { // position
     glob.queueOnceState("throwing", function () {
         bot.log("[combat] throw: " + target.floored());
             var x = target.x - bot.entity.position.x;
@@ -190,7 +192,7 @@ function throwIt(target) {
             var dist = getXZL2(x, z);
 
             var isHigh = true;
-            if (canSeeDirectly(target.offset(0, eyeHeight, 0))) isHigh = false
+            if (canSeeDirectly(target)) isHigh = false
 
             var t = timeToThrow(target, isHigh);
 
@@ -202,7 +204,7 @@ function throwIt(target) {
             if (isNaN(heightAdjust)) {
                 bot.log("[combat] can't throw there")
             } else {
-                bot.lookAt(target.offset(0, heightAdjust + eyeHeight, 0), true, function () {
+                bot.lookAt(target.offset(0, heightAdjust, 0), true, function () {
                     bot.activateItem();
                 });
             }
@@ -216,7 +218,7 @@ function timeToThrow(target, isHigh) {
     var z = target.z - bot.entity.position.z;
     var dist = getXZL2(x, z);
     var angle = Math.atan(y / dist)
-    var ayg = maxArrowSpeed * maxArrowSpeed - y * Gravity;
+    var ayg = maxEggSpeed * maxEggSpeed - y * Gravity;
     var discriminant = (ayg * ayg - Gravity * Gravity * ((dist * dist) + (y * y)));
     var t1 = 2 * (ayg + Math.sqrt(discriminant)) / (Gravity * Gravity);
     var t2 = 2 * (ayg - Math.sqrt(discriminant)) / (Gravity * Gravity);

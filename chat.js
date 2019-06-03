@@ -6,7 +6,7 @@ var minutes = clock.getMinutes();
 var hours = clock.getHours();
 var seconds = clock.getSeconds();
 
-glob.isIgnoreMode = true;
+glob.isIgnoreMode = false;
 glob.isAuctioning = false;
 glob.isAnnounceDeathMode = true;
 glob.isOmikujiReactionMode = false;
