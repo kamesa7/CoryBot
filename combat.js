@@ -12,6 +12,8 @@ glob.logCombat = false;
 
 glob.punch = punch;
 glob.shoot = shoot;
+glob.throwEgg = throwEgg;
+glob.throwPearl = throwPearl;
 glob.throwIt = throwIt;
 
 const airResistance = 0;
@@ -184,30 +186,67 @@ function timeToShoot(target, isHigh) {
     return t;
 }
 
+function throwEgg(target) {
+    glob.queueOnceState("throwprepare", function () {
+        var item = glob.findItem(344);
+        if (item) {
+            bot.equip(item, "hand", function (err) {
+                if (err) {
+                    bot.log(err)
+                } else {
+                    throwIt(target);
+                }
+            });
+        } else {
+            bot.log("[combat] No Egg")
+        }
+        glob.finishState("throwprepare")
+    })
+}
+
+function throwPearl(target) {
+    glob.queueOnceState("throwprepare", function () {
+        var item = glob.findItem(368);
+        if (item) {
+            bot.equip(item, "hand", function (err) {
+                if (err) {
+                    bot.log(err)
+                } else {
+                    throwIt(target);
+                }
+            });
+        } else {
+            bot.log("[combat] No Pearl")
+        }
+        glob.finishState("throwprepare")
+    })
+}
+
 function throwIt(target) { // position
     glob.queueOnceState("throwing", function () {
-        bot.log("[combat] throw: " + target.floored());
-            var x = target.x - bot.entity.position.x;
-            var z = target.z - bot.entity.position.z;
-            var dist = getXZL2(x, z);
+        if (bot.heldItem) bot.log("[combat] throw: " + bot.heldItem.displayName + " " + target.floored());
+        else bot.log("[combat] throw: " + target.floored());
+        var x = target.x - bot.entity.position.x;
+        var z = target.z - bot.entity.position.z;
+        var dist = getXZL2(x, z);
 
-            var isHigh = true;
-            if (canSeeDirectly(target)) isHigh = false
+        var isHigh = true;
+        if (canSeeDirectly(target)) isHigh = false
 
-            var t = timeToThrow(target, isHigh);
+        var t = timeToThrow(target, isHigh);
 
-            var heightAdjust = 0.5 * Gravity * t * t;
-            heightAdjust += t * airResistance;
-            heightAdjust += dist * 0.005
-            if (isHigh) heightAdjust *= highAngleAdjust;
+        var heightAdjust = 0.5 * Gravity * t * t;
+        heightAdjust += t * airResistance;
+        heightAdjust += dist * 0.005
+        if (isHigh) heightAdjust *= highAngleAdjust;
 
-            if (isNaN(heightAdjust)) {
-                bot.log("[combat] can't throw there")
-            } else {
-                bot.lookAt(target.offset(0, heightAdjust, 0), true, function () {
-                    bot.activateItem();
-                });
-            }
+        if (isNaN(heightAdjust)) {
+            bot.log("[combat] can't throw there")
+        } else {
+            bot.lookAt(target.offset(0, heightAdjust, 0), true, function () {
+                bot.activateItem();
+            });
+        }
         glob.finishState("throwing");
     });
 }

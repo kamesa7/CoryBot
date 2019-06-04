@@ -97,10 +97,7 @@ bot.on('respawn', () => {
 });
 
 function goToPos(point) {
-    if (glob.getState() == "move") {
-        stopMoving();
-        bot.log("[move] aborted");
-    }
+    stopMoving();
     var goal;
     if (Array.isArray(point)) {
         goal = point;
@@ -127,16 +124,13 @@ function goToPos(point) {
 }
 
 function follow(entity) {
-    if (glob.getState() == "move") {
-        stopMoving();
-        bot.log("[move] aborted");
-    }
+    stopMoving();
     if (entity == undefined || !entity.isValid) {
         bot.log("[move] cannot find entity");
-        stopMoving();
         return;
     }
-    bot.log("[move] follow entity " + entity.position.floored());
+    if (entity.name != undefined) bot.log("[move] follow: " + entity.name + " " + entity.position.floored());
+    else bot.log("[move] follow: " + entity.username + " " + entity.position.floored());
     glob.targetEntity = entity;
     glob.isFollowing = true;
     reFollow(entity);
@@ -173,10 +167,7 @@ function reFollow(entity) {
 }
 
 function randomWalk() {
-    if (glob.getState() == "move") {
-        stopMoving();
-        bot.log("[move] aborted");
-    }
+    stopMoving();
     bot.log("[move] random walk ");
     glob.isRandomWalking = true;
     reRandom();
@@ -213,17 +204,15 @@ function reRandom() {
 
 var chaser;
 function chase(entity) {
-    if (glob.getState() == "move") {
-        stopMoving();
-        bot.log("[move] aborted");
-    }
+    stopMoving();
     if (entity == undefined || !entity.isValid) {
         bot.log("[move] cannot find entity");
-        stopMoving();
         return;
     }
     glob.targetEntity = entity;
-    bot.log("[move] chase entity " + entity.position.floored());
+
+    if (entity.name != undefined) bot.log("[move] chase: " + entity.name + " " + entity.position.floored());
+    else bot.log("[move] chase: " + entity.username + " " + entity.position.floored());
     chaser = setInterval(reChase, glob.stepTime);
     function reChase() {
         if (entity == undefined || !entity.isValid) {
@@ -471,7 +460,7 @@ function followPath(path) {
             }
         } else {
             stopMoving();
-            bot.log("[move] path end")
+            bot.log("[move] path complete : " + bot.entity.position.floored());
         }
     }, glob.stepTime);
 }
@@ -543,7 +532,7 @@ function bestFirstSearch(finalPath, start, goal, allow = glob.allowGoal) {
             optimize(finalPath);
             return cost;
         } else if (count++ > glob.searchLimit) {
-            bot.log("[move] limit exceeded");
+            // bot.log("[move] limit exceeded");
             var nearDistances = [];
             for (var i = 0; i < closed.length; i++) {
                 nearDistances.push(getL1(closed[i], goal));

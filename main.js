@@ -14,7 +14,7 @@ isSame = require("./isSameObject");
 var steveNum = "";
 
 glob = {
-  debug: process.env.MC_LOCAL == "true" ? true : false,
+  debug: process.env.MC_LOCAL.match(/^true$/i) ? true : false,
   RADAR_PORT: process.env.MC_RADAR_PORT,
   useCache: true,
   event: new events.EventEmitter()

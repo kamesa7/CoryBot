@@ -17,6 +17,11 @@ $(function () {
     });
 
     $('#refresh').click(function () {
+        console.log("refresh")
+        $('.entity').remove();
+        entities = [];
+        players = [];
+        map = [];
         io.emit('server');
         drawAllEntity();
     })
@@ -78,6 +83,7 @@ $(function () {
     })
 
     io.on('server', function (msg) {
+        console.log("on server")
         prop = msg;
         $('#host').text(msg.host + "   " + msg.username)
     })
@@ -125,7 +131,8 @@ $(function () {
 
         $('#messages').append('<LI></LI>');
         $('#messages > LI:last').append(msg);
-        $('.chat').scrollTop($('#messages').height());
+        if ($('.chat').scrollTop() + $('.chat').height() >= $('#messages').height())
+            $('.chat').scrollTop($('#messages').height());
     });
 
     io.on('vital', function (msg) {
@@ -151,7 +158,8 @@ $(function () {
                 $('#state').text("[state] " + state)
 
             me = player;
-        } else {//init            
+        } else {//init
+            console.log("on init myentity")
             me = player;
             io.emit('server');
             drawAllEntity();

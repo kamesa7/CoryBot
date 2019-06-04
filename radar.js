@@ -238,13 +238,21 @@ function emitInventory() {
 
 function mapAt(x, z) {
     var initialY = Math.floor(bot.entity.position.y) + 1;
-    var initialblock = bot.blockAt(new Vec3(x, initialY, z))
+    var initialblock = bot.blockAt(new Vec3(x, initialY + 1, z))
     if (!initialblock) return null;
-    if (initialblock.boundingBox != 'empty') return null;
-    for (var y = initialY; y >= initialY - 16 && y >= 1; y--) {
-        var block = bot.blockAt(new Vec3(x, y, z))
-        if (block.boundingBox != 'empty') {
-            return block;
+    if (initialblock.boundingBox == 'empty') {
+        for (var y = initialY; y >= initialY - 16 && y >= 1; y--) {
+            var block = bot.blockAt(new Vec3(x, y, z))
+            if (block && block.boundingBox != 'empty') {
+                return block;
+            }
+        }
+    } else {
+        for (var y = initialY; y < initialY + 8; y++) {
+            var block = bot.blockAt(new Vec3(x, y, z))
+            if (block && block.boundingBox == 'empty') {
+                return bot.blockAt(new Vec3(x, y - 1, z));
+            }
         }
     }
     return null;
