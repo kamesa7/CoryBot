@@ -38,8 +38,16 @@ $(function () {
         io.emit('stopstate');
     })
 
-    $('#toss').click(function () {
-        io.emit('toss');
+    $('#tossitem').click(function () {
+        io.emit('tossitem');
+    })
+
+    $('#actitem').click(function () {
+        io.emit('actitem');
+    })
+
+    $('#deactitem').click(function () {
+        io.emit('deactitem');
     })
 
     $('#is-close-defence-mode').click(function () {
@@ -362,29 +370,35 @@ $(function () {
         const START = 9;
         var QUICK = 36 + inventory.hand;
         var slots = inventory.slots;
-        var table = '<tbody>';
-        var row = '<tr>';
-        for (var i = START; i < 46; i++) {
-            var name = "";
-            if (slots[i]) {
-                name += slots[i].displayName;
-                name = name.substring(0, 10) + " x" + slots[i].count;
-            }
-            if (i == QUICK) {
-                row += '<td class="quickbar" id="slot' + i + '">' + name + '</td>'
-            } else {
-                row += '<td id="slot' + i + '">' + name + '</td>'
-            }
 
-            if ((i - START + 1) % 9 == 0) {
-                row += '</tr>'
-                table += row;
-                row = '<tr>'
+        function table(start, end) {
+            var table = '<tbody>';
+            var row = '<tr>';
+            for (var i = start; i < end; i++) {
+                var name = "";
+                if (slots[i]) {
+                    name += slots[i].displayName;
+                    name = name.substring(0, 10) + " x" + slots[i].count;
+                }
+                if (i == QUICK) {
+                    row += '<td class="quickbar" id="slot' + i + '">' + name + '</td>'
+                } else {
+                    row += '<td id="slot' + i + '">' + name + '</td>'
+                }
+
+                if ((i - START + 1) % 9 == 0) {
+                    row += '</tr>'
+                    table += row;
+                    row = '<tr>'
+                }
             }
+            table += '</tbody>'
+            return table;
         }
-        table += '</tbody>'
-        if (table != $("#slot").html()) {
-            $("#slot").html(table);
+
+        var main_table = table(START, 46)
+        if (main_table != $("#slot").html()) {
+            $("#slot").html(main_table);
             for (var i = START; i < 46; i++) {
                 const slot = i;
                 $("#slot" + slot).click(function () {
@@ -393,26 +407,15 @@ $(function () {
             }
         }
 
-        var other_table = '<tbody>';
-        var row = '<tr>';
-        for (var i = 0; i < START; i++) {
-            if (slots[i]) {
-                var name = slots[i].displayName;
-                name = name.substring(0, 10) + " x" + slots[i].count;
-                row += '<td id="slot' + i + '">' + name + '</td>'
-            } else {
-                row += '<td> </td>'
-            }
-
-            if ((i - START + 1) % 9 == 0) {
-                row += '</tr>'
-                other_table += row;
-                row = '<tr>'
-            }
-        }
-        other_table += '</tbody>'
+        var other_table = table(0, START)
         if (other_table != $("#other_slot").html()) {
             $("#other_slot").html(other_table);
+            for (var i = 0; i < START; i++) {
+                const slot = i;
+                $("#slot" + slot).click(function () {
+                    io.emit("equip", slot);
+                });
+            }
         }
     });
 });

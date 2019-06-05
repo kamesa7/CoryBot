@@ -63,21 +63,86 @@ io.on('connection', function (client) {
         glob.isCollisionalMode = flags.isCollisionalMode
     })
     client.on('equip', function (slot) {
+        const START = 9;
         var item = bot.inventory.slots[slot];
-        if (item) {
-            bot.equip(item, "hand", function (err) {
-                if (err) bot.log(err);
-            });
+        if (START <= slot) {
+            if (item) {
+                bot.equip(item, "hand", function (err) {
+                    if (err) bot.log(err);
+                });
+            } else {
+                bot.unequip("hand", function (err) {
+                    if (err) bot.log(err);
+                })
+            }
         } else {
-            bot.unequip("hand", function (err) {
-                if (err) bot.log(err);
-            })
+            if (item) {
+                switch (slot) {
+                    case 5:
+                        bot.unequip("head", function (err) {
+                            if (err) bot.log(err);
+                        });
+                        break;
+                    case 6:
+                        bot.unequip("torso", function (err) {
+                            if (err) bot.log(err);
+                        });
+                        break;
+                    case 7:
+                        bot.unequip("legs", function (err) {
+                            if (err) bot.log(err);
+                        });
+                        break;
+                    case 8:
+                        bot.unequip("feet", function (err) {
+                            if (err) bot.log(err);
+                        });
+                        break;
+                }
+            } else {
+                if (bot.heldItem)
+                    switch (slot) {
+                        case 5:
+                            bot.equip(bot.heldItem, "head", function (err) {
+                                if (err) bot.log(err);
+                            });
+                            break;
+                        case 6:
+                            bot.equip(bot.heldItem, "torso", function (err) {
+                                if (err) bot.log(err);
+                            });
+                            break;
+                        case 7:
+                            bot.equip(bot.heldItem, "legs", function (err) {
+                                if (err) bot.log(err);
+                            });
+                            break;
+                        case 8:
+                            bot.equip(bot.heldItem, "feet", function (err) {
+                                if (err) bot.log(err);
+                            });
+                            break;
+                    }
+
+            }
         }
     })
-    client.on('toss', function () {
+    client.on('tossitem', function () {
         var item = bot.heldItem;
         if (item)
             bot.tossStack(item);
+    })
+
+    client.on('actitem', function () {
+        var item = bot.heldItem;
+        if (item)
+            bot.activateItem();
+    })
+
+    client.on('deactitem', function () {
+        var item = bot.heldItem;
+        if (item)
+            bot.deactivateItem();
     })
 
     var sentMap = [];
