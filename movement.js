@@ -40,7 +40,7 @@ glob.randomWalk = randomWalk;
 glob.follow = follow;
 glob.chase = chase;
 
-setInterval(interest_signal, 1000);
+setInterval(interest_signal, 500);
 
 /*
     forward: boolean;
@@ -1052,12 +1052,4 @@ function interest_signal() {
     } else {
         setInterestEntity();
     }
-}
-
-function openElytra() {
-    bot._client.write("entity_action", {
-        entityId: bot.entity.id,
-        actionId: 8,
-        jumpBoost: 0
-    })
 }

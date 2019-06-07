@@ -107,19 +107,3 @@ function chunkCorner(pos) {
     var blockPoint = floored.modulus(CHUNK_SIZE);
     return floored.minus(blockPoint);
 }
-
-/*
-function Location(absoluteVector) {
-    this.floored = absoluteVector.floored()
-    this.blockPoint = this.floored.modulus(CHUNK_SIZE)
-    this.chunkCorner = this.floored.minus(this.blockPoint)
-
-    const loc = new Location(point)
-    const key = columnKeyXZ(loc.chunkCorner.x, loc.chunkCorner.z)
-    const column = columns[key]
-    // sometimes minecraft server sends us block updates before it sends
-    // us the column that the block is in. ignore this.
-    if (!column) return
-    column.setBlockType(posInChunk(point), type)
-    column.setBlockData(posInChunk(point), metadata)
-*/
