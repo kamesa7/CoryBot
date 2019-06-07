@@ -139,7 +139,7 @@ $(function () {
 
         $('#messages').append('<LI></LI>');
         $('#messages > LI:last').append(msg);
-        if ($('.chat').scrollTop() + $('.chat').height() >= $('#messages').height())
+        if ($('.chat').scrollTop() + $('.chat').height() + 100 >= $('#messages').height())
             $('.chat').scrollTop($('#messages').height());
     });
 

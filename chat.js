@@ -19,7 +19,7 @@ const nameCall = new RegExp(str);
 
 setInterval(time_signal, 100);
 
-bot.once('spawn', () => {
+bot.on('login', () => {
     bot.log('[bot.connect]');
     if (glob.debug == true) {
         //bot.chatAddPattern(/^<([^ :]*)> (.*)$/, 'chat');
@@ -177,13 +177,16 @@ bot.on('omikuji', (username, message) => {
 
 //death
 var is_dead = false;
+var dead_point = null;
 bot.on('death', () => {
     is_dead = true;
+    dead_point = bot.entity.position.floored()
+    bot.log("dead at " + dead_point)
 });
 
 bot.on('spawn', () => {
     if (!is_dead) return;
-    if (glob.isAnnounceDeathMode) bot.safechat("私はBOTです。よろしければ遺品回収してください。");
+    if (glob.isAnnounceDeathMode) bot.safechat("よろしければ遺品回収してください。" + dead_point);
     is_dead = false;
 });
 
