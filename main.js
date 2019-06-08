@@ -38,6 +38,7 @@ require("./event_manager")
 require("./chat")
 require("./movement")
 require("./combat")
+require("./elytra")
 require("./radar")
 require("./calculator")
 require("./music_player")
@@ -49,7 +50,7 @@ function start() {
       port: process.env.MC_LOCAL_PORT,
       username: "Steve" + steveNum,
       version: process.env.MC_VERSION,
-      verbose: true,      
+      verbose: true,
     });
     console.log('Connecting to [localhost]');
   } else if (glob.useCache) {
@@ -86,6 +87,12 @@ function start() {
       jsonfile.writeFile("session_cache.json", bot._client.session)
     }
   });
+
+  bot.on('kicked', (reason, loggedIn) => {
+    if (!loggedIn)
+      console.log("login failed")
+    console.log('kicked reason: ' + reason)
+  })
 
   bot.on('end', () => {
     console.log('process exit');
