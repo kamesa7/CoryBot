@@ -4,17 +4,19 @@ glob.openElytra = openElytra
 
 const jumpUpOpenElytraTime = 400
 const defaultMaxSpeed = bot.physics.maxGroundSpeed;
+const maxSpeed = 75
 const fireworkSpeed = 50
 const touchDownSpeed = 10
 glob.reBoostTime = 3000
 glob.elytraUpVec = new Vec3(0, -27 / 19, 0);
-glob.elytraFirework = null
 glob.allowElytra = 40
 
 
+var fireBooster
 var finalDestination = null;
 var preVelocity = null;
 var elytra = null;
+var elytraFirework = null
 
 function elytraFlyTo(pos, altitude) {
     finalDestination = pos.clone();
@@ -26,8 +28,7 @@ function elytraFlyTo(pos, altitude) {
 function jumpUpOpenElytra() {
     elytra = bot.inventory.slots[6];
     if (!elytra || elytra.type != 443) return;
-    bot.setControlState('jump', true);
-    bot.setControlState('jump', false);
+    bot.entity.velocity.add(new Vec3(0, 13, 0))
     setTimeout(function () {
         openElytra();
     }, jumpUpOpenElytraTime)
@@ -49,11 +50,12 @@ bot.on("move", function () {
             glob.changeState("elytra");
             bot.log("[elytra] FallFlying Start  " + (432 - elytra.metadata))
             fireBoost();
+            fireBooster = setInterval(fireBoost, glob.reBoostTime)
             preVelocity = bot.entity.velocity.clone()
         }
-        bot.physics.maxGroundSpeed = 100
+        bot.physics.maxGroundSpeed = maxSpeed
 
-        if (glob.elytraFirework) {
+        if (elytraFirework) {
             bot.entity.velocity = getLookVec(bot.entity).scaled(fireworkSpeed)
         } else {
             var look = getLookVec(bot.entity)
@@ -73,16 +75,15 @@ bot.on("move", function () {
         if (finalDestination) {
             bot.lookAt(finalDestination)
             if (XZdistance(bot.entity.position, finalDestination) < glob.allowElytra) {
-                // bot.entity.velocity = bot.entity.velocity.scaled(touchDownSpeed / bot.entity.velocity.distanceTo(new Vec3(0, 0, 0)))
                 bot.look(bot.entity.yaw, -Math.PI / 16)
-            } else if (glob.elytraFirework) {
+            } else if (elytraFirework) {
                 if (finalDestination.y > bot.entity.position.y + glob.allowElytra) {
                     bot.look(bot.entity.yaw, Math.PI / 3)
                 } else if (finalDestination.y > bot.entity.position.y) {
                     bot.look(bot.entity.yaw, Math.PI / 6)
                 }
             } else {
-                bot.look(bot.entity.yaw, -Math.PI / 16)
+                bot.look(bot.entity.yaw, -Math.PI / 32)
             }
         }
 
@@ -97,10 +98,17 @@ bot.on("move", function () {
 })
 
 function fireBoost() {
-    if (finalDestination && XZdistance(bot.entity.position, finalDestination) < glob.allowElytra)
-        return
+    if (elytraFirework) return
+    if (finalDestination) {
+        if (XZdistance(bot.entity.position, finalDestination) < glob.allowElytra)
+            return
+        if (bot.entity.position.y > finalDestination.y - glob.allowElytra / 2)
+            return
+    }
     if (glob.getState() == "elytra" && bot.heldItem && bot.heldItem.type == 401)
         bot.activateItem();
+    else if (fireBooster)
+        clearInterval(fireBooster)
 }
 
 function getLookVec(entity) {
@@ -122,7 +130,7 @@ function getLookVec(entity) {
 bot.on("entityUpdate", function (entity) {
     if (entity.entityType && entity.entityType == 76) {//firework
         if (entity.metadata[7] == bot.entity.id) {
-            glob.elytraFirework = entity;
+            elytraFirework = entity;
             bot.log("[elytra] Firework Boost Start  " + (432 - elytra.metadata))
         }
     }
@@ -130,9 +138,8 @@ bot.on("entityUpdate", function (entity) {
 bot.on("entityGone", function (entity) {
     if (entity.entityType && entity.entityType == 76) {//firework
         if (entity.metadata[7] == bot.entity.id) {
-            glob.elytraFirework = null
+            elytraFirework = null
             bot.log("[elytra] Firework Boost End  " + (432 - elytra.metadata))
-            setTimeout(fireBoost, glob.reBoostTime)
         }
     }
 })
