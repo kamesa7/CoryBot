@@ -42,6 +42,7 @@ require("./elytra")
 require("./radar")
 require("./calculator")
 require("./music_player")
+require("./pearl_golf")
 
 function start() {
   if (glob.debug) {
