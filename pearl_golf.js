@@ -9,13 +9,14 @@ glob.initGolfGame = initGolfGame
 glob.startCourse = startCourse
 glob.endCourse = endCourse
 glob.endGolf = endGolf
+glob.addPlayer = addPlayer
 glob.verifyGolf = verifyGolf
 
 glob.saveGolf = saveGolf
 glob.loadGolf = loadGolf
 
 function initGolfGame() {
-    bot.chat("[golf] パールゴルフ初期化 : 参加受付中")
+    announce("パールゴルフ初期化 : パール投げで参加受付中")
     glob.golfPlayers = {}
     glob.golfCource = 0;
     glob.isPearlGolfMode = true;
@@ -33,12 +34,12 @@ function addPlayer(username) {
     if (glob.golfPlayers[username]) {
         if (!glob.golfPlayers[username].playing && !glob.golfPlayers[username].goaling) {
             bot.log("[golf] found player " + username)
-            bot.chat("[golf] " + username + " さんが復帰しました")
+            announce(username + " さんが復帰しました")
             glob.golfPlayers[username].playing = true;
         }
     } else {
         bot.log("[golf] new player " + username)
-        bot.chat("[golf] " + username + " さんの参加を受け付けました。")
+        announce(username + " さんの参加を受け付けました。")
         glob.golfPlayers[username] = {
             username: username,
             joined: glob.golfCource,
@@ -47,7 +48,7 @@ function addPlayer(username) {
             courceThrowCnt: 0,
             sumThrowCnt: 0,
             waterCnt: 0,
-            detail: (glob.golfCource <= 1) ? "" : ("コース" + glob.golfCource + "から "),
+            detail: (glob.golfCource <= 1) ? "" : (glob.golfCource + "から "),
             prevpos: pos,
             prevtick: pos,
             myPearlID: null,
@@ -62,7 +63,7 @@ function verifyGolf(cnt) {
     bot.log("[golf_verify] VERIFY " + cnt)
     Object.keys(glob.golfPlayers).forEach(function (key) {
         const gp = glob.golfPlayers[key]
-        if (!bot.players[key].entity) {
+        if (!bot.players[key] || !bot.players[key].entity) {
             bot.log("[golf_verify] not found player " + key + " " + gp.playing)
             return
         }
@@ -72,7 +73,7 @@ function verifyGolf(cnt) {
         if (cnt && gp.courceThrowCnt != cnt)
             bot.log("[golf_verify] " + key + " throw count difference " + gp.courceThrowCnt)
         if (XZdistance(entity.position, gp.prevpos) > glob.allowGolf)
-            bot.log("[golf_verify] " + key + " may be warped from " + gp.prevpos.floored() + " to " + entity.position.floored())
+            bot.log("[golf_verify] " + key + " moved " + XZdistance(entity.position, gp.prevpos) + " from " + gp.prevpos.floored() + " to " + entity.position.floored())
         if (entity.position.distanceTo(bot.entity.position) > glob.pearlViewDistance)
             bot.log("[golf_verify] " + key + " is far from me " + entity.position + " dist " + entity.position.distanceTo(bot.entity.position))
     })
@@ -81,23 +82,24 @@ function verifyGolf(cnt) {
 function startCourse(goal) {
     if (!goal) return
     if (glob.isPearlGolfMode) return
-    glob.golfGoal = goal
+    glob.golfGoal = goal.floored()
+    glob.golfGoal.add(new Vec3(0.5, 0, 0.5))
     glob.isPearlGolfMode = true;
     glob.golfCource++;
     Object.keys(glob.golfPlayers).forEach(function (key) {
         const gp = glob.golfPlayers[key]
         gp.courceThrowCnt = 0
-        if (bot.players[gp.username].entity) {
+        if (bot.players[gp.username] && bot.players[gp.username].entity) {
             gp.prevpos = bot.players[key].entity.position.clone()
             gp.goaling = false;
         } else {
             gp.playing = false
             bot.log("[golf] not found player " + key)
-            bot.chat("[golf] " + key + " さんが見つかりません")
+            announce(key + " さんが見つかりません")
         }
     })
     bot.log("[golf] new cource" + glob.golfCource + " goal: " + glob.golfGoal)
-    bot.chat("ホール " + glob.golfCource + " スタート！  ゴール地点: " + glob.golfGoal)
+    announce("ホール " + glob.golfCource + " スタート！  ゴール地点: " + glob.golfGoal)
 
     saveGolf()
 }
@@ -108,17 +110,17 @@ function endCourse() {
 
     var resultarr = []
     if (glob.golfCource == 0) {
-        bot.chat("[golf] プラクティスホール")
+        announce("プラクティスホール")
         Object.keys(glob.golfPlayers).forEach(function (key) {
             const gp = glob.golfPlayers[key]
             resultarr.push(gp)
         })
     } else {
-        bot.chat("[golf] ホール " + glob.golfCource + " 終了")
+        announce("ホール " + glob.golfCource + " 終了")
         Object.keys(glob.golfPlayers).forEach(function (key) {
             const gp = glob.golfPlayers[key]
             gp.sumThrowCnt += gp.courceThrowCnt
-            if (!gp.goaling) gp.detail += "コース" + glob.golfCource + "未ゴール "
+            if (!gp.goaling) gp.detail += glob.golfCource + "棄権 "
             resultarr.push(gp)
         })
     }
@@ -127,8 +129,8 @@ function endCourse() {
         return a.courceThrowCnt - b.courceThrowCnt
     })
     for (var i = 0; i < resultarr.length; i++) {
-        var det = (resultarr[i].goaling || glob.golfCource == 0) ? "" : " 未ゴール"
-        bot.chat((i + 1) + ": " + resultarr[i].username + "  " + resultarr[i].courceThrowCnt + " : " + det)
+        var det = (resultarr[i].goaling || glob.golfCource == 0) ? "" : " リタイア"
+        announce((i + 1) + ": " + resultarr[i].username + " " + resultarr[i].courceThrowCnt + "  " + det)
     }
 
     saveGolf()
@@ -144,9 +146,9 @@ function endGolf() {
     resultarr.sort((a, b) => {
         return a.sumThrowCnt - b.sumThrowCnt
     })
-    bot.chat("[golf] 結果発表")
+    announce("結果発表")
     for (var i = 0; i < resultarr.length; i++) {
-        bot.chat((i + 1) + ": " + resultarr[i].username + "  " + resultarr[i].sumThrowCnt + " : " + resultarr[i].detail)
+        announce((i + 1) + ": " + resultarr[i].username + " " + resultarr[i].sumThrowCnt + "  " + resultarr[i].detail)
     }
 
     saveGolf()
@@ -163,6 +165,7 @@ bot.on("entitySpawn", function (entity) {
                     found++
                     addPlayer(key)
                     const gp = glob.golfPlayers[key]
+                    const pos = bot.players[key].entity.position.clone()
                     if (gp.goaling) return
                     if (gp.throwing || gp.warping || gp.falling)
                         bot.log("[golf] Transaction Exception " + key + " " + gp.throwing + "||" + gp.warping + "||" + gp.falling)
@@ -170,6 +173,10 @@ bot.on("entitySpawn", function (entity) {
                     gp.myPearlID = entity.id;
                     gp.courceThrowCnt++
                     bot.log("[golf] " + key + " threw at " + bot.players[key].entity.position)
+                    if (XZdistance(gp.prevpos, pos) > glob.allowGolf) {
+                        bot.log("[golf] " + key + " was at defferent place " + XZdistance(gp.prevpos, pos) + " from " + gp.prevpos.floored() + " to " + pos.floored())
+                    }
+                    gp.prevpos = pos
                 }
             }
         })
@@ -206,14 +213,14 @@ bot.on("entityMoved", function (entity) {
     const key = entity.username
     const gp = glob.golfPlayers[key]
     if (!gp) return
+    if (gp.goaling) return
     const pos = entity.position.clone()
-    if (gp.throwing && (gp.warping || XZdistance(gp.prevpos, pos) > glob.allowGolf)) {
+    if (gp.throwing && (gp.warping || XZdistance(gp.prevtick, pos) > glob.allowGolf)) {
         if (gp.prevpos.distanceTo(pos) != 0) {
             bot.log("[golf]  " + key + " warped to " + pos)
             gp.warping = false
             gp.throwing = false
             gp.falling = true
-            gp.prevtick = pos
         }
     } else if (gp.falling) {
         if (bot.blockAt(pos.plus(new Vec3(0, 1, 0))).name.match(/water/)) {
@@ -221,19 +228,19 @@ bot.on("entityMoved", function (entity) {
             gp.falling = false
             gp.waterCnt++
             bot.log("[golf]    " + key + " falled in water : back to " + gp.prevpos)
-            bot.chat("[golf] " + key + " さん：池ポチャ判定です。　元の場所:" + gp.prevpos.floored())
-        } else if (pos.y % 1.0 < 0.001 && gp.prevtick.y == pos.y) {
+            announce(key + " さん：池ポチャ判定です。　元の場所:" + gp.prevpos.floored())
+        } else if (gp.prevtick.y == pos.y) {
             bot.log("[golf]   " + key + " falled to " + pos)
             gp.falling = false
             gp.prevpos = pos
             if (XZdistance(pos, glob.golfGoal) < glob.allowGolf) {
                 bot.log("[golf] " + key + " GOAL " + pos)
-                bot.chat("[golf] " + key + " ゴール！")
+                announce(key + " ゴール！")
                 gp.goaling = true
             }
         }
-    } else if (XZdistance(gp.prevtick, pos) > 0.1 && XZdistance(gp.prevpos, pos) > glob.allowGolf) {
-        bot.log("[golf] " + key + " may be warped from " + gp.prevpos.floored() + " to " + pos.floored())
+    } else if (XZdistance(gp.prevtick, pos) > glob.allowGolf) {
+        bot.log("[golf] " + key + " moved " + XZdistance(gp.prevtick, pos) + " from " + gp.prevpos.floored() + " to " + pos.floored())
     }
     gp.prevtick = pos
 })
@@ -249,6 +256,7 @@ function saveGolf() {
         playing: glob.isPearlGolfMode,
         goal: glob.golfGoal
     })
+    bot.log("[golf] Game Saved")
 }
 
 function loadGolf() {
@@ -262,4 +270,12 @@ function loadGolf() {
     glob.golfCource = data.cource
     glob.isPearlGolfMode = data.playing
     glob.golfGoal = new Vec3(data.goal.x, data.goal.y, data.goal.z)
+    bot.log("[golf] Game Loaded")
+}
+
+function announce(msg) {
+    if (glob.isIgnoreMode)
+        bot.log("[ignored] " + msg)
+    else
+        bot.chat("[Golf] " + msg)
 }
