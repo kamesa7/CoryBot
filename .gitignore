@@ -5,8 +5,11 @@ session_cache.json
 
 MineMusic
 PlayLists
+nbt
+
 test.js
 
+log
 *.log
 
 Radar/blocks

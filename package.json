@@ -4,6 +4,7 @@
   "description": "minecraft bot by mineflayer",
   "main": "main.js",
   "dependencies": {
+    "binary-nbt": "^0.5.7",
     "buckets-js": "^1.98.2",
     "dateformat": "^3.0.2",
     "dotenv": "^4.0.0",
