@@ -16,7 +16,7 @@ glob.saveGolf = saveGolf
 glob.loadGolf = loadGolf
 
 function initGolfGame() {
-    announce("パールゴルフ初期化 : パール投げで参加受付中")
+    ANNOUNCE("パールゴルフ初期化 : パール投げで参加受付中")
     glob.golfPlayers = {}
     glob.golfCource = 0;
     glob.isPearlGolfMode = true;
@@ -43,7 +43,7 @@ function addPlayer(username) {
             courceThrowCnt: 0,
             sumThrowCnt: 0,
             waterCnt: 0,
-            detail: (glob.golfCource <= 1) ? "" : (glob.golfCource + "から "),
+            detail: (glob.golfCource <= 1) ? "" : "|" + (glob.golfCource + "から|"),
             prevpos: pos,
             prevtick: pos,
             myPearlID: null,
@@ -59,12 +59,12 @@ function verifyGolf(cnt) {
     var playingPlayer = "未ゴール "
     var playedPlayer = "ゴール済 "
     Object.keys(glob.golfPlayers).forEach(function (key) {
-        const gp = glob.golfPlayers[key]        
+        const gp = glob.golfPlayers[key]
         if (gp.goaling)
             playedPlayer += key + " "
         else
             playingPlayer += key + " "
-            
+
         if (!bot.players[key] || !bot.players[key].entity) {
             bot.log("[golf_verify] not found player " + key)
             return
@@ -81,6 +81,8 @@ function verifyGolf(cnt) {
     })
     bot.log("[golf_verify] " + playingPlayer)
     bot.log("[golf_verify] " + playedPlayer)
+
+    saveGolf();
 }
 
 function startCourse(goal) {
@@ -102,7 +104,7 @@ function startCourse(goal) {
         }
     })
     bot.log("[golf] new cource" + glob.golfCource + " goal: " + glob.golfGoal)
-    announce("ホール " + glob.golfCource + " スタート！  ゴール地点: " + glob.golfGoal)
+    ANNOUNCE("ホール " + glob.golfCource + " スタート！  ゴール地点: " + glob.golfGoal)
 
     saveGolf()
 }
@@ -113,17 +115,17 @@ function endCourse() {
 
     var resultarr = []
     if (glob.golfCource == 0) {
-        announce("プラクティスホール")
+        ANNOUNCE("プラクティスホール終了")
         Object.keys(glob.golfPlayers).forEach(function (key) {
             const gp = glob.golfPlayers[key]
             resultarr.push(gp)
         })
     } else {
-        announce("ホール " + glob.golfCource + " 終了")
+        ANNOUNCE("ホール " + glob.golfCource + " 終了")
         Object.keys(glob.golfPlayers).forEach(function (key) {
             const gp = glob.golfPlayers[key]
             gp.sumThrowCnt += gp.courceThrowCnt
-            if (!gp.goaling) gp.detail += glob.golfCource + "棄権 "
+            if (!gp.goaling) gp.detail += "|" + glob.golfCource + "棄権|"
             resultarr.push(gp)
         })
     }
@@ -132,7 +134,7 @@ function endCourse() {
         return a.courceThrowCnt - b.courceThrowCnt
     })
     for (var i = 0; i < resultarr.length; i++) {
-        var det = (resultarr[i].goaling || glob.golfCource == 0) ? "" : " リタイア"
+        var det = (resultarr[i].goaling || glob.golfCource == 0) ? "" : "|リタイア|"
         announce((i + 1) + ": " + resultarr[i].username + " " + resultarr[i].courceThrowCnt + "  " + det)
     }
 
@@ -149,7 +151,7 @@ function endGolf() {
     resultarr.sort((a, b) => {
         return a.sumThrowCnt - b.sumThrowCnt
     })
-    announce("結果発表")
+    ANNOUNCE("結果発表")
     for (var i = 0; i < resultarr.length; i++) {
         announce((i + 1) + ": " + resultarr[i].username + " " + resultarr[i].sumThrowCnt + "  " + resultarr[i].detail)
     }
@@ -236,9 +238,9 @@ bot.on("entityMoved", function (entity) {
             bot.log("[golf]   " + key + " falled to " + pos)
             gp.falling = false
             gp.prevpos = pos
-            if (XZdistance(pos, glob.golfGoal) < glob.allowGolf) {
+            if (XZdistance(pos, glob.golfGoal) < glob.allowGolf && pos.y > glob.golfGoal.y - 1) {
                 bot.log("[golf] " + key + " GOAL " + pos)
-                announce(key + " ゴール！")
+                announce(key + " ゴール！ " + gp.courceThrowCnt)
                 gp.goaling = true
             }
         }
@@ -281,4 +283,11 @@ function announce(msg) {
         bot.log("[ignored] " + msg)
     else
         bot.chat("[Golf] " + msg)
+}
+
+function ANNOUNCE(msg) {
+    if (glob.isIgnoreMode)
+        bot.log(">[ignored] " + msg)
+    else
+        bot.chat(">[Golf] " + msg)
 }
