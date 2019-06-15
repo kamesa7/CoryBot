@@ -21,7 +21,7 @@ class State {
 }
 
 /**
- * if the state is not in queue
+ * if the state is not in queue, call queueState
  * @param {*} str 
  * @param {*} cb 
  * @param  {...any} args 
@@ -32,6 +32,12 @@ function queueOnceState(str, cb, ...args) {
     return queueState(str, cb, ...args)
 }
 
+/**
+ * if do nothing, do it. or queue it
+ * @param {*} str 
+ * @param {*} cb 
+ * @param  {...any} args 
+ */
 function queueState(str, cb, ...args) {
     if (state == "") {
         state = str
@@ -75,12 +81,20 @@ function letState(str, cb, ...args) {
     }
 }
 
+/**
+ * force change state
+ * @param {*} str 
+ */
 function changeState(str) {
     var ret = state
     state = str;
     return ret;
 }
 
+/**
+ * finish state or finish specific state
+ * @param {*} str 
+ */
 function finishState(str = "") {
     if (str != "" && state != str)
         return;
