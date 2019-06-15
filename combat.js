@@ -145,16 +145,17 @@ function shoot(entity, isHigh) {
                         if (isNaN(heightAdjust)) {
                             bot.unequip("hand");
                             bot.log("[combat] can't shoot there")
+                            glob.finishState("shooting");
                         } else {
                             bot.lookAt(target.offset(0, heightAdjust + eyeHeight, 0), true, function () {
-                                bot.deactivateItem();
+                                bot.deactivateItem();                               
+                                glob.finishState("shooting");
                             });
                         }
                     } else {
                         bot.unequip("hand");
-
+                        glob.finishState("shooting");
                     }
-                    glob.finishState("shooting");
                 }, drawingTime)
             });;
         } else {
