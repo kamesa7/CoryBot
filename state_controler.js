@@ -20,6 +20,12 @@ class State {
     }
 }
 
+/**
+ * if the state is not in queue
+ * @param {*} str 
+ * @param {*} cb 
+ * @param  {...any} args 
+ */
 function queueOnceState(str, cb, ...args) {
     if (queue.contains(new State(str, cb, args), (a, b) => a.state == b.state ? true : false))
         return false
@@ -37,6 +43,12 @@ function queueState(str, cb, ...args) {
     }
 }
 
+/**
+ * if do nothing
+ * @param {*} str 
+ * @param {*} cb 
+ * @param  {...any} args 
+ */
 function tryState(str, cb, ...args) {
     if (state == "") {
         state = str
@@ -47,6 +59,12 @@ function tryState(str, cb, ...args) {
     }
 }
 
+/**
+ * if do nothing or doing the state
+ * @param {*} str 
+ * @param {*} cb 
+ * @param  {...any} args 
+ */
 function letState(str, cb, ...args) {
     if (state == "" || state == str) {
         state = str
