@@ -1,4 +1,5 @@
 glob.isPearlGolfMode = false;
+
 glob.golfPlayers = {}
 glob.golfCource = 0
 glob.golfGoal = new Vec3(0, 0, 0)
@@ -95,12 +96,12 @@ function startCourse(goal) {
     Object.keys(glob.golfPlayers).forEach(function (key) {
         const gp = glob.golfPlayers[key]
         gp.courceThrowCnt = 0
+        gp.goaling = false;
         if (bot.players[gp.username] && bot.players[gp.username].entity) {
             gp.prevpos = bot.players[key].entity.position.clone()
-            gp.goaling = false;
+            gp.prevtick = bot.players[key].entity.position.clone()
         } else {
             bot.log("[golf] not found player " + key)
-            announce(key + " さんが見つかりません")
         }
     })
     bot.log("[golf] new cource" + glob.golfCource + " goal: " + glob.golfGoal)
@@ -118,12 +119,14 @@ function endCourse() {
         ANNOUNCE("プラクティスホール終了")
         Object.keys(glob.golfPlayers).forEach(function (key) {
             const gp = glob.golfPlayers[key]
+
             resultarr.push(gp)
         })
     } else {
         ANNOUNCE("ホール " + glob.golfCource + " 終了")
         Object.keys(glob.golfPlayers).forEach(function (key) {
             const gp = glob.golfPlayers[key]
+
             gp.sumThrowCnt += gp.courceThrowCnt
             if (!gp.goaling) gp.detail += "|" + glob.golfCource + "棄権|"
             resultarr.push(gp)
@@ -135,7 +138,7 @@ function endCourse() {
     })
     for (var i = 0; i < resultarr.length; i++) {
         var det = (resultarr[i].goaling || glob.golfCource == 0) ? "" : "|リタイア|"
-        announce((i + 1) + ": " + resultarr[i].username + " " + resultarr[i].courceThrowCnt + "  " + det)
+        bot.log((i + 1) + ": " + resultarr[i].username + " " + resultarr[i].courceThrowCnt + "  " + det)
     }
 
     saveGolf()
@@ -153,7 +156,7 @@ function endGolf() {
     })
     ANNOUNCE("結果発表")
     for (var i = 0; i < resultarr.length; i++) {
-        announce((i + 1) + ": " + resultarr[i].username + " " + resultarr[i].sumThrowCnt + "  " + resultarr[i].detail)
+        bot.log((i + 1) + ": " + resultarr[i].username + " " + resultarr[i].sumThrowCnt + "  " + resultarr[i].detail)
     }
 
     saveGolf()
