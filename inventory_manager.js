@@ -84,16 +84,19 @@ var helmets = [
     310, 306, 302, 314, 298
 ];
 
-function findItem(list) {
-    if (Array.isArray(list)) {
+function findItem(target, meta = undefined) {
+    if (Array.isArray(target)) {
         var item;
-        for (var index = 0; index < list.length; index++) {
-            item = bot.inventory.findInventoryItem(list[index]);//, 0);
-            if (item != null) return item;
+        for (var index = 0; index < target.length; index++) {
+            item = bot.inventory.findInventoryItem(target[index], meta);
+            if (item != null) {
+                if (meta && item.metadata != meta) continue
+                return item;
+            }
         }
         return null;
     } else {
-        return bot.inventory.findInventoryItem(list);
+        return bot.inventory.findInventoryItem(target, meta);
     }
 }
 

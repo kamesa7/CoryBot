@@ -43,6 +43,7 @@ require("./radar")
 require("./calculator")
 require("./music_player")
 require("./pearl_golf")
+require("./builder")
 
 function start() {
   if (glob.debug) {
