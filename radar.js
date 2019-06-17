@@ -29,7 +29,6 @@ io.on('connection', function (client) {
     });
     client.on('stopstate', function () {
         glob.finishState();
-        glob.stopMoving();
     });
     client.on('goto', function (ID) {
         if (bot.entities[ID])
@@ -61,6 +60,7 @@ io.on('connection', function (client) {
         glob.isSniperMode = flags.isSniperMode
         glob.isArrowDefenceMode = flags.isArrowDefenceMode
         glob.isCollisionalMode = flags.isCollisionalMode
+        glob.isInterestMode = flags.isInterestMode
     })
     client.on('equip', function (slot) {
         const START = 9;
@@ -187,6 +187,11 @@ io.on('connection', function (client) {
             }
         prevPos = bot.entity.position.clone();
     })
+    bot.on("blockUpdate", function (oldBlock, newBlock) {
+        var data = []
+        container(data, newBlock.position.x, newBlock.position.z)
+        client.json.emit('map', { data: data })
+    });
 
     function emitMapEdge() {
         const range = 32;
@@ -283,7 +288,8 @@ function emitServer() {
         isCloseDefenceMode: glob.isCloseDefenceMode,
         isSniperMode: glob.isSniperMode,
         isArrowDefenceMode: glob.isArrowDefenceMode,
-        isCollisionalMode: glob.isCollisionalMode
+        isCollisionalMode: glob.isCollisionalMode,
+        isInterestMode: glob.isInterestMode,
     })
 }
 

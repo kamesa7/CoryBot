@@ -179,7 +179,8 @@ $(function () {
             isCloseDefenceMode: $('#is-close-defence-mode').prop("checked"),
             isSniperMode: $('#is-sniper-mode').prop("checked"),
             isArrowDefenceMode: $('#is-arrow-defence-mode').prop("checked"),
-            isCollisionalMode: $('#is-collisional-mode').prop("checked")
+            isCollisionalMode: $('#is-collisional-mode').prop("checked"),
+            isInterestMode: $('#is-interest-mode').prop("checked"),
         }
         io.json.emit('flags', flags)
     }
@@ -189,6 +190,7 @@ $(function () {
         $('#is-sniper-mode').prop("checked", flags.isSniperMode)
         $('#is-arrow-defence-mode').prop("checked", flags.isArrowDefenceMode)
         $('#is-collisional-mode').prop("checked", flags.isCollisionalMode)
+        $('#is-interest-mode').prop("checked", flags.isInterestMode)
     });
 
     io.on('players', function (newplayers) {
