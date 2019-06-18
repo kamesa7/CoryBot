@@ -3,7 +3,7 @@ glob.jumpUpOpenElytra = jumpUpOpenElytra
 glob.openElytra = openElytra
 
 const jumpUpOpenElytraTime = 400
-const defaultMaxSpeed = bot.physics.maxGroundSpeed;
+const defaultMaxSpeed = 4.27 // according to the internet
 const maxSpeed = 75
 const fireworkSpeed = 50
 const touchDownSpeed = 10
