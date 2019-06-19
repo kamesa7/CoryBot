@@ -4,7 +4,6 @@ glob.isRandomWalking = false;
 
 glob.isWaiting = false;
 
-glob.isLightingMode = false;
 glob.isCollisionalMode = true;
 glob.isInterestMode = true;
 
@@ -22,6 +21,7 @@ glob.moveConfig = {
     followInterval: 25,//step
     followWait: 50,//step
     randomDistance: 10,
+    randomCollar: Infinity,
     randomHeight: 3,
     randomWait: 50,
     randomCostLimit: 100,
@@ -33,8 +33,8 @@ glob.logMove = false;
 glob.logInterest = false;
 
 var finalDestination;
+var randomOrigin = null
 var targetEntity = null
-var preLightingTime = new Date().getTime();
 
 //functions
 glob.goToPos = goToPos;
@@ -130,7 +130,12 @@ function strictGoToPos(point, bridge = false) {
         setStandable(goal, 1)
 
     var path = [];
-    var cost = bestFirstSearch(path, start, goal, { allowGoal: 0, bridgeable: bridge, ignore: true });
+    var cost = bestFirstSearch(path, start, goal, {
+        allowGoal: 0,
+        bridgeable: bridge,
+        ignore: true,
+        strict: true,
+    });
     if (cost < Infinity) {
         glob.queueOnceState("move", followPath, path)
     }
@@ -179,10 +184,12 @@ function reFollow(entity) {
     }
 }
 
-function randomWalk() {
+function randomWalk(range = Infinity) {
     stopMoving();
     bot.log("[move] random walk ");
     glob.isRandomWalking = true;
+    CONFIG.randomCollar = range
+    randomOrigin = getMyPos()
     reRandom();
 }
 
@@ -190,7 +197,12 @@ function reRandom() {
     if (!glob.isRandomWalking) return;
     var start = getMyPos();
     setStandable(start);
-    var goal = getRandomPos(start, CONFIG.randomDistance, CONFIG.randomHeight);
+    var goal = getRandomPos(start, Math.min(CONFIG.randomDistance, CONFIG.randomCollar), CONFIG.randomHeight);
+    if (getL2(goal, randomOrigin) > CONFIG.randomCollar) {
+        if (glob.logMove) bot.log("[move] too far: reRandom " + getL2(goal, randomOrigin))
+        reRandom()
+        return
+    }
     floor(start);
     floor(goal);
 
@@ -270,10 +282,6 @@ function followPath(path) {
     function step() {
         if (index < path.length) {
 
-            if (glob.isLightingMode && preLightingTime + CONFIG.stepTime * 50 < new Date().getTime()) {
-                lighting();
-            }
-
             if (preIndex != index) {
                 indexCount = 0;
                 preIndex = index;
@@ -286,9 +294,9 @@ function followPath(path) {
             }
             prePos = floor(getMyPos())
 
-            if (err || (path[index][3] != "wait" && stopCount > CONFIG.stepError)) {
+            if (err || (path[index][3] != "wait" && stopCount > CONFIG.stepError)) { // err = true or stopping long
                 bot.clearControlStates();
-                if (!options.ignore)
+                if (!options.ignore || glob.logMove)
                     bot.log("[move] path error end : " + path[index] + " stops: " + stopCount);
                 if (glob.isFollowing) {
                     if (targetEntity && targetEntity.isValid) {
@@ -302,7 +310,8 @@ function followPath(path) {
                     reRandom();
                 } else {
                     stopPath();
-                    goToPos(finalDestination)
+                    if (!options.strict)
+                        goToPos(finalDestination)
                 }
                 return
             } else {
@@ -471,6 +480,24 @@ function followPath(path) {
                         indexCount++;
                         stopCount = 0;
                         break;
+                    case "bridge":
+                        if (indexCount == 0) {
+                            bot.clearControlStates();
+                            var newBlockPos = posToVec(plus(path[index], [0, -1, 0]))
+                            var oldBlock = bot.blockAt(newBlockPos)
+                            if (oldBlock && oldBlock.type == 0) { // assert
+                                var item = glob.findItem(bridgeblocks)
+                                glob.placeBlockAt(item, newBlockPos, (msg, log) => {
+                                    if (!options.ignore || glob.logMove) if (msg) bot.log(msg)
+                                    if (glob.logMove && log) bot.log(log)
+                                }, (error) => {
+                                    if (error) err = true
+                                    else index++
+                                })
+                            }
+                        }
+                        indexCount++;
+                        break;
                     default:
                         bot.log("[move] unknown state");
                         stopMoving();
@@ -478,7 +505,7 @@ function followPath(path) {
             }
         } else {
             stopMoving();
-            if (!options.ignore)
+            if (!options.ignore || glob.logMove)
                 bot.log("[move] path complete : " + bot.entity.position.floored());
         }
     }
@@ -536,7 +563,15 @@ var bridges = [
     [0, 0, 1],
     [0, 0, -1]
 ];
-
+var bridgeblocks = [3]//dirt
+var roundPos = [
+    new Vec3(0, -1, 0),
+    new Vec3(1, 0, 0),
+    new Vec3(-1, 0, 0),
+    new Vec3(0, 0, 1),
+    new Vec3(0, 0, -1),
+    new Vec3(0, 1, 0)
+]
 
 
 function moveCost(move) {
@@ -547,7 +582,10 @@ function moveCost(move) {
         case "jumpover": return 5;
         case "longjumpover": return 7;
         case "land": return 4;
-        default: return 0;
+        case "bridge": return 20;
+        default:
+            bot.log("[move] unknown move cost")
+            return 0;
     }
 }
 
@@ -556,7 +594,7 @@ function moveCost(move) {
  * @param {*} finalPath path destination
  * @param {*} start start pos
  * @param {*} goal goal pos
- * @param {*} options allowGoal : searchLimit : landable : bridgeable : ignore 
+ * @param {*} options allowGoal : searchLimit : landable : bridgeable : ignore : strict
  */
 function bestFirstSearch(finalPath, start, goal, options) {
     if (options) {
@@ -570,6 +608,8 @@ function bestFirstSearch(finalPath, start, goal, options) {
             options.bridgeable = false
         if (options.ignore == undefined)
             options.ignore = false
+        if (options.strict == undefined)
+            options.ignore = false
     } else {
         options = {
             allowGoal: CONFIG.allowGoal,
@@ -577,6 +617,7 @@ function bestFirstSearch(finalPath, start, goal, options) {
             landable: true,
             bridgeable: false,
             ignore: false,
+            strict: false
         }
     }
     finalPath.options = options;
@@ -691,8 +732,8 @@ function expandNode(node, options) {
         }
 
     if (options.bridgeable)
-        for (var i = 0; i < walks.length; i++) {
-            pos = plus(node.p, walks[i]);
+        for (var i = 0; i < bridges.length; i++) {
+            pos = plus(node.p, bridges[i]);
             if (isThroughable(pos) && bot.blockAt(posToVec(plus(pos, [0, -1, 0]))).type == 0) {
                 pos.push("bridge");
                 ret.push(pos);
@@ -787,60 +828,18 @@ function optimize(path) {
             i = startInd + 1;
         }
     }
-}
-
-function lighting() {
-    var brightPos = getRandomPos(getMyPos(), 3);
-    if (isNeedLight(brightPos)) {
-        var torch = glob.findItem(50);
-        if (torch != null) {
-            floor(brightPos);
-            bot.log("[brighten] " + brightPos + ": " + bot.blockAt(posToVec(brightPos)).light);
-
-            bot.equip(torch, "hand", function () {
-                bot.placeBlock(bot.blockAt(posToVec(add(brightPos, [0, -1, 0]))), new Vec3(0, 1, 0));
-            });
-            preLightingTime = new Date().getTime()
-        } else {
-            glob.isLightingMode = false;
-            bot.log("[brighten] no torch end");
+    for (var i = 0; i < path.length; i++) {
+        if (path[i][3] == "bridge") {
+            var pathBridge = path[i];
+            path.splice(i + 1, 0, [pathBridge[0], pathBridge[1], pathBridge[2], "walk"]);
         }
     }
-}
-
-
-function isNeedLight(pos) {
-    if (isStandable(pos) && !mcData.blocks[bot.blockAt(posToVec(pos).add(new Vec3(0, -1, 0))).type].transparent) {
-        var block = bot.blockAt(posToVec(pos));
-        var next;
-        if (block.name != "air") return false;
-        if (block.light <= 1) return true;
-        if (block.light == 2) {
-            for (var i = 0; i < walks.length; i++) {
-                next = bot.blockAt(posToVec(plus(pos, walks[i])));
-                if (next.name != "air") continue;
-                if (next.light <= 1) {
-                    add(pos, walks[i]);
-                    return true;
-                }
-            }
-        }
-        if (block.light <= 7) {
-            for (var i = 0; i < walks.length; i++) {
-                next = bot.blockAt(posToVec(plus(pos, walks[i])));
-                if (next.name != "air") continue;
-                if (next.light < block.light) return false;
-            }
-            return true;
-        }
-    }
-    return false;
 }
 
 function isNotAvoidance(block) {
     if (block.name.match(/wall/)
         || block.name.match(/fence/)
-        || block.name.match(/web/)
+        // || block.name.match(/web/)
         //|| block.name.match(/carpet/) // -> empty
         || block.name.match(/wall/)
         //minecraft-date snow -> empty
@@ -929,11 +928,11 @@ function getXZL2(pos, target) {
 }
 
 function plus(pos, vel) {
-    return [
+    return ([
         pos[0] + vel[0],
         pos[1] + vel[1],
         pos[2] + vel[2]
-    ];
+    ]);
 }
 
 function add(pos, vel) {
