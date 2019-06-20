@@ -38,7 +38,6 @@ var targetEntity = null
 
 //functions
 glob.goToPos = goToPos;
-glob.strictGoToPos = strictGoToPos
 glob.stopMoving = stopMoving;
 glob.randomWalk = randomWalk;
 glob.follow = follow;
@@ -88,7 +87,7 @@ bot.on('respawn', () => {
     stopMoving()
 });
 
-function goToPos(point) {
+function goToPos(point, options = {}) {
     stopMoving();
     var goal;
     if (Array.isArray(point)) {
@@ -96,50 +95,27 @@ function goToPos(point) {
     } else {
         goal = getPosFromVec3(point);
     }
+    if (!options.ignore) options.ignore = false
     var start = getMyPos()
+    var msgable = glob.logMove || !options.ignore
+    var logable = glob.logMove
     floor(goal);
     floor(start);
     setStandable(start);
-    setStandable(goal);
-
-    bot.log("[move] try to goto " + goal + " from " + start);
-    if (glob.logMove) var pathfindtime = new Date().getTime();
+    if (options.standable >= 0) setStandable(goal, options.standable);
+    else setStandable(goal);
+    if (msgable) bot.log("[move] try to goto " + goal + " from " + start);
+    if (logable) var pathfindtime = new Date().getTime();
     var path = [];
-    var cost = bestFirstSearch(path, start, goal);
-    if (glob.logMove) {
+    var cost = bestFirstSearch(path, start, goal, options);
+    if (logable) {
         bot.log("[move] pathfind took: " + (new Date().getTime() - pathfindtime) + "ms");
         bot.log("[move] cost: " + cost);
     }
     if (cost < Infinity) {
         glob.queueOnceState("move", followPath, path)
     } else {
-        bot.log("[move] cannot find path");
-    }
-}
-
-function strictGoToPos(point, bridge = false) {
-    stopMoving();
-    var goal;
-    if (Array.isArray(point)) {
-        goal = point;
-    } else {
-        goal = getPosFromVec3(point);
-    }
-    var start = getMyPos()
-    floor(goal);
-    floor(start);
-    if (!bridge)
-        setStandable(goal, 1)
-
-    var path = [];
-    var cost = bestFirstSearch(path, start, goal, {
-        allowGoal: 0,
-        bridgeable: bridge,
-        ignore: true,
-        strict: true,
-    });
-    if (cost < Infinity) {
-        glob.queueOnceState("move", followPath, path)
+        if (msgable) bot.log("[move] cannot find path");
     }
 }
 
@@ -280,6 +256,8 @@ function followPath(path) {
     var waitCount = 0;
     var stopCount = 0;
     var options = path.options
+    var msgable = glob.logMove || !options.ignore
+    var logable = glob.logMove
     mover = setInterval(step, CONFIG.stepTime);
     function step() {
         if (index < path.length) {
@@ -295,8 +273,7 @@ function followPath(path) {
             prePos = floor(getMyPos())
             if (exception || (path[index][3] != "wait" && stopCount > CONFIG.stepError)) { // exception = true or stopping long
                 bot.clearControlStates();
-                if (!options.ignore || glob.logMove)
-                    bot.log("[move] path error end : " + path[index] + " stops: " + stopCount);
+                if (msgable) bot.log("[move] path error end : " + path[index] + " stops: " + stopCount);
                 if (glob.isFollowing) {
                     if (targetEntity && targetEntity.isValid) {
                         stopPath();
@@ -309,8 +286,7 @@ function followPath(path) {
                     reRandom();
                 } else {
                     stopPath();
-                    if (!options.strict)
-                        goToPos(finalDestination)
+                    goToPos(finalDestination, options)
                 }
                 return
             } else {
@@ -319,7 +295,7 @@ function followPath(path) {
                 var look = lookToVec(dest)
                 var distance = getXZL2(getMyPos(), dest);
                 var height = getMyPos()[1];
-                if (glob.logMove) bot.log("[move] " + node + "  cnt: " + indexCount + " stop: " + stopCount);
+                if (logable) bot.log("[move] " + node + "  cnt: " + indexCount + " stop: " + stopCount);
                 switch (node[3]) {
                     case "walk":
                         if (indexCount == 0) {
@@ -482,12 +458,13 @@ function followPath(path) {
                         stopCount = 0;
                         break;
                     case "bridge":
+                    case "buildstair":
                         if (indexCount == 0) {
                             bot.clearControlStates();
                             var newBlockPos = posToVec(plus(node, [0, -1, 0]))
                             var oldBlock = bot.blockAt(newBlockPos)
                             if (oldBlock && oldBlock.type == 0) { // assert
-                                var item = glob.findItem(bridgeblocks)
+                                var item = glob.findItem(pathblocks)
                                 glob.placeBlockAt(item, newBlockPos, (!options.ignore || glob.logMove), (err) => {
                                     if (err) exception = true
                                     else index++
@@ -503,49 +480,48 @@ function followPath(path) {
             }
         } else {
             stopMoving();
-            if (!options.ignore || glob.logMove)
-                bot.log("[move] path complete : " + floor(getMyPos()));
+            if (msgable) bot.log("[move] path complete : " + floor(getMyPos()));
         }
     }
 }
 
-var walks = [
+const walks = [
     [1, 0, 0],
     [-1, 0, 0],
     [0, 0, 1],
     [0, 0, -1]
 ];
-var crosses = [
+const crosses = [
     [1, 0, 1], [0, 0, 1], [1, 0, 0],
     [-1, 0, 1], [0, 0, 1], [-1, 0, 0],
     [1, 0, -1], [0, 0, -1], [1, 0, 0],
     [-1, 0, -1], [0, 0, -1], [-1, 0, 0]
 ];
-var upstairs = [
+const upstairs = [
     [1, 1, 0],
     [-1, 1, 0],
     [0, 1, 1],
     [0, 1, -1]
 ];
-var downstairs = [
+const downstairs = [
     [1, -1, 0],
     [-1, -1, 0],
     [0, -1, 1],
     [0, -1, -1]
 ];
-var jumpovers = [
+const jumpovers = [
     [2, 0, 0], [1, -1, 0],
     [-2, 0, 0], [-1, -1, 0],
     [0, 0, 2], [0, -1, 1],
     [0, 0, -2], [0, -1, -1]
 ];
-var longjumpovers = [
+const longjumpovers = [
     [3, 0, 0], [1, -1, 0], [2, -1, 0],
     [-3, 0, 0], [-1, -1, 0], [-2, -1, 0],
     [0, 0, 3], [0, -1, 1], [0, -1, 2],
     [0, 0, -3], [0, -1, -1], [0, -1, -2]
 ];
-var lands = [
+const lands = [
     [1, -2, 0],
     [-1, -2, 0],
     [0, -2, 1],
@@ -555,13 +531,19 @@ var lands = [
     [0, -3, 1],
     [0, -3, -1]
 ];
-var bridges = [
+const bridges = [
     [1, 0, 0],
     [-1, 0, 0],
     [0, 0, 1],
     [0, 0, -1]
 ];
-var bridgeblocks = [3]//dirt
+const buildstairs = [
+    [1, 1, 0],
+    [-1, 1, 0],
+    [0, 1, 1],
+    [0, 1, -1]
+];
+var pathblocks = [3]//dirt
 
 function moveCost(move) {
     switch (move) {
@@ -572,6 +554,7 @@ function moveCost(move) {
         case "longjumpover": return 7;
         case "land": return 4;
         case "bridge": return 20;
+        case "buildstair": return 25;
         default:
             bot.log("[move] unknown move cost")
             return 0;
@@ -583,7 +566,7 @@ function moveCost(move) {
  * @param {*} finalPath path destination
  * @param {*} start start pos
  * @param {*} goal goal pos
- * @param {*} options allowGoal : searchLimit : landable : bridgeable : ignore : strict
+ * @param {*} options allowGoal : searchLimit : landable : bridgeable : ignore : buildstairable : standable
  */
 function bestFirstSearch(finalPath, start, goal, options) {
     if (options) {
@@ -595,9 +578,9 @@ function bestFirstSearch(finalPath, start, goal, options) {
             options.landable = true;
         if (options.bridgeable == undefined)
             options.bridgeable = false
+        if (options.buildstairable == undefined)
+            options.buildstairable = false
         if (options.ignore == undefined)
-            options.ignore = false
-        if (options.strict == undefined)
             options.ignore = false
     } else {
         options = {
@@ -605,8 +588,8 @@ function bestFirstSearch(finalPath, start, goal, options) {
             searchLimit: CONFIG.searchLimit,
             landable: true,
             bridgeable: false,
+            buildstairable: false,
             ignore: false,
-            strict: false
         }
     }
     finalPath.options = options;
@@ -730,6 +713,14 @@ function expandNode(node, options) {
             }
         }
 
+    if (options.buildstairable)
+        for (var i = 0; i < buildstairs.length; i++) {
+            pos = plus(prepos, buildstairs[i]);
+            if (isThroughable(pos) && bot.blockAt(posToVec(plus(pos, [0, -1, 0]))).type == 0 && isStandable(plus(pos, [0, -1, 0]))) {
+                pos.push("buildstair");
+                ret.push(pos);
+            }
+        }
     return ret;
 }
 
@@ -822,6 +813,10 @@ function optimize(path) {
             var pathBridge = path[i];
             path.splice(i + 1, 0, [pathBridge[0], pathBridge[1], pathBridge[2], "walk"]);
         }
+        if (path[i][3] == "buildstair") {
+            var pathStair = path[i];
+            path.splice(i + 1, 0, [pathStair[0], pathStair[1], pathStair[2], "upstair"]);
+        }
     }
 }
 
@@ -872,6 +867,7 @@ function isThroughable(pos) {
 }
 
 function setStandable(pos, limit = 15) {
+    if (limit == 0) return isStandable(pos)
     if (!isStandable(pos)) {
         var direct = 1;
         var tmp = plus(pos, [0, direct, 0]);

@@ -4,20 +4,26 @@ zlib = require('zlib')
 
 glob.stopBuild = stopBuild
 glob.schematicBuild = schematicBuild
-glob.createPoster = createPoster
 glob.placeBlockAt = placeBlockAt
+
+glob.createPoster = createPoster
+glob.createBuilding = createBuilding
 glob.lighting = lighting
 
-glob.isLightingMode = false;
+glob.viewBuildData = viewBuildData
+glob.viewBlockNeeds = viewBlockNeeds
 
-glob.isBuildingMode = false;
-glob.buildRange = 2.5
-glob.buildInterval = 50
+glob.buildRange = 4
+glob.buildInterval = 100
 glob.buildWorkProgress = 64
 glob.buildWarnBlock = 8
+
+glob.rawBuildData;
 glob.buildData;
 
-glob.logBuild = true
+glob.isLightingMode = false;
+glob.isBuildingMode = false;
+glob.logBuild = false
 
 var builder;
 
@@ -43,31 +49,32 @@ function schematicBuild(file) {
             return
         }
         level = nbt.deserializeNBT(content)
+        glob.rawBuildData = level
         // level = nbt.deserializeCompressedNBT(data)
 
         console.log(String(level.Materials))
         Object.keys(level).forEach(function (key) {
-            console.log(key, Number(level[key]), level[key].length)
+            console.log(key, level[key].length)
         })
 
         level.Height = Number(level.Height)
-        level.Width = Number(level.Width)
         level.Length = Number(level.Length)
+        level.Width = Number(level.Width)
 
-        console.log(level.Height, level.Width, level.Length)
+        console.log(level.Height, level.Length, level.Width)
 
         const buildData = []
         buildData.origin = bot.entity.position.floored();
         glob.buildData = buildData;
         for (let y = 0; y < level.Height; y++) {
             buildData.push([])
-            for (let z = 0; z < level.Width; z++) {
+            for (let z = 0; z < level.Length; z++) {
                 buildData[y].push([])
-                for (let x = 0; x < level.Length; x++) {
-                    let type = Number(level.Blocks[y * level.Height + z * level.Width + x])
+                for (let x = 0; x < level.Width; x++) {
+                    let type = Number(level.Blocks[y * level.Length * level.Width + z * level.Width + x])
                     buildData[y][z][x] = {
                         type: type >= 0 ? type : 128 * 2 + type,
-                        metadata: Number(level.Data[y * level.Height + z * level.Width + x])
+                        metadata: Number(level.Data[y * level.Length * level.Width + z * level.Width + x])
                     }
                 }
             }
@@ -79,7 +86,13 @@ function createPoster(origin) { // height should be 1
     clearInterval(builder)
     glob.isBuildingMode = true;
     var buildData = glob.buildData
-    buildData.origin = origin
+    if (origin) {
+        origin = origin.floored()
+        buildData.origin = origin
+    } else {
+        origin = buildData.origin
+    }
+
     bot.log("[build] Create Poster At " + origin)
     var createState = "movewait";
     var placing = new Vec3(0, 0, 0);
@@ -91,7 +104,7 @@ function createPoster(origin) { // height should be 1
         switch (createState) {
             case "movewait":
                 if (!glob.doNothing()) return;
-                glob.strictGoToPos(origin.plus(placing.offset(0, 0, 1)), false)
+                glob.goToPos(origin.plus(placing.offset(0, 0, 1)), { ignore: !glob.logBuild, allowGoal: 0, standable: 1 })
                 createState = "move"
                 break
             case "move":
@@ -135,6 +148,95 @@ function createPoster(origin) { // height should be 1
                     }
                     block = bot.blockAt(origin.plus(placing))
                     data = glob.buildData[placing.y][placing.z][placing.x]
+                    item = glob.findItem(data.type, data.metadata)
+                    if (!item && block.type == 0)
+                        bot.log("[build] NEED block: " + blockdata(data.type, data.metadata))
+                } while (!item || block.type != 0)
+                if (glob.doNothing()) { // speed up by before placing
+                    bot.equip(item, "hand", (err) => {
+                        if (err) {
+                            bot.log(err)
+                        }
+                    })
+                }
+                createState = "movewait";
+                break;
+        }
+    }
+}
+
+function createBuilding(origin) {
+    clearInterval(builder)
+    glob.isBuildingMode = true;
+    var buildData = glob.buildData
+    if (origin) {
+        origin = origin.floored()
+        buildData.origin = origin
+    } else {
+        origin = buildData.origin
+    }
+
+    bot.log("[build] Create Building At " + origin)
+    var createState = "movewait";
+    var placing = new Vec3(0, 0, 0);
+    var placeCnt = 0;
+    var blockSum = buildData.length * buildData[0].length * buildData[0][0].length
+    var prevTime = new Date().getTime();
+    builder = setInterval(posterControl, glob.buildInterval)
+    function posterControl() {
+        switch (createState) {
+            case "movewait":
+                if (!glob.doNothing()) return;
+                glob.goToPos(origin.plus(placing.offset(-1, 1, 0)), {
+                    ignore: !glob.logBuild,
+                    allowGoal: 0,
+                    standable: 1,
+                    bridgeable: true,
+                    scaffordable: true,
+                })
+                createState = "move"
+                break
+            case "move":
+                if (!glob.doNothing()) return;
+                createState = "buildwait"
+                break
+            case "buildwait":
+                if (!glob.doNothing()) return;
+                placeBlockFromSchematic(placing)
+                prevTime = new Date().getTime();
+                createState = "build"
+                break
+            case "build":
+                if (new Date().getTime() - prevTime > 3000) {
+                    bot.log("[build] Something Error At" + origin.plus(placing))
+                    glob.finishState("build")
+                }
+                if (!glob.doNothing()) return;
+                let block
+                let item
+                let data
+                do {
+                    placeCnt++
+                    if (placeCnt % glob.buildWorkProgress == 0) {
+                        bot.log("[build] Construction " + placeCnt + " " + (100 * placeCnt / blockSum) + "% ")
+                    }
+                    // X
+                    if (++placing.x == buildData[placing.y][placing.z].length) {
+                        placing.x = 0;
+                        // Z
+                        if (++placing.z == buildData[placing.y].length) {
+                            placing.z = 0;
+                            // Y
+                            if (++placing.y == buildData.length) {
+                                bot.log("[build] Create Building Finished")
+                                clearInterval(builder)
+                                return
+                            }
+                        }
+                    }
+                    block = bot.blockAt(origin.plus(placing))
+                    data = glob.buildData[placing.y][placing.z][placing.x]
+                    if (data.type == 0) continue
                     item = glob.findItem(data.type, data.metadata)
                     if (!item && block.type == 0)
                         bot.log("[build] NEED block: " + blockdata(data.type, data.metadata))
@@ -213,11 +315,11 @@ function placeBlockAt(item, pos, logMode, cb) {
             })
         } else {
             bot.clearControlStates();
-            if (cb) cb("[place] NO block item")
+            if (cb) cb("[place] NO block item to place : " + item)
         }
     } else {
         bot.clearControlStates();
-        if (cb) cb("[place] cannot place")
+        if (cb) cb("[place] cannot place theres")
     }
 }
 
@@ -290,4 +392,63 @@ function isNeedLight(pos) {
         }
     }
     return false;
+}
+
+function viewBuildData() {
+    const buildData = glob.buildData
+    for (let y = 0; y < buildData.length; y++) {
+        for (let z = 0; z < buildData[y].length; z++) {
+            let str = ""
+            for (let x = 0; x < buildData[y][z].length; x++) {
+                str += buildData[y][z][x].type + "  "
+            }
+            console.log(str)
+        }
+        console.log("---")
+    }
+}
+
+function viewBlockNeeds(origin) {
+    const buildData = glob.buildData
+    const count = {};
+    if (origin) {
+        origin = origin.floored()
+        for (let y = 0; y < buildData.length; y++) {
+            for (let z = 0; z < buildData[y].length; z++) {
+                for (let x = 0; x < buildData[y][z].length; x++) {
+                    let block = bot.blockAt(origin.offset(x, y, z))
+                    let data = buildData[y][z][x]
+                    let tag;
+                    if (data.metadata != 0) tag = data.type + "." + data.metadata
+                    else tag = data.type
+                    if (block.type = data.type && block.metadata == data.metadata) {
+                        if (!count[tag]) count[tag] = 0
+                    } else {
+                        if (!count[tag]) count[tag] = 0
+                        count[tag]++;
+                    }
+                }
+            }
+        }
+    } else {
+        for (let y = 0; y < buildData.length; y++) {
+            for (let z = 0; z < buildData[y].length; z++) {
+                for (let x = 0; x < buildData[y][z].length; x++) {
+                    let data = buildData[y][z][x]
+                    let tag;
+                    if (data.metadata != 0) tag = data.type + "." + data.metadata
+                    else tag = data.type
+                    if (!count[tag]) count[tag] = 0
+                    count[tag]++;
+                }
+            }
+        }
+    }
+    Object.keys(count).forEach(function (key) {
+        let type = key.split(".")[0]
+        if (mcData.blocks[type])
+            console.log(key + " : " + mcData.blocks[type].name + " : " + count[key])
+        else
+            console.log(key + " :     : " + count[key])
+    })
 }
