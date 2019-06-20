@@ -165,11 +165,8 @@ function placeBlockFromSchematic(placing) {
                 else if (item.count == 1)
                     bot.log("[build] SHORTAGE block: " + blockdata(item.type, item.metadata))
             }
-            placeBlockAt(item, newBlockPos, (msg, log) => {
-                if (msg) bot.log(msg)
-                if (glob.logBuild && log) bot.log(log)
-            }, (err) => {
-                //if(err)
+            placeBlockAt(item, newBlockPos, glob.logBuild, (err) => {
+                if (err) bot.log(err)
                 glob.finishState("build")
             })
         })
@@ -177,32 +174,23 @@ function placeBlockFromSchematic(placing) {
 }
 
 /**
- * Global placing method
- * (torch, brightPos,
- *  (msg, log) => {
- *      if (msg) bot.log(msg)
- *      if (logmode) bot.log(log)
- *  },(err)=>{
- *      if(err) catch
- *      else fin
- *  })
  * @param {*} item 
  * @param {*} pos 
- * @param {*} msgcb (ErrorMessage, LogMessage)
+ * @param {*} logMode 
  * @param {*} cb isError
  */
-function placeBlockAt(item, pos, msgcb, cb) {
+function placeBlockAt(item, pos, logMode, cb) {
     bot.setControlState("sneak", true)
     var newBlockPos = pos
     var oldBlock = bot.blockAt(newBlockPos)
+    var refBlock, i
     if (oldBlock && oldBlock.type == 0) {
         if (item) {
             bot.equip(item, "hand", (error) => {
                 if (error) {
-                    if (msgcb) msgcb(error)
-                    if (cb) cb(true)
+                    if (cb) cb(error)
+                    return
                 }
-                var refBlock, i
                 for (i = 0; i < roundPos.length; i++) {
                     if (bot.blockAt(newBlockPos.plus(roundPos[i])).type != 0) {
                         refBlock = bot.blockAt(newBlockPos.plus(roundPos[i]))
@@ -210,28 +198,26 @@ function placeBlockAt(item, pos, msgcb, cb) {
                     }
                 }
                 if (i == roundPos.length) {
-                    if (msgcb) msgcb("[place] NO reference block At: " + newBlockPos)
+                    if (logMode) bot.log("[place] NO reference block At: " + newBlockPos)
                     refBlock = oldBlock
                     i = 0;
                 }
-                if (msgcb) msgcb(null, "[place] place: ref " + refBlock.position + " new " + newBlockPos + " face " + roundPos[i])
+                if (logMode) bot.log("[place] place: ref " + refBlock.position + " new " + newBlockPos + " face " + roundPos[i])
                 bot.lookAt(refBlock.position.offset(0.5, 0.5, 0.5), true, () => {
                     bot.placeBlock(refBlock, roundPos[i].scaled(-1), (error) => {
-                        if (error) if (msgcb) msgcb(error)
                         bot.clearControlStates();
-                        cb(false)
+                        if (cb) cb(error)
+                        return
                     })
                 })
             })
         } else {
-            if (msgcb) msgcb("[place] NO block item")
             bot.clearControlStates();
-            if (cb) cb(true)
+            if (cb) cb("[place] NO block item")
         }
     } else {
-        if (msgcb) msgcb("[place] cannot place")
         bot.clearControlStates();
-        if (cb) cb(true)
+        if (cb) cb("[place] cannot place")
     }
 }
 
@@ -260,9 +246,7 @@ function lighting() {
             var torch = glob.findItem(50);
             if (torch != null) {
                 bot.log("[brighten] " + brightPos + ": " + bot.blockAt(brightPos).light);
-                placeBlockAt(torch, brightPos, (msg, log) => {
-                    if (msg) bot.log(msg)
-                })
+                placeBlockAt(torch, brightPos, false)
             } else {
                 glob.isLightingMode = false;
                 bot.log("[brighten] no torch end");
