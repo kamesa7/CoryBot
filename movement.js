@@ -273,7 +273,7 @@ function followPath(path) {
             prePos = floor(getMyPos())
             if (exception || (path[index][3] != "wait" && stopCount > CONFIG.stepError)) { // exception = true or stopping long
                 bot.clearControlStates();
-                if (msgable) bot.log("[move] path error end : " + path[index] + " stops: " + stopCount);
+                bot.log("[move] path error end : " + path[index] + " stops: " + stopCount);
                 if (glob.isFollowing) {
                     if (targetEntity && targetEntity.isValid) {
                         stopPath();
@@ -286,7 +286,8 @@ function followPath(path) {
                     reRandom();
                 } else {
                     stopPath();
-                    goToPos(finalDestination, options)
+                    if (options.continue)
+                        goToPos(finalDestination, options)
                 }
                 return
             } else {
@@ -466,8 +467,30 @@ function followPath(path) {
                             if (oldBlock && oldBlock.type == 0) { // assert
                                 var item = glob.findItem(pathblocks)
                                 glob.placeBlockAt(item, newBlockPos, (!options.ignore || glob.logMove), (err) => {
-                                    if (err) exception = true
-                                    else index++
+                                    if (err) {
+                                        bot.log(err)
+                                        exception = true
+                                    } else index++
+                                })
+                            }
+                        }
+                        indexCount++;
+                        break;
+                    case "scafford":
+                        if (indexCount == 0) {
+                            bot.clearControlStates();
+                            bot.setControlState('jump', true);
+                            bot.setControlState('jump', false);
+                        } else if (indexCount == 4) {
+                            var newBlockPos = posToVec(plus(node, [0, -1, 0]))
+                            var oldBlock = bot.blockAt(newBlockPos)
+                            if (oldBlock && oldBlock.type == 0) { // assert
+                                var item = glob.findItem(pathblocks)
+                                glob.placeBlockAt(item, newBlockPos, (!options.ignore || glob.logMove), (err) => {
+                                    if (err) {
+                                        bot.log(err)
+                                        exception = true
+                                    } else index++
                                 })
                             }
                         }
@@ -543,6 +566,7 @@ const buildstairs = [
     [0, 1, 1],
     [0, 1, -1]
 ];
+const scafford = [0, 1, 0]
 var pathblocks = [3]//dirt
 
 function moveCost(move) {
@@ -555,6 +579,7 @@ function moveCost(move) {
         case "land": return 4;
         case "bridge": return 20;
         case "buildstair": return 25;
+        case "scafford": return 30;
         default:
             bot.log("[move] unknown move cost")
             return 0;
@@ -566,7 +591,7 @@ function moveCost(move) {
  * @param {*} finalPath path destination
  * @param {*} start start pos
  * @param {*} goal goal pos
- * @param {*} options allowGoal : searchLimit : landable : bridgeable : ignore : buildstairable : standable
+ * @param {*} options allowGoal : searchLimit : landable : bridgeable : ignore : buildstairable : standable : scaffordable
  */
 function bestFirstSearch(finalPath, start, goal, options) {
     if (options) {
@@ -580,8 +605,12 @@ function bestFirstSearch(finalPath, start, goal, options) {
             options.bridgeable = false
         if (options.buildstairable == undefined)
             options.buildstairable = false
+        if (options.scaffordable == undefined)
+            options.scaffordable = false
         if (options.ignore == undefined)
             options.ignore = false
+        if (options.continue == undefined)
+            options.continue = true
     } else {
         options = {
             allowGoal: CONFIG.allowGoal,
@@ -589,7 +618,9 @@ function bestFirstSearch(finalPath, start, goal, options) {
             landable: true,
             bridgeable: false,
             buildstairable: false,
+            scaffordable: false,
             ignore: false,
+            continue: true
         }
     }
     finalPath.options = options;
@@ -721,6 +752,15 @@ function expandNode(node, options) {
                 ret.push(pos);
             }
         }
+
+    if (options.scaffordable) {
+        pos = plus(prepos, scafford);
+        if (isThroughable(pos)) {
+            pos.push("scafford");
+            ret.push(pos);
+        }
+    }
+
     return ret;
 }
 
@@ -816,6 +856,10 @@ function optimize(path) {
         if (path[i][3] == "buildstair") {
             var pathStair = path[i];
             path.splice(i + 1, 0, [pathStair[0], pathStair[1], pathStair[2], "upstair"]);
+        }
+        if (path[i][3] == "scafford") {
+            var pathStair = path[i];
+            path.splice(i + 1, 0, [pathStair[0], pathStair[1], pathStair[2], "wait", 10]);
         }
     }
 }

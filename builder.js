@@ -104,7 +104,13 @@ function createPoster(origin) { // height should be 1
         switch (createState) {
             case "movewait":
                 if (!glob.doNothing()) return;
-                glob.goToPos(origin.plus(placing.offset(0, 0, 1)), { ignore: !glob.logBuild, allowGoal: 0, standable: 1 })
+                // POSTER
+                glob.goToPos(origin.plus(placing.offset(0, 0, 1)), {
+                    ignore: !glob.logBuild,
+                    allowGoal: 0,
+                    standable: 1,
+                    continue: false
+                })
                 createState = "move"
                 break
             case "move":
@@ -182,17 +188,19 @@ function createBuilding(origin) {
     var placeCnt = 0;
     var blockSum = buildData.length * buildData[0].length * buildData[0][0].length
     var prevTime = new Date().getTime();
-    builder = setInterval(posterControl, glob.buildInterval)
-    function posterControl() {
+    builder = setInterval(buildingControl, glob.buildInterval)
+    function buildingControl() {
         switch (createState) {
             case "movewait":
                 if (!glob.doNothing()) return;
+                // BUILDING
                 glob.goToPos(origin.plus(placing.offset(-1, 1, 0)), {
                     ignore: !glob.logBuild,
                     allowGoal: 0,
                     standable: 1,
                     bridgeable: true,
                     scaffordable: true,
+                    continue: false
                 })
                 createState = "move"
                 break
@@ -315,11 +323,11 @@ function placeBlockAt(item, pos, logMode, cb) {
             })
         } else {
             bot.clearControlStates();
-            if (cb) cb("[place] NO block item to place : " + item)
+            if (cb) cb("[place] NO block item to place")
         }
     } else {
         bot.clearControlStates();
-        if (cb) cb("[place] cannot place theres")
+        if (cb) cb("[place] cannot place there")
     }
 }
 
@@ -421,7 +429,7 @@ function viewBlockNeeds(origin) {
                     let tag;
                     if (data.metadata != 0) tag = data.type + "." + data.metadata
                     else tag = data.type
-                    if (block.type = data.type && block.metadata == data.metadata) {
+                    if (block.type == data.type && block.metadata == data.metadata) {
                         if (!count[tag]) count[tag] = 0
                     } else {
                         if (!count[tag]) count[tag] = 0
