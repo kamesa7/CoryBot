@@ -3,11 +3,11 @@ fs = require("fs")
 zlib = require('zlib')
 
 glob.stopBuild = stopBuild
-glob.schematicBuild = schematicBuild
+glob.loadSchematic = loadSchematic
 glob.placeBlockAt = placeBlockAt
 
-glob.createPoster = createPoster
-glob.createBuilding = createBuilding
+glob.buildPoster = buildPoster
+glob.buildBuilding = buildBuilding
 glob.lighting = lighting
 
 glob.viewBuildData = viewBuildData
@@ -41,7 +41,7 @@ function stopBuild() {
     bot.log("[build] Stop Construction")
 }
 
-function schematicBuild(file) {
+function loadSchematic(file) {
     binary = fs.readFileSync("nbt/" + file)
     zlib.gunzip(binary, function (err, content) {
         if (err) {
@@ -64,7 +64,6 @@ function schematicBuild(file) {
         console.log(level.Height, level.Length, level.Width)
 
         const buildData = []
-        buildData.origin = bot.entity.position.floored();
         glob.buildData = buildData;
         for (let y = 0; y < level.Height; y++) {
             buildData.push([])
@@ -82,126 +81,154 @@ function schematicBuild(file) {
     })
 }
 
-function createPoster(origin) { // height should be 1
+//////////////////////////////////////////////////////////////////////////////////////////////
+
+function buildPoster(origin) {
+    const buildData = glob.buildData
     clearInterval(builder)
-    glob.isBuildingMode = true;
-    var buildData = glob.buildData
     if (origin) {
         origin = origin.floored()
-        buildData.origin = origin
     } else {
-        origin = buildData.origin
+        bot.log("[build] Need Origin for Poster")
+        return
     }
-
+    if (buildData.length != 1) {
+        bot.log("[build] Poster should be height 1")
+        return
+    }
     bot.log("[build] Create Poster At " + origin)
-    var createState = "movewait";
-    var placing = new Vec3(0, 0, 0);
-    var placeCnt = 0;
-    var blockSum = buildData[0].length * buildData[0][0].length
-    var prevTime = new Date().getTime();
-    builder = setInterval(posterControl, glob.buildInterval)
-    function posterControl() {
-        switch (createState) {
-            case "movewait":
-                if (!glob.doNothing()) return;
-                // POSTER
-                glob.goToPos(origin.plus(placing.offset(0, 0, 1)), {
-                    ignore: !glob.logBuild,
-                    allowGoal: 0,
-                    standable: 1,
-                    continue: false
-                })
-                createState = "move"
-                break
-            case "move":
-                if (!glob.doNothing()) return;
-                createState = "buildwait"
-                break
-            case "buildwait":
-                if (!glob.doNothing()) return;
-                placeBlockFromSchematic(placing)
-                prevTime = new Date().getTime();
-                createState = "build"
-                break
-            case "build":
-                if (new Date().getTime() - prevTime > 3000) {
-                    bot.log("[build] Something Error At" + origin.plus(placing))
-                    glob.finishState("build")
-                }
-                if (!glob.doNothing()) return;
-                let block
-                let item
-                let data
-                do {
-                    placeCnt++
-                    if (placeCnt % glob.buildWorkProgress == 0) {
-                        bot.log("[build] Construction " + placeCnt + " " + (100 * placeCnt / blockSum) + "% ")
-                    }
-                    // X
-                    if (++placing.x == buildData[placing.y][placing.z].length) {
-                        placing.x = 0;
-                        // Z
-                        if (++placing.z == buildData[placing.y].length) {
-                            placing.z = 0;
-                            // Y
-                            if (++placing.y == buildData.length) { // assert
-                                bot.log("[build] Create Poster Finished")
-                                clearInterval(builder)
-                                return
-                            }
-                            if (glob.logBuild) bot.log("[build] goto " + origin.plus(placing.offset(0, 0, 1)))
-                        }
-                    }
-                    block = bot.blockAt(origin.plus(placing))
-                    data = glob.buildData[placing.y][placing.z][placing.x]
-                    item = glob.findItem(data.type, data.metadata)
-                    if (!item && block.type == 0)
-                        bot.log("[build] NEED block: " + blockdata(data.type, data.metadata))
-                } while (!item || block.type != 0)
-                if (glob.doNothing()) { // speed up by before placing
-                    bot.equip(item, "hand", (err) => {
-                        if (err) {
-                            bot.log(err)
-                        }
-                    })
-                }
-                createState = "movewait";
-                break;
-        }
-    }
+
+    generalBuild(origin, posterGoTo, posterNext)
 }
 
-function createBuilding(origin) {
+function posterGoTo(origin, placing) {
+    glob.goToPos(origin.plus(placing.offset(0, 0, 1)), { // from flat position
+        ignore: !glob.logBuild,
+        allowGoal: 0,
+        standadjust: 1,
+        continue: false
+    })
+}
+
+function posterNext(origin, placing) {
+    const buildData = glob.buildData
+    var skip = 0
+    let block
+    let item
+    let data
+    do {
+        skip++
+        // X
+        if (++placing.x == buildData[placing.y][placing.z].length) {
+            placing.x = 0;
+            // Z
+            if (++placing.z == buildData[placing.y].length) {
+                placing.z = 0;
+                // Y
+                if (++placing.y == buildData.length) { // assert
+                    bot.log("[build] Create Poster Finished")
+                    clearInterval(builder)
+                    return
+                }
+            }
+        }
+        block = bot.blockAt(origin.plus(placing))
+        data = glob.buildData[placing.y][placing.z][placing.x]
+        item = glob.findItem(data.type, data.metadata)
+        if (!item && block.type == 0)
+            bot.log("[build] NEED block: " + blockdata(data.type, data.metadata))
+    } while (!item || block.type != 0)
+    if (glob.doNothing()) { // speed up by before placing
+        bot.equip(item, "hand", (err) => {
+            if (err) {
+                bot.log(err)
+            }
+        })
+    }
+    return skip
+}
+
+function buildBuilding(origin) {
+    const buildData = glob.buildData
     clearInterval(builder)
-    glob.isBuildingMode = true;
-    var buildData = glob.buildData
     if (origin) {
         origin = origin.floored()
-        buildData.origin = origin
     } else {
-        origin = buildData.origin
+        origin = bot.entity.position.floored()
     }
-
     bot.log("[build] Create Building At " + origin)
+
+    generalBuild(origin, buildingGoTo, buildingNext)
+}
+
+function buildingGoTo(origin, placing) {
+    glob.goToPos(origin.plus(placing.offset(0, 1, 0)), {
+        ignore: !glob.logBuild,
+        allowGoal: 2,
+        rejectGoal: 0,
+        standadjust: 1,
+        strictfin: true,
+        bridgeable: true,
+        scaffordable: true,
+        continue: false,
+    })
+}
+
+function buildingNext(origin, placing) {
+    const buildData = glob.buildData
+    var skip = 0
+    let block
+    let item
+    let data
+    do {
+        skip++
+        // X
+        if (++placing.x == buildData[placing.y][placing.z].length) {
+            placing.x = 0;
+            // Z
+            if (++placing.z == buildData[placing.y].length) {
+                placing.z = 0;
+                // Y
+                if (++placing.y == buildData.length) {
+                    bot.log("[build] Create Building Finished")
+                    clearInterval(builder)
+                    return
+                }
+            }
+        }
+        block = bot.blockAt(origin.plus(placing))
+        data = glob.buildData[placing.y][placing.z][placing.x]
+        if (data.type == 0) continue
+        item = glob.findItem(data.type, data.metadata)
+        if (!item && block.type == 0)
+            bot.log("[build] NEED block: " + blockdata(data.type, data.metadata))
+    } while (!item || block.type != 0)
+    if (glob.doNothing()) { // speed up by before placing
+        bot.equip(item, "hand", (err) => {
+            if (err) {
+                bot.log(err)
+            }
+        })
+    }
+    return skip
+}
+
+function generalBuild(origin, gotofunc, nextfunc) {
+    clearInterval(builder)
+    glob.isBuildingMode = true;
+    const buildData = glob.buildData
     var createState = "movewait";
     var placing = new Vec3(0, 0, 0);
     var placeCnt = 0;
     var blockSum = buildData.length * buildData[0].length * buildData[0][0].length
     var prevTime = new Date().getTime();
+    var prevPlace = 0;
     builder = setInterval(buildingControl, glob.buildInterval)
     function buildingControl() {
         switch (createState) {
             case "movewait":
                 if (!glob.doNothing()) return;
-                // BUILDING
-                glob.goToPos(origin.plus(placing.offset(-1, 1, 0)), {
-                    ignore: !glob.logBuild,
-                    allowGoal: 0,
-                    standable: 1,
-                    bridgeable: true,
-                    scaffordable: true,
-                    continue: false
-                })
+                gotofunc(origin, placing)
                 createState = "move"
                 break
             case "move":
@@ -210,7 +237,7 @@ function createBuilding(origin) {
                 break
             case "buildwait":
                 if (!glob.doNothing()) return;
-                placeBlockFromSchematic(placing)
+                placeBlockFromSchematic(origin, placing)
                 prevTime = new Date().getTime();
                 createState = "build"
                 break
@@ -220,41 +247,10 @@ function createBuilding(origin) {
                     glob.finishState("build")
                 }
                 if (!glob.doNothing()) return;
-                let block
-                let item
-                let data
-                do {
-                    placeCnt++
-                    if (placeCnt % glob.buildWorkProgress == 0) {
-                        bot.log("[build] Construction " + placeCnt + " " + (100 * placeCnt / blockSum) + "% ")
-                    }
-                    // X
-                    if (++placing.x == buildData[placing.y][placing.z].length) {
-                        placing.x = 0;
-                        // Z
-                        if (++placing.z == buildData[placing.y].length) {
-                            placing.z = 0;
-                            // Y
-                            if (++placing.y == buildData.length) {
-                                bot.log("[build] Create Building Finished")
-                                clearInterval(builder)
-                                return
-                            }
-                        }
-                    }
-                    block = bot.blockAt(origin.plus(placing))
-                    data = glob.buildData[placing.y][placing.z][placing.x]
-                    if (data.type == 0) continue
-                    item = glob.findItem(data.type, data.metadata)
-                    if (!item && block.type == 0)
-                        bot.log("[build] NEED block: " + blockdata(data.type, data.metadata))
-                } while (!item || block.type != 0)
-                if (glob.doNothing()) { // speed up by before placing
-                    bot.equip(item, "hand", (err) => {
-                        if (err) {
-                            bot.log(err)
-                        }
-                    })
+                placeCnt += nextfunc(origin, placing)
+                if (placeCnt - prevPlace >= glob.buildWorkProgres) {
+                    bot.log("[build] Construction " + placeCnt + " " + (100 * placeCnt / blockSum) + "% ")
+                    prevPlace = placeCnt
                 }
                 createState = "movewait";
                 break;
@@ -262,8 +258,7 @@ function createBuilding(origin) {
     }
 }
 
-function placeBlockFromSchematic(placing) {
-    var origin = glob.buildData.origin
+function placeBlockFromSchematic(origin, placing) {
     var newBlockPos = origin.plus(placing)
     if (glob.buildData[placing.y] && glob.buildData[placing.y][placing.z] && glob.buildData[placing.y][placing.z][placing.x]) { // assert
         glob.tryState("build", function () {
@@ -341,8 +336,6 @@ function nearBuild() {
     var rad = Math.random() * 2 * Math.PI;
     var plus = new Vec3(Math.random() * glob.buildRange * Math.sin(rad), -1, Math.random() * glob.buildRange * Math.cos(rad));
     var target = bot.entity.position.plus(plus).floored();
-    var build = target.offset(0, 1, 0).minus(glob.buildData.origin)
-    var block = bot.blockAt(target)
 }
 
 function lighting() {

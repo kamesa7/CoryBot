@@ -102,7 +102,7 @@ function goToPos(point, options = {}) {
     floor(goal);
     floor(start);
     setStandable(start);
-    if (options.standable >= 0) setStandable(goal, options.standable);
+    if (options.standadjust >= 0) setStandable(goal, options.standadjust);
     else setStandable(goal);
     if (msgable) bot.log("[move] try to goto " + goal + " from " + start);
     if (logable) var pathfindtime = new Date().getTime();
@@ -146,7 +146,11 @@ function reFollow(entity) {
     }
 
     if (entity.position.distanceTo(bot.entity.position) < CONFIG.allowFollow) {
-        setTimeout(reFollow, Math.floor(Math.random() * CONFIG.followWait * CONFIG.stepTime), entity)
+        setTimeout(
+            reFollow,
+            Math.ceil(Math.random() * CONFIG.followWait * CONFIG.stepTime),
+            entity
+        )
     } else {
         var path = [];
         var cost = bestFirstSearch(path, start, goal, { allowGoal: CONFIG.allowFollow });
@@ -202,7 +206,7 @@ function reRandom() {
     }
     setTimeout(function () {
         glob.queueOnceState("move", followPath, path)
-    }, Math.floor(Math.random() * CONFIG.randomWait * CONFIG.stepTime));
+    }, Math.ceil(Math.random() * CONFIG.randomWait * CONFIG.stepTime));
 }
 
 var chaser;
@@ -271,7 +275,7 @@ function followPath(path) {
                 stopCount = 0;
             }
             prePos = floor(getMyPos())
-            if (exception || (path[index][3] != "wait" && stopCount > CONFIG.stepError)) { // exception = true or stopping long
+            if (exception || (path[index][3] != "wait" && stopCount > CONFIG.stepError)) { // exception = true or stopping long time
                 bot.clearControlStates();
                 bot.log("[move] path error end : " + path[index] + " stops: " + stopCount);
                 if (glob.isFollowing) {
@@ -304,7 +308,6 @@ function followPath(path) {
                             bot.setControlState('forward', true);
                             preDistance = Infinity;
                         }
-                        indexCount++;
                         if (indexCount > CONFIG.stepError) {
                             exception = true;
                             break;
@@ -325,7 +328,6 @@ function followPath(path) {
                             bot.setControlState('sprint', true);
                             preDistance = Infinity;
                         }
-                        indexCount++;
                         if (preDistance <= distance || distance <= CONFIG.onPos) {
                             bot.clearControlStates();
                             index++;
@@ -341,7 +343,6 @@ function followPath(path) {
                             bot.setControlState('forward', true);
                             preDistance = Infinity;
                         }
-                        indexCount++;
                         if ((height - onGround) % 1 != 0) break;
                         if (dest[1] != height - onGround && indexCount > 1) {
                             exception = true;
@@ -360,7 +361,6 @@ function followPath(path) {
                             bot.setControlState('forward', true);
                             preDistance = Infinity;
                         }
-                        indexCount++;
                         if ((height - onGround) % 1 != 0) break;
                         if (dest[1] != height - onGround) {
                             //まだ降りてない
@@ -381,7 +381,6 @@ function followPath(path) {
                             bot.setControlState('forward', true);
                             preDistance = Infinity;
                         }
-                        indexCount++;
                         if ((height - onGround) % 1 != 0) break;
                         if (dest[1] != height - onGround) {
                             exception = true;
@@ -408,25 +407,14 @@ function followPath(path) {
                         } else {
                             index++;
                         }
-                        indexCount++;
                         break;
                     case "strict":
                         if (indexCount == 0) {
                             bot.clearControlStates();
-                            bot.lookAt(look, true, function () {
-                                bot.setControlState('sneak', true);
-                                bot.setControlState('forward', true);
-                            });
-                        }
-                        bot.lookAt(look, true);
-                        indexCount++;
-                        if (indexCount > CONFIG.stepError) {
-                            exception = true;
-                            break;
-                        } else if (distance <= CONFIG.onPos) {
-                            bot.clearControlStates();
+                            bot.lookAt(look, true);
+                            bot.entity.position = posToVec(dest).offset(0, onGround, 0)
+                        } else {
                             index++;
-                            break;
                         }
                         break;
                     case "follow":
@@ -455,7 +443,6 @@ function followPath(path) {
                             });
                             break;
                         }
-                        indexCount++;
                         stopCount = 0;
                         break;
                     case "bridge":
@@ -474,7 +461,6 @@ function followPath(path) {
                                 })
                             }
                         }
-                        indexCount++;
                         break;
                     case "scafford":
                         if (indexCount == 0) {
@@ -494,12 +480,12 @@ function followPath(path) {
                                 })
                             }
                         }
-                        indexCount++;
                         break;
                     default:
                         bot.log("[move] unknown state");
                         stopMoving();
                 }
+                indexCount++
             }
         } else {
             stopMoving();
@@ -591,14 +577,24 @@ function moveCost(move) {
  * @param {*} finalPath path destination
  * @param {*} start start pos
  * @param {*} goal goal pos
- * @param {*} options allowGoal : searchLimit : landable : bridgeable : ignore : buildstairable : standable : scaffordable
+ * @param {*} options 
+ * allowGoal : rejectGoal : searchLimit : strictfin : standadjust
+ * landable : bridgeable : buildstairable : scaffordable
+ * ignore : cotinue
  */
 function bestFirstSearch(finalPath, start, goal, options) {
     if (options) {
         if (options.allowGoal == undefined)
             options.allowGoal = CONFIG.allowGoal
+        if (options.rejectGoal == undefined)
+            options.rejectGoal = -1
         if (options.searchLimit == undefined)
             options.searchLimit = CONFIG.searchLimit
+        if (options.strictfin == undefined)
+            options.strictfin = false
+        if (options.standadjust == undefined)
+            options.standadjust = -1
+
         if (options.landable == undefined)
             options.landable = true;
         if (options.bridgeable == undefined)
@@ -607,6 +603,7 @@ function bestFirstSearch(finalPath, start, goal, options) {
             options.buildstairable = false
         if (options.scaffordable == undefined)
             options.scaffordable = false
+
         if (options.ignore == undefined)
             options.ignore = false
         if (options.continue == undefined)
@@ -614,14 +611,23 @@ function bestFirstSearch(finalPath, start, goal, options) {
     } else {
         options = {
             allowGoal: CONFIG.allowGoal,
+            rejectGoal: -1,
             searchLimit: CONFIG.searchLimit,
+            strictfin: false,
+            standadjust: -1,
+
             landable: true,
             bridgeable: false,
             buildstairable: false,
             scaffordable: false,
+
             ignore: false,
             continue: true
         }
+    }
+    if (options.allowGoal <= options.rejectGoal) {
+        bot.log("[move] invalid options")
+        return Infinity
     }
     finalPath.options = options;
     var closed = [];
@@ -633,9 +639,9 @@ function bestFirstSearch(finalPath, start, goal, options) {
     open.enqueue(new NodeElement(start, getL1(start, goal), node));
     while (!open.isEmpty()) {
         node = open.dequeue();
-        if (isGoal(node.p, goal, options.allowGoal)) { // find path
+        if (isGoal(node.p, goal, options.allowGoal, options.rejectGoal)) { // find path
             var cost = convertNode(finalPath, node);
-            optimize(finalPath);
+            optimize(finalPath, options);
             return cost;
         } else if (count++ > options.searchLimit) { // limit over
             var nearDistances = [];
@@ -644,6 +650,8 @@ function bestFirstSearch(finalPath, start, goal, options) {
             }
             var nearest = getMinInd(nearDistances);
             bot.log("[move] nearest: " + closed[nearest]);
+            options.allowGoal = 0
+            options.rejectGoal = -1
             return bestFirstSearch(finalPath, start, closed[nearest], options);
         }
         expanded = expandNode(node, options);
@@ -778,7 +786,7 @@ function convertNode(path, node) {
     return sum;
 }
 
-function optimize(path) {
+function optimize(path, options) {
     if (path.length == 0) return;
     var start = floor(getMyPos());
     if (bot.blockAt(posToVec(start)).boundingBox == "door") {
@@ -862,6 +870,10 @@ function optimize(path) {
             path.splice(i + 1, 0, [pathStair[0], pathStair[1], pathStair[2], "wait", 10]);
         }
     }
+    if (options.strictfin) {
+        const fin = path[path.length - 1];
+        path.push([fin[0], fin[1], fin[2], "strict"])
+    }
 }
 
 function isNotAvoidance(block) {
@@ -939,13 +951,17 @@ function getRandomPos(root, distance, height = 2) {
     return root;
 }
 
-function isGoal(pos, goal, allowGoal) {
-    if (getL1(pos, goal) <= allowGoal) return true;
+function isGoal(pos, goal, allowGoal, rejectGoal) {
+    if (getL1(pos, goal) <= allowGoal && getXZL1(pos, goal) > rejectGoal) return true;
     else return false;
 }
 
 function getL1(pos, target) {
     return Math.abs(target[0] - pos[0]) + Math.abs(target[1] - pos[1]) + Math.abs(target[2] - pos[2]);
+}
+
+function getXZL1(pos, target) {
+    return Math.abs(target[0] - pos[0]) + Math.abs(target[2] - pos[2]);
 }
 
 function getL2(pos, target) {
