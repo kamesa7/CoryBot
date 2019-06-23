@@ -117,7 +117,6 @@ function posterNext(origin, placing) {
     let item
     let data
     do {
-        skip++
         // X
         if (++placing.x == buildData[placing.y][placing.z].length) {
             placing.x = 0;
@@ -135,8 +134,8 @@ function posterNext(origin, placing) {
         block = bot.blockAt(origin.plus(placing))
         data = glob.buildData[placing.y][placing.z][placing.x]
         item = glob.findItem(data.type, data.metadata)
-        if (!item && block.type == 0)
-            bot.log("[build] NEED block: " + blockdata(data.type, data.metadata))
+        if (!item && block.type == 0) bot.log("[build] NEED block: " + blockdata(data.type, data.metadata) + " at " + placing)
+        if (block.type == 0) skip++
     } while (!item || block.type != 0)
     if (glob.doNothing()) { // speed up by before placing
         bot.equip(item, "hand", (err) => {
@@ -174,34 +173,46 @@ function buildingGoTo(origin, placing) {
     })
 }
 
-function buildingNext(origin, placing) {
+function buildingNext(origin, placing, open) {
     const buildData = glob.buildData
     var skip = 0
+    var nearest
     let block
     let item
     let data
     do {
-        skip++
-        // X
-        if (++placing.x == buildData[placing.y][placing.z].length) {
-            placing.x = 0;
-            // Z
-            if (++placing.z == buildData[placing.y].length) {
-                placing.z = 0;
-                // Y
-                if (++placing.y == buildData.length) {
-                    bot.log("[build] Create Building Finished")
-                    clearInterval(builder)
-                    return
+        let nearest = null
+        let y = placing.y
+        for (let z = 0; z < buildData[y].length; z++) {
+            for (let x = 0; x < buildData[y][z].length; x++) {
+                if (open[y][z][x]) {
+                    let pos = new Vec3(x, y, z)
+                    if (!nearest || placing.distanceTo(pos) < placing.distanceTo(nearest)) {
+                        nearest = pos;
+                    }
                 }
             }
         }
+        if (!nearest) {
+            if (++placing.y == buildData.length) {
+                bot.log("[build] Create Building Finished")
+                clearInterval(builder)
+                return
+            } else {
+                continue;
+            }
+        }
+        placing.x = nearest.x
+        placing.y = nearest.y
+        placing.z = nearest.z
+        skip++
+        open[placing.y][placing.z][placing.x] = false
+
         block = bot.blockAt(origin.plus(placing))
         data = glob.buildData[placing.y][placing.z][placing.x]
-        if (data.type == 0) continue
         item = glob.findItem(data.type, data.metadata)
         if (!item && block.type == 0)
-            bot.log("[build] NEED block: " + blockdata(data.type, data.metadata))
+            bot.log("[build] NEED block: " + blockdata(data.type, data.metadata) + " at " + placing)
     } while (!item || block.type != 0)
     if (glob.doNothing()) { // speed up by before placing
         bot.equip(item, "hand", (err) => {
@@ -220,9 +231,12 @@ function generalBuild(origin, gotofunc, nextfunc) {
     var createState = "movewait";
     var placing = new Vec3(0, 0, 0);
     var placeCnt = 0;
-    var blockSum = buildData.length * buildData[0].length * buildData[0][0].length
+    var prevPlaceCnt = 0;
+    const size = buildData.length * buildData[0].length * buildData[0][0].length
+    var open = []
+    const blockSum = viewBlockNeeds(origin, open)
+    bot.log("[build] size: " + size + "  needs: " + blockSum)
     var prevTime = new Date().getTime();
-    var prevPlace = 0;
     builder = setInterval(buildingControl, glob.buildInterval)
     function buildingControl() {
         switch (createState) {
@@ -247,10 +261,10 @@ function generalBuild(origin, gotofunc, nextfunc) {
                     glob.finishState("build")
                 }
                 if (!glob.doNothing()) return;
-                placeCnt += nextfunc(origin, placing)
-                if (placeCnt - prevPlace >= glob.buildWorkProgres) {
+                placeCnt += nextfunc(origin, placing, open)
+                if (placeCnt - prevPlaceCnt >= glob.buildWorkProgres) {
                     bot.log("[build] Construction " + placeCnt + " " + (100 * placeCnt / blockSum) + "% ")
-                    prevPlace = placeCnt
+                    prevPlaceCnt = placeCnt
                 }
                 createState = "movewait";
                 break;
@@ -318,7 +332,7 @@ function placeBlockAt(item, pos, logMode, cb) {
             })
         } else {
             bot.clearControlStates();
-            if (cb) cb("[place] NO block item to place")
+            if (cb) cb("[place] NO block item : item == null")
         }
     } else {
         bot.clearControlStates();
@@ -409,24 +423,34 @@ function viewBuildData() {
     }
 }
 
-function viewBlockNeeds(origin) {
+function viewBlockNeeds(origin, open = []) {
     const buildData = glob.buildData
     const count = {};
+    let needs = 0;
     if (origin) {
         origin = origin.floored()
         for (let y = 0; y < buildData.length; y++) {
+            open.push([])
             for (let z = 0; z < buildData[y].length; z++) {
+                open[y].push([])
                 for (let x = 0; x < buildData[y][z].length; x++) {
                     let block = bot.blockAt(origin.offset(x, y, z))
                     let data = buildData[y][z][x]
                     let tag;
                     if (data.metadata != 0) tag = data.type + "." + data.metadata
                     else tag = data.type
-                    if (block.type == data.type && block.metadata == data.metadata) {
+                    if (block.type == data.type && block.metadata == data.metadata) {//一致
                         if (!count[tag]) count[tag] = 0
-                    } else {
+                        open[y][z].push(false);
+                    } else {                //不一致
                         if (!count[tag]) count[tag] = 0
                         count[tag]++;
+                        if (data.type == 0) {//空気予定
+                            open[y][z].push(false);
+                        } else {            //非空気予定
+                            needs++
+                            open[y][z].push(true);
+                        }
                     }
                 }
             }
@@ -441,10 +465,12 @@ function viewBlockNeeds(origin) {
                     else tag = data.type
                     if (!count[tag]) count[tag] = 0
                     count[tag]++;
+                    if (data.type != 0) needs++
                 }
             }
         }
     }
+    console.log("All Blocks : " + needs)
     Object.keys(count).forEach(function (key) {
         let type = key.split(".")[0]
         if (mcData.blocks[type])
@@ -452,4 +478,5 @@ function viewBlockNeeds(origin) {
         else
             console.log(key + " :     : " + count[key])
     })
+    return needs
 }

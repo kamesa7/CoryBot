@@ -453,6 +453,7 @@ function followPath(path) {
                             var oldBlock = bot.blockAt(newBlockPos)
                             if (oldBlock && oldBlock.type == 0) { // assert
                                 var item = glob.findItem(pathblocks)
+                                if (!item) bot.log("[move] No Movement Block")
                                 glob.placeBlockAt(item, newBlockPos, (!options.ignore || glob.logMove), (err) => {
                                     if (err) {
                                         bot.log(err)
@@ -472,6 +473,7 @@ function followPath(path) {
                             var oldBlock = bot.blockAt(newBlockPos)
                             if (oldBlock && oldBlock.type == 0) { // assert
                                 var item = glob.findItem(pathblocks)
+                                if (!item) bot.log("[move] No Movement Block")
                                 glob.placeBlockAt(item, newBlockPos, (!options.ignore || glob.logMove), (err) => {
                                     if (err) {
                                         bot.log(err)
@@ -564,8 +566,8 @@ function moveCost(move) {
         case "longjumpover": return 7;
         case "land": return 4;
         case "bridge": return 20;
-        case "buildstair": return 25;
-        case "scafford": return 30;
+        case "buildstair": return 21;
+        case "scafford": return 22;
         default:
             bot.log("[move] unknown move cost")
             return 0;
