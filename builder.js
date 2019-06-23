@@ -176,7 +176,6 @@ function buildingGoTo(origin, placing) {
 function buildingNext(origin, placing, open) {
     const buildData = glob.buildData
     var skip = 0
-    var nearest
     let block
     let item
     let data
@@ -262,7 +261,7 @@ function generalBuild(origin, gotofunc, nextfunc) {
                 }
                 if (!glob.doNothing()) return;
                 placeCnt += nextfunc(origin, placing, open)
-                if (placeCnt - prevPlaceCnt >= glob.buildWorkProgres) {
+                if (placeCnt - prevPlaceCnt >= glob.buildWorkProgress) {
                     bot.log("[build] Construction " + placeCnt + " " + (100 * placeCnt / blockSum) + "% ")
                     prevPlaceCnt = placeCnt
                 }
@@ -282,7 +281,7 @@ function placeBlockFromSchematic(origin, placing) {
                 if (item.count == glob.buildWarnBlock)
                     bot.log("[build] LOW block: " + blockdata(item.type, item.metadata))
                 else if (item.count == 1)
-                    bot.log("[build] SHORTAGE block: " + blockdata(item.type, item.metadata))
+                    bot.log("[build] USED block: " + blockdata(item.type, item.metadata))
             }
             placeBlockAt(item, newBlockPos, glob.logBuild, (err) => {
                 if (err) bot.log(err)
@@ -317,7 +316,7 @@ function placeBlockAt(item, pos, logMode, cb) {
                     }
                 }
                 if (i == roundPos.length) {
-                    if (logMode) bot.log("[place] NO reference block At: " + newBlockPos)
+                    bot.log("[place] NO reference block At: " + newBlockPos)
                     refBlock = oldBlock
                     i = 0;
                 }
@@ -325,6 +324,10 @@ function placeBlockAt(item, pos, logMode, cb) {
                 bot.lookAt(refBlock.position.offset(0.5, 0.5, 0.5), true, () => {
                     bot.placeBlock(refBlock, roundPos[i].scaled(-1), (error) => {
                         bot.clearControlStates();
+                        if (logMode) {
+                            let newBlock = bot.blockAt(newBlockPos);
+                            bot.log("[place] placed: " + blockdata(newBlock.type, newBlock.metadata))
+                        }
                         if (cb) cb(error)
                         return
                     })
