@@ -104,7 +104,7 @@ function goToPos(point, options = {}) {
     setStandable(start);
     if (options.standadjust >= 0) setStandable(goal, options.standadjust);
     else setStandable(goal);
-    if (msgable) bot.log("[move] try to goto " + goal + " from " + start);
+    if (msgable) bot.log("[move] goto " + goal + " from " + start);
     if (logable) var pathfindtime = new Date().getTime();
     var path = [];
     var cost = bestFirstSearch(path, start, goal, options);

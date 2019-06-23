@@ -14,12 +14,14 @@ app.get('/', function (req, res) {
 io.on('connection', function (client) {
 
     client.on('message', function (msg) {
-        bot.safechat(msg);
+        bot.chat(msg);
     });
     client.on('server', function () {
         emitServer();
         emitMapAll();
         emitVital();
+        emitInventory();
+        emitFlags();
     });
     client.on('stopmove', function () {
         glob.stopMoving()
@@ -49,7 +51,6 @@ io.on('connection', function (client) {
     client.on('punch', function (ID) {
         if (bot.entities[ID])
             glob.punch(bot.entities[ID])
-        // bot.attack(bot.entities[ID])
     });
     client.on('shoot', function (ID) {
         if (bot.entities[ID])
@@ -61,6 +62,7 @@ io.on('connection', function (client) {
         glob.isArrowDefenceMode = flags.isArrowDefenceMode
         glob.isCollisionalMode = flags.isCollisionalMode
         glob.isInterestMode = flags.isInterestMode
+        glob.isIgnoreMode = flags.isIgnoreMode
     })
     client.on('equip', function (slot) {
         const START = 9;
@@ -68,11 +70,11 @@ io.on('connection', function (client) {
         if (START <= slot) {
             if (item) {
                 bot.equip(item, "hand", function (err) {
-                    if (err) bot.log(err);
+                    equipcb(err)
                 });
             } else {
                 bot.unequip("hand", function (err) {
-                    if (err) bot.log(err);
+                    equipcb(err)
                 })
             }
         } else {
@@ -80,22 +82,22 @@ io.on('connection', function (client) {
                 switch (slot) {
                     case 5:
                         bot.unequip("head", function (err) {
-                            if (err) bot.log(err);
+                            equipcb(err)
                         });
                         break;
                     case 6:
                         bot.unequip("torso", function (err) {
-                            if (err) bot.log(err);
+                            equipcb(err)
                         });
                         break;
                     case 7:
                         bot.unequip("legs", function (err) {
-                            if (err) bot.log(err);
+                            equipcb(err)
                         });
                         break;
                     case 8:
                         bot.unequip("feet", function (err) {
-                            if (err) bot.log(err);
+                            equipcb(err)
                         });
                         break;
                 }
@@ -104,27 +106,32 @@ io.on('connection', function (client) {
                     switch (slot) {
                         case 5:
                             bot.equip(bot.heldItem, "head", function (err) {
-                                if (err) bot.log(err);
+                                equipcb(err)
                             });
                             break;
                         case 6:
                             bot.equip(bot.heldItem, "torso", function (err) {
-                                if (err) bot.log(err);
+                                equipcb(err)
                             });
                             break;
                         case 7:
                             bot.equip(bot.heldItem, "legs", function (err) {
-                                if (err) bot.log(err);
+                                equipcb(err)
                             });
                             break;
                         case 8:
                             bot.equip(bot.heldItem, "feet", function (err) {
-                                if (err) bot.log(err);
+                                equipcb(err)
                             });
                             break;
                     }
 
             }
+        }
+        equipcb()
+        function equipcb(err) {
+            if (err) bot.log(err);
+            emitInventory()
         }
     })
     client.on('tossitem', function () {
@@ -173,9 +180,12 @@ io.on('connection', function (client) {
         sentMap[x][z] = true;
     }
 
+    /// for client
+
     var prevPos;
     bot.on("respawn", () => {
         emitMapAll()
+        emitInventory()
         prevPos = bot.entity.position.clone();
     })
     bot.on("move", () => {
@@ -190,7 +200,7 @@ io.on('connection', function (client) {
     bot.on("blockUpdate", function (oldBlock, newBlock) {
         var data = []
         container(data, newBlock.position.x, newBlock.position.z)
-        client.json.emit('map', { data: data })
+        client.json.emit('newblock', { data: data })
     });
 
     function emitMapEdge() {
@@ -238,13 +248,15 @@ io.on('connection', function (client) {
     }
 });
 
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 glob.event.on("log", (msg) => {
     io.emit('message', msg);
 })
 
 bot.on("move", () => {
     io.json.emit("myentity", bot.entity, glob.getState())
-    if (Math.random() > 0.8)
+    if (Math.random() > 0.975)
         emitInventory()
 })
 
@@ -284,12 +296,16 @@ function emitServer() {
         username: bot.username,
     })
     io.json.emit('players', bot.players)
+}
+
+function emitFlags() {
     io.json.emit('flags', {
         isCloseDefenceMode: glob.isCloseDefenceMode,
         isSniperMode: glob.isSniperMode,
         isArrowDefenceMode: glob.isArrowDefenceMode,
         isCollisionalMode: glob.isCollisionalMode,
         isInterestMode: glob.isInterestMode,
+        isIgnoreMode: glob.isIgnoreMode,
     })
 }
 

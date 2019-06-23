@@ -27,20 +27,20 @@
           <span id='state'></span><br>
         </div>
         <div class="control">
+          <input id='stopstate' type="button" class="button-input" value="StopState">
           <input id='stopmove' type="button" class="button-input" value="StopMove">
           <input id='dismount' type="button" class="button-input" value="Dismount">
-          <input id='stopstate' type="button" class="button-input" value="StopState">
           <input id='tossitem' type="button" class="button-input" value="TossItem">
           <input id='actitem' type="button" class="button-input" value="ActItem">
           <input id='deactitem' type="button" class="button-input" value="DeActItem">
           <br>
           <label>
             <input id='is-close-defence-mode' type="checkbox" class="checkbox-input"><span
-              class="checkbox-parts">CloseDefence</span>
+              class="checkbox-parts">Swordsman</span>
           </label>
           <label>
             <input id='is-sniper-mode' type="checkbox" class="checkbox-input"><span
-              class="checkbox-parts">SniperMode</span>
+              class="checkbox-parts">Sniper</span>
           </label>
           <label>
             <input id='is-arrow-defence-mode' type="checkbox" class="checkbox-input"><span
@@ -48,11 +48,15 @@
           </label>
           <label>
             <input id='is-collisional-mode' type="checkbox" class="checkbox-input"><span
-              class="checkbox-parts">CollisionalMove</span>
+              class="checkbox-parts">Collision</span>
           </label>
           <label>
             <input id='is-interest-mode' type="checkbox" class="checkbox-input"><span
-              class="checkbox-parts">InterestMove</span>
+              class="checkbox-parts">Interest</span>
+          </label>
+          <label>
+            <input id='is-ignore-mode' type="checkbox" class="checkbox-input"><span
+              class="checkbox-parts">Ignore</span>
           </label>
           <form id="select">
             <input id="target_entity" autocomplete="off" size="6">
@@ -74,7 +78,7 @@
         <ul id="messages"></ul>
       </div>
       <div class="chat-sender">
-        <form id="message_form" action="#">
+        <form id="message_form">
           <input id="input_msg" autocomplete="off" size="60" /><button>Send</button>
         </form>
       </div>

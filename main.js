@@ -97,7 +97,7 @@ function start() {
   })
 
   bot.on('end', () => {
-    console.log('process exit');
+    console.log('bot.end :: process exit');
     if (!glob.debug) jsonfile.writeFileSync("session_cache.json", bot._client.session)
     process.exit();
   });
