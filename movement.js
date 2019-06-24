@@ -765,7 +765,7 @@ function expandNode(node, options) {
     if (options.buildstairable)
         for (var i = 0; i < buildstairs.length; i++) {
             pos = plus(prepos, buildstairs[i]);
-            if (isThroughable(pos) && bot.blockAt(posToVec(plus(pos, [0, -1, 0]))).type == 0 && isStandable(plus(pos, [0, -1, 0]))) {
+            if (isThroughable(pos) && bot.blockAt(posToVec(plus(pos, [0, -1, 0]))).type == 0 /*&& isStandable(plus(pos, [0, -1, 0]))*/) {
                 pos.push("buildstair");
                 ret.push(pos);
             }
