@@ -13,9 +13,17 @@ const armorSlots = {
 //functions
 glob.startEat = startEat;
 glob.findItem = findItem;
+glob.checkItemCount = checkItemCount
 glob.clearInventory = clearInventory;
 glob.equipArmor = equipArmor;
 glob.equipHead = equipHead;
+
+bot.on('spawn', function () {
+    if (bot.heldItem)
+        bot.unequip("hand", function (err) {
+            bot.log(err)
+        })
+})
 
 bot.on('health', function () {
     bodyManage();
@@ -98,6 +106,18 @@ function findItem(target, meta = undefined) {
     } else {
         return bot.inventory.findInventoryItem(target, meta);
     }
+}
+
+function checkItemCount(type, metadata = undefined) {
+    const slots = bot.inventory.slots
+    var count = 0
+    for (var index = 0; index < slots.length; index++) {
+        var item = slots[index]
+        if (item && item.type == type && (metadata == undefined || item.metadata == metadata)) {
+            count += item.count
+        }
+    }
+    return count;
 }
 
 function equipArmor(dest = 0) {

@@ -37,6 +37,7 @@ var roundPos = [
 ]
 
 function stopBuild() {
+    glob.stopMoving()
     clearInterval(builder)
     bot.log("[build] Stop Construction")
 }
@@ -62,6 +63,7 @@ function loadSchematic(file) {
         level.Width = Number(level.Width)
 
         console.log(level.Height, level.Length, level.Width)
+        console.log("x:" + level.Width + " y:" + level.Height + " z:" + level.Length)
 
         const buildData = []
         glob.buildData = buildData;
@@ -116,6 +118,7 @@ function posterNext(origin, placing) {
     let block
     let item
     let data
+    let NEED = {}
     do {
         // X
         if (++placing.x == buildData[placing.y][placing.z].length) {
@@ -134,9 +137,13 @@ function posterNext(origin, placing) {
         block = bot.blockAt(origin.plus(placing))
         data = glob.buildData[placing.y][placing.z][placing.x]
         item = glob.findItem(data.type, data.metadata)
-        if (!item && block.type == 0) bot.log("[build] NEED block: " + blockdata(data.type, data.metadata) + " at " + placing)
         if (block.type == 0) skip++
+        if (!item && block.type == 0 && skip < glob.buildWorkProgress)
+            NEED["[build] NEED block: " + blockdata(data.type, data.metadata)] += placing
     } while (!item || block.type != 0)
+    Object.keys(NEED).forEach(function (key) {
+        bot.log(key + NEED[key].replace("undefined", " at "));
+    })
     if (glob.doNothing()) { // speed up by before placing
         bot.equip(item, "hand", (err) => {
             if (err) {
@@ -179,6 +186,7 @@ function buildingNext(origin, placing, open) {
     let block
     let item
     let data
+    let NEED = {}
     do {
         let nearest = null
         let y = placing.y
@@ -204,15 +212,18 @@ function buildingNext(origin, placing, open) {
         placing.x = nearest.x
         placing.y = nearest.y
         placing.z = nearest.z
-        skip++
         open[placing.y][placing.z][placing.x] = false
 
         block = bot.blockAt(origin.plus(placing))
         data = glob.buildData[placing.y][placing.z][placing.x]
         item = glob.findItem(data.type, data.metadata)
-        if (!item && block.type == 0)
-            bot.log("[build] NEED block: " + blockdata(data.type, data.metadata) + " at " + placing)
+        skip++
+        if (!item && block.type == 0 && skip < glob.buildWorkProgress)
+            NEED["[build] NEED block: " + blockdata(data.type, data.metadata)] += placing
     } while (!item || block.type != 0)
+    Object.keys(NEED).forEach(function (key) {
+        bot.log(key + NEED[key].replace("undefined", " at "));
+    })
     if (glob.doNothing()) { // speed up by before placing
         bot.equip(item, "hand", (err) => {
             if (err) {
@@ -278,9 +289,10 @@ function placeBlockFromSchematic(origin, placing) {
             var data = glob.buildData[placing.y][placing.z][placing.x]
             var item = glob.findItem(data.type, data.metadata)
             if (item) {
-                if (item.count == glob.buildWarnBlock)
-                    bot.log("[build] LOW block: " + blockdata(item.type, item.metadata))
-                else if (item.count == 1)
+                let count = glob.checkItemCount(item.type, item.metadata)
+                if (count == glob.buildWarnBlock)
+                    bot.log("[build] LOW(" + (count - 1) + ") block: " + blockdata(item.type, item.metadata))
+                else if (count == 1)
                     bot.log("[build] USED block: " + blockdata(item.type, item.metadata))
             }
             placeBlockAt(item, newBlockPos, glob.logBuild, (err) => {
@@ -339,7 +351,7 @@ function placeBlockAt(item, pos, logMode, cb) {
         }
     } else {
         bot.clearControlStates();
-        if (cb) cb("[place] cannot place there")
+        if (cb) cb("[place] cannot place there : not air")
     }
 }
 
@@ -475,9 +487,12 @@ function viewBlockNeeds(origin, open = []) {
     }
     console.log("All Blocks : " + needs)
     Object.keys(count).forEach(function (key) {
-        let type = key.split(".")[0]
+        let split = key.split(".")
+        let type = split[0]
+        let meta = split[1] ? split[1] : 0
+        let have = glob.checkItemCount(type, meta)
         if (mcData.blocks[type])
-            console.log(key + " : " + mcData.blocks[type].name + " : " + count[key])
+            console.log(key + " : " + mcData.blocks[type].name + " : " + count[key] + "/" + have + "  (" + (count[key] - have) + ")")
         else
             console.log(key + " :     : " + count[key])
     })

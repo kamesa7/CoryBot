@@ -25,6 +25,7 @@ glob.moveConfig = {
     randomHeight: 3,
     randomWait: 50,
     randomCostLimit: 100,
+    pathblocks: [3]//dirt
 }
 
 const CONFIG = glob.moveConfig;
@@ -108,6 +109,14 @@ function goToPos(point, options = {}) {
     if (logable) var pathfindtime = new Date().getTime();
     var path = [];
     var cost = bestFirstSearch(path, start, goal, options);
+    if (path.pathBlockCnt > 0) {
+        let sum = 0;
+        for (let i = 0; i < CONFIG.pathblocks.length; i++) {
+            sum += glob.checkItemCount(CONFIG.pathblocks[i])
+        }
+        if (msgable) bot.log("[move] path blocks " + path.pathBlockCnt + "/" + sum);
+        if (path.pathBlockCnt > sum) bot.log("[move] NEED more path blocks : " + (path.pathBlockCnt - sum) + " : " + path.pathBlockCnt + "/" + sum);
+    }
     if (logable) {
         bot.log("[move] pathfind took: " + (new Date().getTime() - pathfindtime) + "ms");
         bot.log("[move] cost: " + cost);
@@ -452,7 +461,7 @@ function followPath(path) {
                             var newBlockPos = posToVec(plus(node, [0, -1, 0]))
                             var oldBlock = bot.blockAt(newBlockPos)
                             if (oldBlock && oldBlock.type == 0) { // assert
-                                var item = glob.findItem(pathblocks)
+                                var item = glob.findItem(CONFIG.pathblocks)
                                 if (!item) bot.log("[move] No Movement Block")
                                 glob.placeBlockAt(item, newBlockPos, (!options.ignore || glob.logMove), (err) => {
                                     if (err) {
@@ -472,7 +481,7 @@ function followPath(path) {
                             var newBlockPos = posToVec(plus(node, [0, -1, 0]))
                             var oldBlock = bot.blockAt(newBlockPos)
                             if (oldBlock && oldBlock.type == 0) { // assert
-                                var item = glob.findItem(pathblocks)
+                                var item = glob.findItem(CONFIG.pathblocks)
                                 if (!item) bot.log("[move] No Movement Block")
                                 glob.placeBlockAt(item, newBlockPos, (!options.ignore || glob.logMove), (err) => {
                                     if (err) {
@@ -555,7 +564,6 @@ const buildstairs = [
     [0, 1, -1]
 ];
 const scafford = [0, 1, 0]
-var pathblocks = [3]//dirt
 
 function moveCost(move) {
     switch (move) {
@@ -642,26 +650,26 @@ function bestFirstSearch(finalPath, start, goal, options) {
     while (!open.isEmpty()) {
         node = open.dequeue();
         if (isGoal(node.p, goal, options.allowGoal, options.rejectGoal)) { // find path
-            var cost = convertNode(finalPath, node);
-            optimize(finalPath, options);
+            let cost = convertNode(finalPath, node);
+            optimize(finalPath);
             return cost;
         } else if (count++ > options.searchLimit) { // limit over
-            var nearDistances = [];
-            for (var i = 0; i < closed.length; i++) {
+            let nearDistances = [];
+            for (let i = 0; i < closed.length; i++) {
                 nearDistances.push(getL1(closed[i], goal));
             }
-            var nearest = getMinInd(nearDistances);
+            let nearest = getMinInd(nearDistances);
             bot.log("[move] nearest: " + closed[nearest]);
             options.allowGoal = 0
             options.rejectGoal = -1
             return bestFirstSearch(finalPath, start, closed[nearest], options);
         }
         expanded = expandNode(node, options);
-        for (var i = 0; i < expanded.length; i++) { // expand
-            var pos = expanded[i];
+        for (let i = 0; i < expanded.length; i++) { // expand
+            let pos = expanded[i];
             if (!contains(closed, pos)) {
                 closed.push(pos);
-                var newNode = new NodeElement(pos, getL1(pos, goal) + moveCost(pos[3]), node);
+                let newNode = new NodeElement(pos, getL1(pos, goal) + moveCost(pos[3]), node);
                 open.enqueue(newNode);
             }
         }
@@ -788,8 +796,9 @@ function convertNode(path, node) {
     return sum;
 }
 
-function optimize(path, options) {
+function optimize(path) {
     if (path.length == 0) return;
+    const options = path.options;
     var start = floor(getMyPos());
     if (bot.blockAt(posToVec(start)).boundingBox == "door") {
         path.splice(0, 0, [start[0], start[1], start[2], "strict"]);
@@ -858,20 +867,25 @@ function optimize(path, options) {
             i = startInd + 1;
         }
     }
+    var pathBlockCnt = 0
     for (var i = 0; i < path.length; i++) {
-        if (path[i][3] == "bridge") {
-            var pathBridge = path[i];
-            path.splice(i + 1, 0, [pathBridge[0], pathBridge[1], pathBridge[2], "walk"]);
-        }
-        if (path[i][3] == "buildstair") {
-            var pathStair = path[i];
-            path.splice(i + 1, 0, [pathStair[0], pathStair[1], pathStair[2], "upstair"]);
-        }
-        if (path[i][3] == "scafford") {
-            var pathStair = path[i];
-            path.splice(i + 1, 0, [pathStair[0], pathStair[1], pathStair[2], "wait", 10]);
+        const blockPos = path[i];
+        switch (blockPos[3]) {
+            case "bridge":
+                path.splice(i + 1, 0, [blockPos[0], blockPos[1], blockPos[2], "walk"]);
+                pathBlockCnt++
+                break
+            case "buildstair":
+                path.splice(i + 1, 0, [blockPos[0], blockPos[1], blockPos[2], "upstair"]);
+                pathBlockCnt++
+                break
+            case "scafford":
+                path.splice(i + 1, 0, [blockPos[0], blockPos[1], blockPos[2], "wait", 10]);
+                pathBlockCnt++
+                break
         }
     }
+    path.pathBlockCnt = pathBlockCnt
     if (options.strictfin) {
         const fin = path[path.length - 1];
         path.push([fin[0], fin[1], fin[2], "strict"])
