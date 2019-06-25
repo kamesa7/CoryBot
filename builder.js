@@ -287,8 +287,8 @@ function placeBlockFromSchematic(origin, placing) {
     if (glob.buildData[placing.y] && glob.buildData[placing.y][placing.z] && glob.buildData[placing.y][placing.z][placing.x]) { // assert
         glob.tryState("build", function () {
             const data = glob.buildData[placing.y][placing.z][placing.x]
-            let item = findConstructiveBlock(data.type, data.metadata)
-            let placingMethod = getPlacingMethod(data.type, data.metadata)
+            const item = findConstructiveBlock(data.type, data.metadata)
+            const placingMethod = getPlacingMethod(data.type, data.metadata)
             if (item) {
                 let count = glob.checkItemCount(item.type, item.metadata)
                 if (count == glob.buildWarnBlock)
@@ -296,11 +296,11 @@ function placeBlockFromSchematic(origin, placing) {
                 else if (count == 1)
                     bot.log("[build] USED block: " + blockdata(item.type, item.metadata))
 
-                if (placingMethod.facing) {
-                    placeDirectedBlockAt(item, newBlockPos, placingMethod.facing, glob.logBuild, (err) => {
+                if (placingMethod.look != undefined || placingMethod.direction != undefined) {
+                    placeDirectedBlockAt(item, newBlockPos, placingMethod, glob.logBuild, (err) => {
                         if (err) bot.log(err)
                         glob.finishState("build")
-                    }, placingMethod.offset)
+                    })
                 } else {
                     placeBlockAt(item, newBlockPos, glob.logBuild, (err) => {
                         if (err) bot.log(err)
@@ -321,135 +321,118 @@ function placeBlockFromSchematic(origin, placing) {
  * @param {*} cb isError
  */
 function placeBlockAt(item, pos, logMode, cb = noop) {
-    bot.setControlState("sneak", true)
-    var newBlockPos = pos
-    var oldBlock = bot.blockAt(newBlockPos)
-    var refBlock, i
-    if (oldBlock && oldBlock.type == 0) {
-        if (item) {
-            bot.equip(item, "hand", (error) => {
-                if (error) {
-                    cb(error)
-                    return
-                }
-                for (i = 0; i < roundPos.length; i++) {
-                    if (bot.blockAt(newBlockPos.plus(roundPos[i])).type != 0) {
-                        refBlock = bot.blockAt(newBlockPos.plus(roundPos[i]))
-                        break
-                    }
-                }
-                if (i == roundPos.length) {
-                    bot.log("[place] No reference block At: " + newBlockPos)
-                    refBlock = oldBlock
-                    i = 0;
-                }
-                if (logMode) bot.log("[place] place: ref " + refBlock.position + " new " + newBlockPos + " face " + roundPos[i])
-                bot.lookAt(refBlock.position.offset(0.5, 0.5, 0.5), true, () => {
-                    bot.placeBlock(refBlock, roundPos[i].scaled(-1), (error) => {
-                        bot.clearControlStates();
-                        if (logMode) {
-                            let newBlock = bot.blockAt(newBlockPos);
-                            bot.log("[place] placed: " + blockdata(newBlock.type, newBlock.metadata))
-                        }
-                        cb(error)
-                        return
-                    })
-                })
-            })
-        } else {
-            bot.clearControlStates();
-            cb("[place] No block item : item == null")
-        }
-    } else {
-        bot.clearControlStates();
-        cb("[place] cannot place there : not air")
+    const newBlockPos = pos
+    const oldBlock = bot.blockAt(newBlockPos)
+    var refBlock, face
+    if (!item) {
+        cb("[place] No block item : null item")
+        return
     }
+    if (!oldBlock || oldBlock.type != 0) {
+        cb("[place] cannot place there : not air pos")
+        return
+    }
+    bot.setControlState("sneak", true)
+    bot.equip(item, "hand", (error) => {
+        if (error) {
+            cb(error)
+            return
+        }
+        refBlock = referenceAt(newBlockPos)
+        if (refBlock) {
+            face = newBlockPos.minus(refBlock.position)
+        } else {
+            bot.log("[place] No reference block At: " + newBlockPos)
+            refBlock = oldBlock
+            face = new Vec3(0, 1, 0)
+        }
+        if (logMode) bot.log("[place] place: ref " + refBlock.position + " new " + newBlockPos + " face " + face)
+        bot.lookAt(refBlock.position.offset(0.5, 0.5, 0.5), true, () => {
+            bot.placeBlock(refBlock, face, (error) => {
+                bot.clearControlStates();
+                if (logMode) {
+                    const newBlock = bot.blockAt(newBlockPos);
+                    bot.log("[place] placed: " + blockdata(newBlock.type, newBlock.metadata))
+                }
+                cb(error)
+                return
+            })
+        })
+    })
 }
 
 /**
  * @param {*} item 
  * @param {*} pos 
- * @param {*} faceVector
+ * @param {*} detail 
  * @param {*} logMode 
- * @param {*} cb isError
- * @param {*} offset when placing stair
+ * @param {*} cb 
  */
-function placeDirectedBlockAt(item, pos, faceVector, logMode, cb = noop, offset = new Vec3(0.5, 0.5, 0.5)) {
-    faceVector = faceVector.scaled(-1)
-    bot.setControlState("sneak", true)
-    var newBlockPos = pos
-    var oldBlock = bot.blockAt(newBlockPos)
-    var refBlock = bot.blockAt(newBlockPos.minus(faceVector))
-    if (oldBlock && oldBlock.type == 0) {
-        if (item) {
-            bot.equip(item, "hand", (error) => {
-                if (error) {
-                    cb(error)
-                    return
-                }
-                if (logMode) bot.log("[place] place directed: ref " + refBlock.position + " new " + newBlockPos + " face " + faceVector + " offset " + offset)
-                bot.lookAt(newBlockPos.plus(faceVector.scaled(-3)), true, () => {
-                    if (!bot.heldItem) cbb(new Error('must be holding an item to place a block'))
-                    // TODO: tell the server that we are sneaking while doing this
-                    bot._client.write('arm_animation', { hand: 0 })
-                    const pos = refBlock.position
-                    bot._client.write('block_place', {
-                        location: pos,
-                        direction: vectorToDirection(faceVector),
-                        hand: 0,
-                        cursorX: offset.x,
-                        cursorY: offset.y,
-                        cursorZ: offset.z
-                    })
-                    const dest = pos.plus(faceVector)
-                    const eventName = `blockUpdate:${dest}`
-                    bot.once(eventName, onBlockUpdate)
-                    function onBlockUpdate(oldBlock, newBlock) {
-                        if (oldBlock.type === newBlock.type) {
-                            cbb(new Error(`No block has been placed : the block is still ${oldBlock.name}`))
-                        } else {
-                            cbb()
-                        }
-                    }
-                })
-            })
-        } else {
-            bot.clearControlStates();
-            cb("[place] No block item : item == null")
-        }
-    } else {
-        bot.clearControlStates();
-        cb("[place] cannot place there : not air")
+function placeDirectedBlockAt(item, pos, detail, logMode, cb = noop) {
+    const newBlockPos = pos
+    const oldBlock = bot.blockAt(newBlockPos)
+    if (!item) {
+        cb("[place] No block item : null item")
+        return
     }
+    if (!oldBlock || oldBlock.type != 0) {
+        cb("[place] cannot place there : not air pos")
+        return
+    }
+    if (!detail.direction) detail.direction = 0
+    if (!detail.look) detail.look = pos.offset(0.5, 0.5, 0.5)
+    else detail.look = bot.entity.position.offset(0, 1.2, 0).minus(detail.look)
+    bot.setControlState("sneak", true)
+    bot.equip(item, "hand", (error) => {
+        if (error) {
+            cb(error)
+            return
+        }
+        if (logMode) bot.log("[place] place directed: pos " + newBlockPos + " direct " + detail.direction + " look " + detail.look)
+        bot.lookAt(detail.look, true, () => {
+            if (!bot.heldItem) cbb(new Error('must be holding an item to place a block'))
+            bot._client.write('arm_animation', { hand: 0 })
+            bot._client.write('block_place', {
+                location: pos,
+                direction: detail.direction,
+                hand: 0,
+                cursorX: 0.5,
+                cursorY: 0.5,
+                cursorZ: 0.5
+            })
+            const eventName = `blockUpdate:${pos}`
+            bot.once(eventName, onBlockUpdate)
+            function onBlockUpdate(oldBlock, newBlock) {
+                if (oldBlock.type === newBlock.type) {
+                    cbb(new Error(`No block has been placed : the block is still ${oldBlock.name}`))
+                } else {
+                    cbb()
+                }
+            }
+        })
+    })
     function cbb(error) {
         bot.clearControlStates();
         if (logMode) {
-            let newBlock = bot.blockAt(newBlockPos);
+            const newBlock = bot.blockAt(newBlockPos);
             bot.log("[place] placed: " + blockdata(newBlock.type, newBlock.metadata))
         }
         cb(error)
         return
     }
-    function vectorToDirection(v) {
-        if (v.y < 0) {
-            return 0
-        } else if (v.y > 0) {
-            return 1
-        } else if (v.z < 0) {
-            return 2
-        } else if (v.z > 0) {
-            return 3
-        } else if (v.x < 0) {
-            return 4
-        } else if (v.x > 0) {
-            return 5
-        }
-        assert.ok(false, `invalid direction vector ${v}`)
-    }
 }
 
 function blockdata(type, metadata) {
     return type + " " + mcData.blocks[type].name + " " + metadata
+}
+
+function referenceAt(vec) {
+    for (let i = 0; i < roundPos.length; i++) {
+        if (bot.blockAt(vec.plus(roundPos[i])).type != 0) {
+            return bot.blockAt(vec.plus(roundPos[i]))
+        }
+    }
+    return null
 }
 
 function nearBuild() {
@@ -578,16 +561,16 @@ function viewBlockNeeds(origin, open = []) {
             }
         }
     }
-    console.log("All Blocks : " + needs)
+    bot.log("All Blocks : " + needs)
     Object.keys(count).forEach(function (key) {
         let split = key.split(".")
         let type = split[0]
         let meta = split[1] ? split[1] : 0
         let have = glob.checkItemCount(type, meta)
         if (mcData.blocks[type])
-            console.log(key + " : " + mcData.blocks[type].name + " : " + count[key] + "/" + have + "  (" + (count[key] - have) + ")")
+            bot.log(key + " : " + mcData.blocks[type].name + " : " + count[key] + "/" + have + "  (" + (count[key] - have) + ")")
         else
-            console.log(key + " :     : " + count[key])
+            bot.log(key + " :     : " + count[key])
     })
     return needs
 }
@@ -643,17 +626,17 @@ function findConstructiveBlock(type, metadata) {
 }
 
 function getPlacingMethod(type, metadata) {
-    let facing = undefined
-    let offset = undefined
+    let direction = undefined
+    let look = undefined
     switch (type) {
         /*3 faces*/
         //log
         case 17: case 162:
-            switch (metadata & 0x7) {
-                case 4: facing = roundPos[0]; break;
-                case 5: facing = roundPos[1]; break;
-                case 6: facing = roundPos[3]; break;
-                case 7: break
+            switch ((metadata >> 2) & 0x3) {
+                case 0: direction = 0; break;
+                case 1: direction = 4; break;
+                case 2: direction = 2; break;
+                case 3: direction = 0; break;
             }
             break
         /*4 faces*/
@@ -666,10 +649,10 @@ function getPlacingMethod(type, metadata) {
         //ladder
         case 65:
             switch (metadata) {
-                case 0: facing = roundPos[4]; break;
-                case 1: facing = roundPos[2]; break;
-                case 2: facing = roundPos[3]; break;
-                case 3: facing = roundPos[1]; break;
+                case 2: look = new Vec3(0, 0, 1); break;
+                case 3: look = new Vec3(0, 0, -1); break;
+                case 4: look = new Vec3(1, 0, 0); break;
+                case 5: look = new Vec3(-1, 0, 0); break;
             }
         //rail
         case 27: case 28: case 66: case 157:
@@ -686,41 +669,39 @@ function getPlacingMethod(type, metadata) {
         //button
         case 77: case 143:
             switch (metadata & 0x7) {
-                case 0: facing = roundPos[5]; break;
-                case 1: facing = roundPos[1]; break;
-                case 2: facing = roundPos[2]; break;
-                case 3: facing = roundPos[3]; break;
-                case 4: facing = roundPos[4]; break;
-                case 5: facing = roundPos[0]; break;
+                case 0: look = new Vec3(0, 1, 0); break;
+                case 1: look = new Vec3(0, -1, 0); break;
+                case 2: look = new Vec3(0, 0, 1); break;
+                case 3: look = new Vec3(0, 0, -1); break;
+                case 4: look = new Vec3(1, 0, 0); break;
+                case 5: look = new Vec3(-1, 0, 0); break;
             }
             break
         /*stairs*/
         case 53: case 67: case 108: case 109: case 114: case 128: case 134: case 135: case 136: case 156: case 163: case 164: case 180: case 203:
             switch (metadata & 0x3) {
-                case 0: facing = roundPos[1]; break;
-                case 1: facing = roundPos[2]; break;
-                case 2: facing = roundPos[3]; break;
-                case 3: facing = roundPos[4]; break;
+                case 0: look = new Vec3(-1, 0, 0); break;
+                case 1: look = new Vec3(1, 0, 0); break;
+                case 2: look = new Vec3(0, 0, -1); break;
+                case 3: look = new Vec3(0, 0, 1); break;
             }
             if (metadata & 0x4 == 0)
-                offset = new Vec3(0.5, 0.9, 0.5)
+                direction = 0
             else
-                offset = new Vec3(0.5, 0.1, 0.5)
+                direction = 1
             break
         /*slabs*/
-        // case 44: case 126: case 182: case 205:
-        //     if (metadata < 8) {
-        //         facing = roundPos[0];
-        //         offset = new Vec3(0.5, 0.1, 0.5)
-        //     } else {
-        //         facing = roundPos[5];
-        //         offset = new Vec3(0.5, 0.9, 0.5)
-        //     }
-        //     break
+        case 44: case 126: case 182: case 205:
+            if (metadata < 8) {
+                direction = 1
+            } else {
+                direction = 0
+            }
+            break
         default:
             break
     }
-    return { facing: facing, offset: offset }
+    return { direction: direction, look: look }
 }
 
 function noop(err) {
