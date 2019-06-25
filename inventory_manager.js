@@ -19,10 +19,11 @@ glob.equipArmor = equipArmor;
 glob.equipHead = equipHead;
 
 bot.on('spawn', function () {
-    if (bot.heldItem)
+    setTimeout(function () {
         bot.unequip("hand", function (err) {
             bot.log(err)
         })
+    }, 5000);
 })
 
 bot.on('health', function () {

@@ -679,17 +679,17 @@ function bestFirstSearch(finalPath, start, goal, options) {
 }
 
 function expandNode(node, options) {
-    var ret = [];
-    var prepos = node.p
+    const ret = [];
+    const prepos = node.p
     var pos;
-    for (var i = 0; i < walks.length; i++) {
+    for (let i = 0; i < walks.length; i++) {
         pos = plus(prepos, walks[i]);
         if (isStandable(pos)) {
             pos.push("walk");
             ret.push(pos);
         }
     }
-    for (var i = 0; i < crosses.length; i += 3) {
+    for (let i = 0; i < crosses.length; i += 3) {
         pos = plus(prepos, crosses[i]);
         if (isStandable(pos) &&
             isThroughable(plus(prepos, crosses[i + 1])) && isThroughable(plus(prepos, crosses[i + 2]))
@@ -700,7 +700,7 @@ function expandNode(node, options) {
     }
 
     if (isThroughable(plus(prepos, [0, 1, 0]))) {
-        for (var i = 0; i < upstairs.length; i++) {
+        for (let i = 0; i < upstairs.length; i++) {
             pos = plus(prepos, upstairs[i]);
             if (isStandable(pos)) {
                 pos.push("upstair");
@@ -709,7 +709,7 @@ function expandNode(node, options) {
         }
     }
 
-    for (var i = 0; i < downstairs.length; i++) {
+    for (let i = 0; i < downstairs.length; i++) {
         pos = plus(prepos, downstairs[i]);
         if (isStandable(pos) && isThroughable(plus(pos, [0, 1, 0]))) {
             pos.push("downstair");
@@ -718,9 +718,9 @@ function expandNode(node, options) {
     }
 
     if (isThroughable(plus(prepos, [0, 1, 0]))) {
-        for (var i = 0; i < jumpovers.length; i += 2) {
+        for (let i = 0; i < jumpovers.length; i += 2) {
             pos = plus(prepos, jumpovers[i]);
-            var midpos = plus(prepos, jumpovers[i + 1]);
+            let midpos = plus(prepos, jumpovers[i + 1]);
             if (isStandable(pos) && isThroughable(midpos) && isThroughable(plus(midpos, [0, 2, 0]))
                 && isThroughable(plus(pos, [0, 1, 0]))) {
                 pos.push("jumpover");
@@ -730,10 +730,10 @@ function expandNode(node, options) {
     }
 
     if (isThroughable(plus(prepos, [0, 1, 0]))) {
-        for (var i = 0; i < longjumpovers.length; i += 3) {
+        for (let i = 0; i < longjumpovers.length; i += 3) {
             pos = plus(prepos, longjumpovers[i]);
-            var midpos1 = plus(prepos, longjumpovers[i + 1]);
-            var midpos2 = plus(prepos, longjumpovers[i + 2]);
+            let midpos1 = plus(prepos, longjumpovers[i + 1]);
+            let midpos2 = plus(prepos, longjumpovers[i + 2]);
             if (isStandable(pos)
                 && isThroughable(midpos1) && isThroughable(plus(midpos1, [0, 2, 0]))
                 && isThroughable(midpos2) && isThroughable(plus(midpos2, [0, 2, 0]))
@@ -745,7 +745,7 @@ function expandNode(node, options) {
     }
 
     if (options.landable)
-        for (var i = 0; i < lands.length; i++) {
+        for (let i = 0; i < lands.length; i++) {
             pos = plus(prepos, lands[i]);
             if (isStandable(pos) && isThroughable(plus(pos, [0, 2, 0])) && isThroughable(plus(pos, [0, 4, 0]))) {
                 pos.push("land");
@@ -754,7 +754,7 @@ function expandNode(node, options) {
         }
 
     if (options.bridgeable)
-        for (var i = 0; i < bridges.length; i++) {
+        for (let i = 0; i < bridges.length; i++) {
             pos = plus(prepos, bridges[i]);
             if (isThroughable(pos) && bot.blockAt(posToVec(plus(pos, [0, -1, 0]))).type == 0) {
                 pos.push("bridge");
@@ -763,13 +763,14 @@ function expandNode(node, options) {
         }
 
     if (options.buildstairable)
-        for (var i = 0; i < buildstairs.length; i++) {
-            pos = plus(prepos, buildstairs[i]);
-            if (isThroughable(pos) && bot.blockAt(posToVec(plus(pos, [0, -1, 0]))).type == 0 /*&& isStandable(plus(pos, [0, -1, 0]))*/) {
-                pos.push("buildstair");
-                ret.push(pos);
+        if (isThroughable(plus(prepos, [0, 1, 0])))
+            for (let i = 0; i < buildstairs.length; i++) {
+                pos = plus(prepos, buildstairs[i]);
+                if (isThroughable(pos) && bot.blockAt(posToVec(plus(pos, [0, -1, 0]))).type == 0 && referenceAt(plus(pos, [0, -1, 0]))) {
+                    pos.push("buildstair");
+                    ret.push(pos);
+                }
             }
-        }
 
     if (options.scaffordable) {
         pos = plus(prepos, scafford);
@@ -806,15 +807,15 @@ function optimize(path) {
     }
     var s = 0;
     if (bot.blockAt(posToVec(path[0])).boundingBox == "door") {
-        var pathDoor = path[0];
+        const pathDoor = path[0];
         path.splice(0, 0, [start[0], start[1], start[2], "strict"]);
         path.splice(1, 0, [pathDoor[0], pathDoor[1], pathDoor[2], "door"]);
         s += 2;
     }
-    for (var i = s; i < path.length; i++) {
+    for (let i = s; i < path.length; i++) {
         if (bot.blockAt(posToVec(path[i])).boundingBox == "door") {
-            var pathDoor = path[i];
-            var doorFront = path[i - 1];
+            const pathDoor = path[i];
+            const doorFront = path[i - 1];
             path.splice(i, 0, [doorFront[0], doorFront[1], doorFront[2], "strict"]);
             path.splice(i + 1, 0, [pathDoor[0], pathDoor[1], pathDoor[2], "door"]);
             i += 2;
@@ -825,7 +826,7 @@ function optimize(path) {
     var dir;
     var preDir;
     var fin = false;
-    for (var i = 0; i < path.length; i++) {
+    for (let i = 0; i < path.length; i++) {
         if (path[i][3] == "walk") {
             if (cnt == 0) {
                 startInd = i;
@@ -868,7 +869,7 @@ function optimize(path) {
         }
     }
     var pathBlockCnt = 0
-    for (var i = 0; i < path.length; i++) {
+    for (let i = 0; i < path.length; i++) {
         const blockPos = path[i];
         switch (blockPos[3]) {
             case "bridge":
@@ -910,9 +911,9 @@ function isNotAvoidance(block) {
 
 
 function isStandable(pos) {
-    var B1 = bot.blockAt(new Vec3(pos[0], pos[1] - 1, pos[2]))
-    var B2 = bot.blockAt(new Vec3(pos[0], pos[1], pos[2]))
-    var B3 = bot.blockAt(new Vec3(pos[0], pos[1] + 1, pos[2]))
+    const B1 = bot.blockAt(new Vec3(pos[0], pos[1] - 1, pos[2]))
+    const B2 = bot.blockAt(new Vec3(pos[0], pos[1], pos[2]))
+    const B3 = bot.blockAt(new Vec3(pos[0], pos[1] + 1, pos[2]))
     if (B1.boundingBox == 'block' &&
         B2.boundingBox != 'block' &&
         B3.boundingBox != 'block' &&
@@ -926,8 +927,8 @@ function isStandable(pos) {
 }
 
 function isThroughable(pos) {
-    var B1 = bot.blockAt(new Vec3(pos[0], pos[1], pos[2]))
-    var B2 = bot.blockAt(new Vec3(pos[0], pos[1] + 1, pos[2]))
+    const B1 = bot.blockAt(new Vec3(pos[0], pos[1], pos[2]))
+    const B2 = bot.blockAt(new Vec3(pos[0], pos[1] + 1, pos[2]))
     if (B1.boundingBox != 'block' &&
         B2.boundingBox != 'block' &&
         isNotAvoidance(B2)
@@ -936,6 +937,24 @@ function isThroughable(pos) {
     } else {
         return false;
     }
+}
+
+function referenceAt(pos) {
+    const vec = posToVec(pos)
+    const roundPos = [
+        new Vec3(0, -1, 0),
+        new Vec3(1, 0, 0),
+        new Vec3(-1, 0, 0),
+        new Vec3(0, 0, 1),
+        new Vec3(0, 0, -1),
+        new Vec3(0, 1, 0)
+    ]
+    for (let i = 0; i < roundPos.length; i++) {
+        if (bot.blockAt(vec.plus(roundPos[i])).type != 0) {
+            return bot.blockAt(vec.plus(roundPos[i]))
+        }
+    }
+    return null
 }
 
 function setStandable(pos, limit = 15) {
