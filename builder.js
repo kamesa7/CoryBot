@@ -136,7 +136,7 @@ function posterNext(origin, placing) {
         }
         block = bot.blockAt(origin.plus(placing))
         data = glob.buildData[placing.y][placing.z][placing.x]
-        item = findConstructiveBlock(data.type, data.metadata)
+        item = glob.findItem(data.type, getConstructiveBlockMetadata(data.type, data.metadata))
         if (block.type == 0) skip++
         if (!item && block.type == 0 && skip < glob.buildWorkProgress)
             NEED["[build] NEED block: " + blockdata(data.type, data.metadata)] += placing
@@ -216,7 +216,7 @@ function buildingNext(origin, placing, open) {
 
         block = bot.blockAt(origin.plus(placing))
         data = glob.buildData[placing.y][placing.z][placing.x]
-        item = findConstructiveBlock(data.type, data.metadata)
+        item = glob.findItem(data.type, getConstructiveBlockMetadata(data.type, data.metadata))
         skip++
         if (!item && block.type == 0 && skip < glob.buildWorkProgress)
             NEED["[build] NEED block: " + blockdata(data.type, data.metadata)] += placing
@@ -287,7 +287,7 @@ function placeBlockFromSchematic(origin, placing) {
     if (glob.buildData[placing.y] && glob.buildData[placing.y][placing.z] && glob.buildData[placing.y][placing.z][placing.x]) { // assert
         glob.tryState("build", function () {
             const data = glob.buildData[placing.y][placing.z][placing.x]
-            const item = findConstructiveBlock(data.type, data.metadata)
+            const item = glob.findItem(data.type, getConstructiveBlockMetadata(data.type, data.metadata))
             const placingMethod = getPlacingMethod(data.type, data.metadata)
             if (item) {
                 let count = glob.checkItemCount(item.type, item.metadata)
@@ -451,7 +451,7 @@ function lighting() {
     var cnt = 0
     while (cont && cnt < 10) {
         if (isNeedLight(brightPos)) {
-            var torch = findConstructiveBlock(50);
+            var torch = glob.findItem(50);
             if (torch != null) {
                 bot.log("[brighten] " + brightPos + ": " + bot.blockAt(brightPos).light);
                 placeBlockAt(torch, brightPos, false)
@@ -527,8 +527,9 @@ function viewBlockNeeds(origin, open = []) {
                 for (let x = 0; x < buildData[y][z].length; x++) {
                     let block = bot.blockAt(origin.offset(x, y, z))
                     let data = buildData[y][z][x]
+                    let meta = getConstructiveBlockMetadata(data.type, data.metadata)
                     let tag;
-                    if (data.metadata != 0) tag = data.type + "." + data.metadata
+                    if (meta != null && meta != 0) tag = data.type + "." + meta
                     else tag = data.type
                     if (block.type == data.type && block.metadata == data.metadata) {//一致
                         if (!count[tag]) count[tag] = 0
@@ -551,8 +552,9 @@ function viewBlockNeeds(origin, open = []) {
             for (let z = 0; z < buildData[y].length; z++) {
                 for (let x = 0; x < buildData[y][z].length; x++) {
                     let data = buildData[y][z][x]
+                    let meta = getConstructiveBlockMetadata(data.type, data.metadata)
                     let tag;
-                    if (data.metadata != 0) tag = data.type + "." + data.metadata
+                    if (meta != null && meta != 0) tag = data.type + "." + meta
                     else tag = data.type
                     if (!count[tag]) count[tag] = 0
                     count[tag]++;
@@ -575,13 +577,19 @@ function viewBlockNeeds(origin, open = []) {
     return needs
 }
 
-function findConstructiveBlock(type, metadata) {
-    let item;
+function getConstructiveBlockMetadata(type, metadata) {
+    let retMeta
     switch (type) {
         /*3 faces*/
         //log
         case 17: case 162:
-            item = glob.findItem(type, metadata & 0x3)
+            retMeta = (metadata & 0x3)
+            break
+        case 155:
+            if (metadata <= 1)
+                retMeta = (metadata)
+            else
+                retMeta = (2)
             break
         /*4 faces*/
         //pumpkin
@@ -594,12 +602,12 @@ function findConstructiveBlock(type, metadata) {
         case 65:
         //rail
         case 27: case 28: case 66: case 157:
-            item = glob.findItem(type)
+            retMeta = null
             break
         /*5 faces*/
         //torch
         case 50: case 75: case 76:
-            item = glob.findItem(type)
+            retMeta = null
             break
         /*6 faces*/
         //piston
@@ -608,21 +616,21 @@ function findConstructiveBlock(type, metadata) {
         case 23: case 218: case 154:
         //button
         case 77: case 143:
-            item = glob.findItem(type)
+            retMeta = null
             break
         /*stairs*/
         case 53: case 67: case 108: case 109: case 114: case 128: case 134: case 135: case 136: case 156: case 163: case 164: case 180: case 203:
-            item = glob.findItem(type)
+            retMeta = null
             break
         /*slabs*/
         case 44: case 126: case 182: case 205:
-            item = glob.findItem(type, metadata & 0x7)
+            retMeta = (metadata & 0x7)
             break
         default:
-            item = glob.findItem(type, metadata)
+            retMeta = (metadata)
             break
     }
-    return item
+    return retMeta
 }
 
 function getPlacingMethod(type, metadata) {
@@ -637,6 +645,15 @@ function getPlacingMethod(type, metadata) {
                 case 1: direction = 4; break;
                 case 2: direction = 2; break;
                 case 3: direction = 0; break;
+            }
+            break
+        case 155:
+            switch (metadata) {
+                case 0: break;
+                case 1: break;
+                case 2: direction = 0; break;
+                case 3: direction = 4; break;
+                case 4: direction = 2; break;
             }
             break
         /*4 faces*/
@@ -685,17 +702,17 @@ function getPlacingMethod(type, metadata) {
                 case 2: look = new Vec3(0, 0, -1); break;
                 case 3: look = new Vec3(0, 0, 1); break;
             }
-            if (metadata & 0x4 == 0)
-                direction = 0
+            if (metadata < 4)
+                direction = 1//normal
             else
-                direction = 1
+                direction = 0//reverse
             break
         /*slabs*/
         case 44: case 126: case 182: case 205:
             if (metadata < 8) {
-                direction = 1
+                direction = 1//normal
             } else {
-                direction = 0
+                direction = 0//reverse
             }
             break
         default:
