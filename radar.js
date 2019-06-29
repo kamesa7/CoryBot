@@ -25,6 +25,7 @@ io.on('connection', function (client) {
     });
     client.on('stopmove', function () {
         glob.stopMoving()
+        glob.stopBuild()
     });
     client.on('dismount', function () {
         bot.dismount();
@@ -152,6 +153,29 @@ io.on('connection', function (client) {
             bot.deactivateItem();
     })
 
+    /// for client
+
+    var prevPos;
+    bot.on("respawn", () => {
+        emitMapAll()
+        emitInventory()
+        prevPos = bot.entity.position.clone();
+    })
+    bot.on("move", () => {
+        if (prevPos)
+            if (bot.entity.position.distanceTo(prevPos) > 16.0) {
+                emitMapAll()
+            } else if (bot.entity.position.distanceTo(prevPos) > 0.1) {
+                emitMapEdge()
+            }
+        prevPos = bot.entity.position.clone();
+    })
+    bot.on("blockUpdate", function (oldBlock, newBlock) {
+        var data = []
+        container(data, newBlock.position.x, newBlock.position.z)
+        client.json.emit('newblock', { data: data })
+    });
+
     var sentMap = [];
     function emitMapAll() {
         const range = 48;
@@ -165,44 +189,6 @@ io.on('connection', function (client) {
         }
         client.json.emit('map', { data: data })
     }
-
-    function container(data, x, z) {
-        var block = mapAt(x, z);
-        if (block) {
-            data.push({
-                position: block.position,
-                name: block.name,
-                metadata: block.metadata
-            });
-        }
-
-        if (!sentMap[x]) sentMap[x] = []
-        sentMap[x][z] = true;
-    }
-
-    /// for client
-
-    var prevPos;
-    bot.on("respawn", () => {
-        emitMapAll()
-        emitInventory()
-        prevPos = bot.entity.position.clone();
-    })
-    bot.on("move", () => {
-        if (prevPos)
-            if (bot.entity.position.distanceTo(prevPos) > 16.0) {
-                emitMapAll()
-            } else if (bot.entity.position.distanceTo(prevPos) > 0.0) {
-                emitMapEdge()
-            }
-        prevPos = bot.entity.position.clone();
-    })
-    bot.on("blockUpdate", function (oldBlock, newBlock) {
-        var data = []
-        container(data, newBlock.position.x, newBlock.position.z)
-        client.json.emit('newblock', { data: data })
-    });
-
     function emitMapEdge() {
         const range = 32;
         var me = bot.entity.position.floored();
@@ -242,15 +228,58 @@ io.on('connection', function (client) {
 
         if (data.length > 0) {
             client.json.emit('map', { data: data })
-        } else if (Math.random() > 0.8) {
+        } else if (Math.random() > 0.7) {
             client.json.emit('map', { data: data })
         }
+    }
+    function container(data, x, z) {
+        var block = mapAt(x, z);
+        if (block) {
+            data.push({
+                position: block.position,
+                name: block.name,
+                metadata: block.metadata
+            });
+        }
+        if (!sentMap[x]) sentMap[x] = []
+        sentMap[x][z] = true;
     }
 });
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 glob.event.on("log", (msg) => {
+    msg = msg.replace(/</g, '&lt;')
+    msg = msg.replace(/>/g, '&gt;')
+    var url = msg.match(/(?:https?|ftp):\/\/[^\s　]+/);
+    if (url) {
+        url = url[0];
+        url = url.replace(/§./g, "")
+        msg = msg.replace(url, '§§')
+    }
+    const codes = [
+        '§0', '§1', '§2', '§3', '§4', '§5', '§6', '§7', '§8', '§9',
+        '§a', '§b', '§c', '§d', '§e', '§f', '§l', '§o', '§n', '§m', '§k'
+    ]
+    for (let i in codes) {
+        let k = codes[i];
+        msg = msg.replace(new RegExp(k, 'g'), '<span class="' + k + '">')
+    }
+    var cnt = 0;
+    for (let i = 0; i < msg.length; i++) {
+        if (msg[i] == '§') {
+            if (msg[i + 1] == 'r') {
+                let endiv = "";
+                for (let j = 0; j < cnt; j++)
+                    endiv += "</span>"
+                msg = msg.replace(/§r/, endiv)
+                cnt = 0;
+            } else {
+                cnt++;
+            }
+        }
+    }
+    msg = msg.replace('§§', '<a href="' + url + '"  target="_blank">' + url + '</a>')
     io.emit('message', msg);
 })
 

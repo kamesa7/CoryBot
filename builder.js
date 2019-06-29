@@ -570,7 +570,7 @@ function viewBlockNeeds(origin, open = []) {
         let meta = split[1] ? split[1] : 0
         let have = glob.checkItemCount(type, meta)
         if (mcData.blocks[type])
-            bot.log(key + " : " + mcData.blocks[type].name + " : " + count[key] + "/" + have + "  (" + (count[key] - have) + ")")
+            bot.log(key + " : " + mcData.blocks[type].name + " : " + have + "/" + count[key] + "  (" + Math.max(count[key] - have, 0) + ")")
         else
             bot.log(key + " :     : " + count[key])
     })

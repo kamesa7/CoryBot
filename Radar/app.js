@@ -11,10 +11,13 @@ $(function () {
     const canvasSize = 400;//pixel
     const grid = canvasSize / radarRange / 2;
 
-    $('#message_form').submit(function () {
-        io.emit('message', $('#input_msg').val());
+    $('#message_form').submit(function (e) {
+        e.preventDefault()
+        let msg = $('#input_msg').val()
+        io.emit('message', msg);
+        console.log("emit " + msg)
         $('#input_msg').val('');
-    });
+    })
 
     $('#refresh').click(function () {
         console.log("refresh")
@@ -209,46 +212,6 @@ $(function () {
     })
 
     function drawMessage(msg) {
-        msg = msg.replace(/</g, '[')
-        msg = msg.replace(/>/g, ']')
-
-        var url = msg.match(/(?:https?|ftp):\/\/[^\s　]+/);
-        if (url) {
-            url = url[0];
-            url = url.replace(/§./g, "")
-            msg = msg.replace(url, '§§')
-        }
-
-        const codes = [
-            '§0', '§1', '§2',
-            '§3', '§4', '§5',
-            '§6', '§7', '§8',
-            '§9', '§a', '§b',
-            '§c', '§d', '§e',
-            '§f', '§l', '§o',
-            '§n', '§m', '§k'
-        ]
-        for (let i in codes) {
-            var k = codes[i];
-            msg = msg.replace(new RegExp(k, 'g'), '<span class="' + k + '">')
-        }
-        var cnt = 0;
-        for (var i = 0; i < msg.length; i++) {
-            if (msg[i] == '§') {
-                if (msg[i + 1] == 'r') {
-                    var endiv = "";
-                    for (var j = 0; j < cnt; j++)
-                        endiv += "</span>"
-                    msg = msg.replace(/§r/, endiv)
-                    cnt = 0;
-                } else {
-                    cnt++;
-                }
-            }
-        }
-
-        msg = msg.replace('§§', '<a href="' + url + '"  target="_blank">' + url + '</a>')
-
         $('#messages').append('<LI></LI>');
         $('#messages > LI:last').append(msg);
         if ($('.chat').scrollTop() + $('.chat').height() + 100 >= $('#messages').height())

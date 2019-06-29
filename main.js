@@ -7,7 +7,7 @@ eventEmitter.setMaxListeners(640);
 fs = require('fs');
 jsonfile = require('jsonfile');
 Vec3 = require('vec3').Vec3;
-mcData = require("minecraft-data")("1.12.2");//bot.version
+mcData = require("minecraft-data")(process.env.MC_VERSION);
 bucketsJs = require('buckets-js');
 isSame = require("./isSameObject");
 

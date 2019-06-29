@@ -27,8 +27,8 @@
           <span id='state'></span><br>
         </div>
         <div class="control">
-          <input id='stopstate' type="button" class="button-input" value="StopState">
-          <input id='stopmove' type="button" class="button-input" value="StopMove">
+          <input id='stopstate' type="button" class="button-input" value="StateStop">
+          <input id='stopmove' type="button" class="button-input" value="StopMoving">
           <input id='dismount' type="button" class="button-input" value="Dismount">
           <input id='tossitem' type="button" class="button-input" value="TossItem">
           <input id='actitem' type="button" class="button-input" value="ActItem">
@@ -58,7 +58,7 @@
             <input id='is-ignore-mode' type="checkbox" class="checkbox-input"><span
               class="checkbox-parts">Ignore</span>
           </label>
-          <form id="select">
+          <div id="select">
             <input id="target_entity" autocomplete="off" size="6">
             <span id='target_entity_name'></span>
             <input id='goto' type="button" value="Goto">
@@ -67,7 +67,7 @@
             <input id='mount' type="button" value="Mount">
             <input id='punch' type="button" value="Punch">
             <input id='shoot' type="button" value="Shoot">
-          </form>
+          </div>
           <div id="playerlist"></div>
         </div>
       </div>
@@ -79,7 +79,8 @@
       </div>
       <div class="chat-sender">
         <form id="message_form">
-          <input id="input_msg" autocomplete="off" size="60" /><button>Send</button>
+          <input id="input_msg" type="text" autocomplete="off" size="60" value=""/>
+          <input type="button" value="Post"/>
         </form>
       </div>
     </div>
