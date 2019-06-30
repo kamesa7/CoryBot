@@ -15,6 +15,7 @@ glob.moveConfig = {
     stepError: 20,
     searchLimit: 5000,
     onPos: 0.2,
+    stopRad: Math.PI / 4,
     allowGoal: 1,
     allowFollow: 4,
     allowChase: 2,
@@ -262,10 +263,10 @@ var mover;
 function followPath(path) {
     var index = 0;
     var exception = false;
-    var preDistance = Infinity;
+    var preRad;
     var prePos = getMyPos();
-    var preIndex = 0;
-    var indexCount = 0;
+    var preIndex = -1;
+    var indexCount;
     var waitCount = 0;
     var stopCount = 0;
     var options = path.options
@@ -278,13 +279,13 @@ function followPath(path) {
                 indexCount = 0;
                 preIndex = index;
             }
-            if (getDiff(floor(getMyPos()), prePos) == 0) {
+            if (getL1(floor(getMyPos()), prePos) == 0) {
                 stopCount++;
             } else {
                 stopCount = 0;
             }
             prePos = floor(getMyPos())
-            if (exception || (path[index][3] != "wait" && stopCount > CONFIG.stepError)) { // exception = true or stopping long time
+            if (exception || (!glob.isWaiting && stopCount > CONFIG.stepError)) { // exception = true or stopping long time
                 bot.clearControlStates();
                 bot.log("[move] path error end : " + path[index] + " stops: " + stopCount);
                 if (glob.isFollowing) {
@@ -304,18 +305,19 @@ function followPath(path) {
                 }
                 return
             } else {
-                var node = path[index]
-                var dest = [node[0] + 0.5, node[1], node[2] + 0.5]
-                var look = lookToVec(dest)
-                var distance = getXZL2(getMyPos(), dest);
-                var height = getMyPos()[1];
-                if (logable) bot.log("[move] " + node + "  cnt: " + indexCount + " stop: " + stopCount);
+                const node = path[index]
+                const dest = [node[0] + 0.5, node[1], node[2] + 0.5]
+                const look = lookToVec(dest)
+                const rad = getRad2(getMyPos(), dest);
+                const distance = getXZL2(getMyPos(), dest)
+                if (indexCount == 0) preRad = rad;
+                const height = getMyPos()[1];
+                if (logable) bot.log("[move] " + node + "  cnt: " + indexCount + " stop: " + stopCount + " dist: " + Math.floor(1000 * distance) / 1000 + " rad: " + Math.floor(1000 * getRadDiff(preRad, rad) / Math.PI * 180) / 1000);
                 switch (node[3]) {
                     case "walk":
                         if (indexCount == 0) {
                             bot.lookAt(look, true);
                             bot.setControlState('forward', true);
-                            preDistance = Infinity;
                         }
                         if (indexCount > CONFIG.stepError) {
                             exception = true;
@@ -323,26 +325,23 @@ function followPath(path) {
                         } else if (distance > 2) {
                             exception = true;
                             break;
-                        } else if (preDistance <= distance || distance <= CONFIG.onPos) {
+                        } else if (getRadDiff(preRad, rad) > CONFIG.stopRad || distance <= CONFIG.onPos) {
                             bot.clearControlStates();
                             index++;
                             break;
                         }
-                        preDistance = distance;
                         break;
                     case "sprint":
                         bot.lookAt(look, true);
                         if (indexCount == 0) {
                             bot.setControlState('forward', true);
                             bot.setControlState('sprint', true);
-                            preDistance = Infinity;
                         }
-                        if (preDistance <= distance || distance <= CONFIG.onPos) {
+                        if (getRadDiff(preRad, rad) > CONFIG.stopRad || distance <= CONFIG.onPos) {
                             bot.clearControlStates();
                             index++;
                             break;
                         }
-                        preDistance = distance;
                         break;
                     case "upstair":
                         bot.lookAt(look, true);
@@ -350,35 +349,39 @@ function followPath(path) {
                             bot.setControlState('jump', true);
                             bot.setControlState('jump', false);
                             bot.setControlState('forward', true);
-                            preDistance = Infinity;
+                        } else if (indexCount > CONFIG.stepError) {
+                            exception = true;
+                            break;
                         }
                         if ((height - onGround) % 1 != 0) break;
                         if (dest[1] != height - onGround && indexCount > 1) {
                             exception = true;
                             break;
-                        } else if (preDistance <= distance - CONFIG.onPos || distance <= CONFIG.onPos) {
+                        } else if (getRadDiff(preRad, rad) > CONFIG.stopRad || distance <= CONFIG.onPos) {
                             bot.clearControlStates();
                             index++;
                             break;
                         }
-                        preDistance = distance;
                         break;
                     case "land":
                     case "downstair":
                         bot.lookAt(look, true);
                         if (indexCount == 0) {
                             bot.setControlState('forward', true);
-                            preDistance = Infinity;
+                        } else if (indexCount == 10) {
+                            bot.entity.position = posToVec(dest).offset(0, onGround, 0)
+                        } else if (indexCount > CONFIG.stepError) {
+                            exception = true;
+                            break;
                         }
-                        if ((height - onGround) % 1 != 0) break;
-                        if (dest[1] != height - onGround) {
-                            //まだ降りてない
-                        } else if (preDistance <= distance || distance <= CONFIG.onPos) {
+                        if (getRadDiff(preRad, rad) > CONFIG.stopRad || distance <= CONFIG.onPos) {
+                            bot.clearControlStates();
+                        }
+                        if ((dest[1] == height - onGround) && ((height - onGround) % 1 == 0)) {//onGround
                             bot.clearControlStates();
                             index++;
                             break;
                         }
-                        preDistance = distance;
                         break;
                     case "longjumpover":
                         bot.setControlState('sprint', true)
@@ -388,26 +391,23 @@ function followPath(path) {
                             bot.setControlState('jump', true);
                             bot.setControlState('jump', false);
                             bot.setControlState('forward', true);
-                            preDistance = Infinity;
                         }
                         if ((height - onGround) % 1 != 0) break;
                         if (dest[1] != height - onGround) {
                             exception = true;
                             break;
                         }
-                        if (preDistance <= distance - CONFIG.onPos || distance <= CONFIG.onPos) {
+                        if (getRadDiff(preRad, rad) > CONFIG.stopRad || distance <= CONFIG.onPos) {
                             bot.clearControlStates();
                             index++;
                             break;
                         }
-                        preDistance = distance;
                         break;
                     case "door":
                         bot.clearControlStates();
                         bot.lookAt(look, true);
                         bot.setControlState('forward', true);
-                        var vec = posToVec(node);
-                        var door = bot.blockAt(vec);
+                        var door = bot.blockAt(posToVec(node));
                         if (door.metadata < 4 || 7 < door.metadata) {
                             if (indexCount % 3 == 0)
                                 bot.lookAt(posToVec(dest), true, function () {
@@ -497,6 +497,7 @@ function followPath(path) {
                         stopMoving();
                 }
                 indexCount++
+                preRad = rad
             }
         } else {
             stopMoving();
@@ -564,22 +565,20 @@ const buildstairs = [
     [0, 1, -1]
 ];
 const scafford = [0, 1, 0]
+const Cost = {
+    "walk": 1,
+    "upstair": 5,
+    "downstair": 4,
+    "jumpover": 5,
+    "longjumpover": 7,
+    "land": 8,
+    "bridge": 20,
+    "buildstair": 21,
+    "scafford": 22,
+}
 
 function moveCost(move) {
-    switch (move) {
-        case "walk": return 1;
-        case "upstair": return 5;
-        case "downstair": return 4;
-        case "jumpover": return 5;
-        case "longjumpover": return 7;
-        case "land": return 4;
-        case "bridge": return 20;
-        case "buildstair": return 21;
-        case "scafford": return 22;
-        default:
-            bot.log("[move] unknown move cost")
-            return 0;
-    }
+    return Cost[move]
 }
 
 /**
@@ -590,7 +589,7 @@ function moveCost(move) {
  * @param {*} options 
  * allowGoal : rejectGoal : searchLimit : strictfin : standadjust
  * landable : bridgeable : buildstairable : scaffordable
- * ignore : cotinue
+ * ignore : continue
  */
 function bestFirstSearch(finalPath, start, goal, options) {
     if (options) {
@@ -834,12 +833,12 @@ function optimize(path) {
                 continue;
             }
             if (cnt == 1) {
-                dir = getdir(path[i - 1], path[i]);
+                dir = getdirection(path[i - 1], path[i]);
                 preDir = dir;
                 cnt++;
             }
             if (cnt >= 2) {
-                dir = getdir(path[i - 1], path[i]);
+                dir = getdirection(path[i - 1], path[i]);
                 if (dir == preDir) {
                     cnt++;
                 } else if (cnt >= 3) {
@@ -1037,12 +1036,20 @@ function scale(pos, scale) {
     return pos;
 }
 
-function getdir(pos1, pos2) {
-    return (pos1[0] - pos2[0]) * 10 + (pos1[2] - pos2[2]);
+function getdirection(pos1, pos2) {
+    return Math.atan2(pos1[0] - pos2[0], pos1[2] - pos2[2])
 }
 
-function getDiff(pos1, pos2) {
-    return (pos1[0] - pos2[0]) * 100 + (pos1[1] - pos2[1]) * 10 + (pos1[2] - pos2[2]);
+function vectorFromTo(pos1, pos2) {
+    return posToVec(pos1).minus(posToVec(pos2))
+}
+
+function getRad2(pos1, pos2) {
+    return Math.atan2(pos1[0] - pos2[0], pos1[2] - pos2[2])
+}
+
+function getRadDiff(rad1, rad2) {
+    return Math.min(Math.abs(rad1 - rad2), Math.abs(2 * Math.PI + Math.min(rad1, rad2) - Math.max(rad1, rad2)))
 }
 
 function getPosFromVec3(abvec) {
