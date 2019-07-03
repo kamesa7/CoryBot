@@ -4,6 +4,7 @@ players = [];
 me = null;
 prop = null;
 map = [];
+logmode = false;
 $(function () {
     const pointVW = 0.5;//%
     const radarRange = 48;//blocks
@@ -15,7 +16,7 @@ $(function () {
         e.preventDefault()
         let msg = $('#input_msg').val()
         io.emit('message', msg);
-        console.log("emit " + msg)
+        if(logmode) console.log("emit " + msg)
         $('#input_msg').val('');
     })
 
@@ -110,17 +111,17 @@ $(function () {
     })
 
     io.on('message', function (msg) {
-        console.log("on message")
+        if(logmode) console.log("on message")
         drawMessage(msg)
     });
 
     io.on('vital', function (msg) {
-        console.log("on vital")
+        if(logmode) console.log("on vital")
         $('#vital').html('<img src="misc/Health_' + Math.min(msg.health, 20) + '.png"> <img src="misc/Hunger_' + Math.min(msg.food, 20) + '.png">')
     })
 
     io.on('myentity', function (player, state) {
-        // console.log("on me")
+        // if(logmode) console.log("on me")
         if (me) {
             if (me.position.x != player.position.x || me.position.z != player.position.z) {
                 drawAllEntity();
@@ -139,7 +140,7 @@ $(function () {
                 $('#state').text("[state] " + state)
             me = player;
         } else {//init
-            console.log("on init myentity")
+            if(logmode) console.log("on init myentity")
             me = player;
             io.emit('server');
             drawAllEntity();
@@ -147,12 +148,12 @@ $(function () {
     });
 
     io.on('inventory', function (inventory) {
-        console.log("on inventory")
+        if(logmode) console.log("on inventory")
         drawInventory(inventory)
     });
 
     io.on('players', function (newplayers) {
-        console.log("on players")
+        if(logmode) console.log("on players")
         players = newplayers;
         if (prop == null) return;
         $("#playerlist").empty();
@@ -170,26 +171,26 @@ $(function () {
     });
 
     io.on('entityapper', function (entity) {
-        console.log("on appear")
+        if(logmode) console.log("on appear")
         entities.push(entity);
         drawEntity(entity);
     });
 
     io.on('entity', function (entity) {
-        // console.log("on entity")
+        // if(logmode) console.log("on entity")
         entities = entities.filter(element => element.id !== entity.id);
         entities.push(entity);
         drawEntity(entity)
     });
 
     io.on('entitydisapper', function (entity) {
-        console.log("on disapper")
+        if(logmode) console.log("on disapper")
         entities = entities.filter(element => element.id !== entity.id);
         $('#entity' + entity.id).remove();
     });
 
     io.on('map', function (chunk) {
-        console.log("on map")
+        if(logmode) console.log("on map")
         for (var i = 0; i < chunk.data.length; i++) {
             var block = chunk.data[i];
             if (!block) continue;
@@ -201,7 +202,7 @@ $(function () {
     })
 
     io.on('newblock', function (chunk) {
-        console.log("on newblock")
+        if(logmode) console.log("on newblock")
         for (var i = 0; i < chunk.data.length; i++) {
             var block = chunk.data[i];
             if (!block) continue;
