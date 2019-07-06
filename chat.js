@@ -10,6 +10,9 @@ glob.isIgnoreMode = false;
 glob.isAuctioning = false;
 glob.isAnnounceDeathMode = true;
 glob.isOmikujiReactionMode = false;
+glob.setAuction = setAuction
+glob.autoAuction = autoAuction
+glob.secretInit = secretInit
 
 const keyNames = ["コリドラ", "こりどら", "コリちゃん", "こりちゃん", "Cory"];
 var str = "^(" + keyNames[0];
@@ -17,7 +20,7 @@ for (var i = 1; i < keyNames.length; i++)str += "|" + keyNames[i];
 str += ")";
 const nameCall = new RegExp(str);
 
-setInterval(time_signal, 100);
+setInterval(time_signal, 200);
 
 bot.on('login', () => {
     bot.log('[bot.connect]');
@@ -61,7 +64,7 @@ bot.on('chat', (username, message) => {
     //Calculator
     if (message.match(/(.*)=$/)) {
         var calcMessage = glob.Calc(message);
-        if (!calcMessage.match(/¬/)) bot.safechat(calcMessage, 0);
+        if (!calcMessage.match(/¬/)) bot.safechat(calcMessage);
     }
 
     //Follow
@@ -91,16 +94,24 @@ bot.on('chat', (username, message) => {
     }
 
     //Auction
-    if (message.match(/^>\s*(\d+)/) && glob.isAuctioning) {
-        if (maxBid < Number(RegExp.$1)) {
-            maxBid = Number(RegExp.$1);
-            maxBidPlayer = username;
-            bot.log("[Auction] max:" + maxBidPlayer + " " + maxBid);
+    if (message.match(/^>\s*(\d+)$/)) {
+        const money = Number(RegExp.$1)
+        if (glob.isAuctioning)
+            bidAuction(username, money)
+        else if (glob.secretMaxBid < money) {
+            glob.secretMaxBid = money
+            glob.secretMaxBidPlayer = username
+            bot.log("[secret auction] " + username + "  " + money)
+            if (glob.secretMaxBidPlayer != bot.username && glob.secretLimit > glob.secretMaxBid) {
+                bot.safechat(">" + Math.min(glob.secretLimit, glob.secretMaxBid + Math.floor(glob.secretMaxBid * 0.05 + 1)))
+            }
         }
-        setAuction(aucTimeSetting);
     }
-    if (message.match(/^Auction \s*(-?\w+)\s*/i)) {
-        setAuction(Number(RegExp.$1));
+    if (message.match(/^(Auction|オークション)$/i)) {
+        setAuction(60);
+    }
+    if (message.match(/^(Auction|オークション) \s*(-?\w+)\s*$/i)) {
+        setAuction(Number(RegExp.$2));
     }
 
     //Music
@@ -157,6 +168,9 @@ bot.on('whisper', (username, message) => {
     if (message.match(/(.*)=$/)) {
         bot.safechat("/tell " + username + " " + message + "  " + glob.Calc(message));
     }
+    if (message.match(/^autoAuction \s*(-?\w+)\s*/i)) {
+        autoAuction(username, Number(RegExp.$1));
+    }
 });
 
 
@@ -210,48 +224,85 @@ function time_signal() {
             bot.safechat('/omikuji', 9000);
         }
 
-        if (glob.isAuctioning && clock.getTime() >= aucDeadline.getTime()) {//auction
-            bot.chat(">落札！ Max: " + maxBidPlayer + " " + maxBid);
-            glob.isAuctioning = false;
-            aucTimeSetting = 0;
-        }
-
-        if (glob.isAuctioning && aucTimeSetting > 10 && auc10called == false && aucDeadline.getTime() - clock.getTime() <= 10000) {
-            auc10called = true;
-            bot.chat(">残り10秒未満  現在Max: " + maxBidPlayer + " " + maxBid);
+        if (glob.isAuctioning) {
+            for (let i = 0; i < glob.autoBiddings.length; i++) {
+                const item = glob.autoBiddings[i];
+                if (item.username != maxBidPlayer && item.limit > maxBid) {
+                    const nextBid = Math.min(item.limit, maxBid + Math.floor(maxBid * 0.05 + 1));
+                    bidAuction(item.username, nextBid)
+                    bot.safechat("[auto] " + item.username + " > " + nextBid)
+                    break;
+                }
+            }
+            if (aucTimeSetting > glob.auctionCall && aucTimeCalled == false && aucDeadline.getTime() - clock.getTime() <= glob.auctionCall * 1000) {
+                aucTimeCalled = true;
+                bot.chat(">残り" + glob.auctionCall + "秒未満です  現在Max: " + maxBidPlayer + " " + maxBid + " 締切: " + aucDeadline);
+            }
+            if (clock.getTime() >= aucDeadline.getTime()) {//auction
+                bot.chat(">落札！ Max: " + maxBidPlayer + " " + maxBid);
+                glob.isAuctioning = false;
+                aucTimeSetting = 0;
+            }
         }
     }
     catch (e) { console.log(e); }
 }
 
-
-var auc10called = false;
+glob.auctionCall = 15
+var aucTimeCalled = false;
 var aucDeadline;
 var aucTimeSetting = 0;
 var maxBid = 0;
 var maxBidPlayer = "";
+
+function secretInit(limit = 0) {
+    glob.secretMaxBidPlayer = ""
+    glob.secretMaxBid = 0
+    glob.secretLimit = limit
+}
+glob.secretMaxBidPlayer = ""
+glob.secretMaxBid = 0
+glob.secretLimit = 0
+
+function bidAuction(username, money) {
+    if (money > maxBid) {
+        maxBid = money
+        maxBidPlayer = username
+        bot.log("[Auction Bid Accept]" + username + " " + money);
+    } else {
+        bot.log("[Auction Bid Deny]" + username + " " + money);
+    }
+    setAuction(aucTimeSetting);
+}
+
 function setAuction(seconds) {
     try {
         if (seconds < 1) return;
         aucDeadline = new Date();
         aucDeadline.setSeconds(aucDeadline.getSeconds() + seconds);
-        if (!glob.isAuctioning) {
+        if (!glob.isAuctioning) { // init
             glob.isAuctioning = true;
             bot.chat(">オークションを開始しました: 最終入札(>[数値])から" + seconds + "秒まで");
             aucTimeSetting = seconds;
             maxBid = 0;
             maxBidPlayer = "";
+            glob.autoBiddings = [];
         }
 
         aucTimeSetting = seconds;
-        if (aucTimeSetting > 10) auc10called = false;
+        if (aucTimeSetting > glob.auctionCall) aucTimeCalled = false;
 
-        bot.log("[Auction]" + aucDeadline);
+        bot.log("[Auction] " + aucDeadline);
     } catch (e) {
         console.log(e);
     }
 }
 
+glob.autoBiddings = [];
+function autoAuction(username, limit) {
+    bot.log("[Auction Auto] " + username + " " + limit);
+    glob.autoBiddings.push({ username: username, limit: limit })
+}
 
 /// 同じメッセージのループ送信、短時間での大量送信などを
 /// 防ぐ仕組みを入れたチャット送信メソッド
