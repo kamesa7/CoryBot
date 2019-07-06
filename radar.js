@@ -57,6 +57,10 @@ io.on('connection', function (client) {
         if (bot.entities[ID])
             glob.shoot(bot.entities[ID])
     });
+    client.on('lookat', function (ID) {
+        if (bot.entities[ID])
+            glob.lookAt(bot.entities[ID])
+    });
     client.on('flags', function (flags) {
         glob.isCloseDefenceMode = flags.isCloseDefenceMode
         glob.isSniperMode = flags.isSniperMode

@@ -82,6 +82,10 @@ $(function () {
         io.emit('shoot', $('#target_entity').val());
     })
 
+    $('#lookat').click(function () {
+        io.emit('lookat', $('#target_entity').val());
+    })
+
     function emitFlags() {
         var flags = {
             isCloseDefenceMode: $('#is-close-defence-mode').prop("checked"),

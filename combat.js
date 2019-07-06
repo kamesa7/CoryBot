@@ -15,6 +15,7 @@ glob.shoot = shoot;
 glob.throwEgg = throwEgg;
 glob.throwPearl = throwPearl;
 glob.throwIt = throwIt;
+glob.lookAt = lookAt
 
 const airResistance = 0;
 const highAngleAdjust = 0.58;
@@ -148,7 +149,7 @@ function shoot(entity, isHigh) {
                             glob.finishState("shooting");
                         } else {
                             bot.lookAt(target.offset(0, heightAdjust + eyeHeight, 0), true, function () {
-                                bot.deactivateItem();                               
+                                bot.deactivateItem();
                                 glob.finishState("shooting");
                             });
                         }
@@ -302,4 +303,17 @@ function contains(arr, val) {
 
 function getXZL2(x, z) {
     return Math.sqrt((x * x) + (z * z));
+}
+
+var lookingEntity;
+function lookAt(entity) {
+    lookingEntity = entity;
+    glob.tryState("lookAt", function () {
+        setInterval(function () {
+            if (lookingEntity && lookingEntity.isValid && glob.getState() == "lookAt")
+                bot.lookAt(lookingEntity.position.offset(0, eyeHeight, 0), true);
+            else
+                glob.finishState("lookAt")
+        }, 100)
+    })
 }
