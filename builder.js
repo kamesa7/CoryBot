@@ -238,8 +238,8 @@ function generalBuild(origin, gotofunc, nextfunc) {
     clearInterval(builder)
     glob.isBuildingMode = true;
     const buildData = glob.buildData
-    var createState = "movewait";
-    var placing = new Vec3(0, 0, 0);
+    var createState = "build";
+    var placing = new Vec3(-1, 0, 0);
     var placeCnt = 0;
     var prevPlaceCnt = 0;
     const size = buildData.length * buildData[0].length * buildData[0][0].length

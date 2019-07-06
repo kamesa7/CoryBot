@@ -439,6 +439,16 @@ function followPath(path) {
                         stopPath()
                         reRandom()
                         break;
+                    case "freeze":
+                        if (indexCount == 0) {
+                            bot.clearControlStates();
+                            waitCount = node[4];
+                        } else if (indexCount >= waitCount) {
+                            index++;
+                            break;
+                        }
+                        stopCount = 0;
+                        break;
                     case "wait":
                         if (indexCount == 0) {
                             bot.clearControlStates();
@@ -475,9 +485,10 @@ function followPath(path) {
                     case "scafford":
                         if (indexCount == 0) {
                             bot.clearControlStates();
+                            bot.entity.pitch = -Math.PI / 2
                             bot.setControlState('jump', true);
                             bot.setControlState('jump', false);
-                        } else if (indexCount == 4) {
+                        } else if (indexCount == 3) {
                             var newBlockPos = posToVec(plus(node, [0, -1, 0]))
                             var oldBlock = bot.blockAt(newBlockPos)
                             if (oldBlock && oldBlock.type == 0) { // assert
@@ -880,7 +891,7 @@ function optimize(path) {
                 pathBlockCnt++
                 break
             case "scafford":
-                path.splice(i + 1, 0, [blockPos[0], blockPos[1], blockPos[2], "wait", 10]);
+                path.splice(i + 1, 0, [blockPos[0], blockPos[1], blockPos[2], "freeze", 6]);
                 pathBlockCnt++
                 break
         }
@@ -986,7 +997,7 @@ function getRandomPos(root, distance, height = 2) {
 }
 
 function isGoal(pos, goal, allowGoal, rejectGoal) {
-    if (getL1(pos, goal) <= allowGoal && getXZL1(pos, goal) > rejectGoal) return true;
+    if (getL1(pos, goal) <= allowGoal && getXZL1(pos, goal) > rejectGoal && getXZL1(plus(pos, [0, 1, 0]), goal) > rejectGoal) return true;
     else return false;
 }
 
