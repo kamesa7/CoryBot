@@ -323,7 +323,6 @@ function placeBlockFromSchematic(origin, placing) {
 function placeBlockAt(item, pos, logMode, cb = noop) {
     const newBlockPos = pos
     const oldBlock = bot.blockAt(newBlockPos)
-    var refBlock, face
     if (!item) {
         cb("[place] No block item : null item")
         return
@@ -338,6 +337,7 @@ function placeBlockAt(item, pos, logMode, cb = noop) {
             cb(error)
             return
         }
+        let refBlock, face, isNoRef = false
         refBlock = referenceAt(newBlockPos)
         if (refBlock) {
             face = newBlockPos.minus(refBlock.position)
@@ -345,6 +345,7 @@ function placeBlockAt(item, pos, logMode, cb = noop) {
             bot.log("[place] No reference block At: " + newBlockPos)
             refBlock = oldBlock
             face = new Vec3(0, 1, 0)
+            isNoRef = true
         }
         if (logMode) bot.log("[place] place: ref " + refBlock.position + " new " + newBlockPos + " face " + face)
         bot.lookAt(refBlock.position.offset(0.5, 0.5, 0.5), true, () => {
@@ -354,7 +355,10 @@ function placeBlockAt(item, pos, logMode, cb = noop) {
                     const newBlock = bot.blockAt(newBlockPos);
                     bot.log("[place] placed: " + blockdata(newBlock.type, newBlock.metadata))
                 }
-                cb(error)
+                if (isNoRef)
+                    cb()
+                else
+                    cb(error)
                 return
             })
         })
@@ -433,14 +437,6 @@ function referenceAt(vec) {
         }
     }
     return null
-}
-
-function nearBuild() {
-    glob.finishState("build")
-    if (!glob.isBuildingMode) clearInterval(builder);
-    var rad = Math.random() * 2 * Math.PI;
-    var plus = new Vec3(Math.random() * glob.buildRange * Math.sin(rad), -1, Math.random() * glob.buildRange * Math.cos(rad));
-    var target = bot.entity.position.plus(plus).floored();
 }
 
 function lighting() {

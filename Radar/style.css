@@ -160,13 +160,14 @@ td {
 }
 
 .cat2 {
-	width: 60vw;
+	width: 57vw;
 	background: ghostwhite;
 }
 
 .chat {
 	height: 95%;
 	max-height: 95vh;
+	overflow-x: hidden;
 	overflow-y: auto;
 }
 
