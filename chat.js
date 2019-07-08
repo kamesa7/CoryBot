@@ -10,9 +10,12 @@ glob.isIgnoreMode = false;
 glob.isAuctioning = false;
 glob.isAnnounceDeathMode = true;
 glob.isOmikujiReactionMode = false;
+
 glob.setAuction = setAuction
 glob.autoAuction = autoAuction
 glob.secretInit = secretInit
+glob.checkCount = checkCount
+glob.deleteCount = deleteCount
 
 const keyNames = ["コリドラ", "こりどら", "コリちゃん", "こりちゃん", "Cory"];
 var str = "^(" + keyNames[0];
@@ -32,7 +35,8 @@ bot.on('login', () => {
         bot.chatAddPattern(/^(?:\[[^\]]*\])<([^ :]*)> (.*)$/, 'chat', 'kenmomine.club chat');
         bot.chatAddPattern(/^(?:\[[^\]]*\])<Super_AI> \[([^ :]*)\] (.*)$/, 'chat', 'kenmomine.club chat');
         bot.chatAddPattern(/^(?:\[Omikuji\]) ([^ :]*)は <(.*)>/, 'omikuji', 'kenmomine.club omikuji');
-        bot.chatAddPattern(/^([^ ]*) whispers: (.*)$/, 'whisper', 'kenmomine.club whisper(Chatco)');
+        bot.chatAddPattern(/^([^ ]*) whispers: (.*)$/, 'whisper', 'kenmomine.club whisper');
+        bot.chatAddPattern(/^([^ :]*) が (.*) を (\d*) 個発見しました$/, 'orefound', 'kenmomine.club orefound');
         bot.log('[bot.login] kenmomine');
     } else if (process.env.MC_HOST != null && process.env.MC_HOST == 'pcgamemc.dip.jp') {
         // pcgamemc.dip.jp向けchat/whisperパターン
@@ -93,18 +97,22 @@ bot.on('chat', (username, message) => {
         }
     }
 
+    //OreFound
+    if (message.match(/^採掘記録$/)) {
+        checkCount(username)
+    } else if (message.match(/^採掘記録 (.+)$/)) {
+        checkCount(RegExp.$1)
+    } else if (message.match(/^採掘記録削除$/)) {
+        deleteCount(username)
+    }
+
     //Auction
     if (message.match(/^>\s*(\d+)$/)) {
         const money = Number(RegExp.$1)
-        if (glob.isAuctioning)
+        if (glob.isAuctioning) {
             bidAuction(username, money)
-        else if (glob.secretMaxBid < money) {
-            glob.secretMaxBid = money
-            glob.secretMaxBidPlayer = username
-            bot.log("[secret auction] " + username + "  " + money)
-            if (glob.secretMaxBidPlayer != bot.username && glob.secretLimit > glob.secretMaxBid) {
-                bot.safechat(">" + Math.min(glob.secretLimit, glob.secretMaxBid + Math.floor(glob.secretMaxBid * 0.05 + 1)))
-            }
+        } else {
+            secretAuction(username, money)
         }
     }
     if (message.match(/^(Auction|オークション)$/i)) {
@@ -205,6 +213,38 @@ bot.on('spawn', () => {
 });
 
 
+//orefound
+glob.miningCount = {}
+glob.logMining = false;
+bot.on('orefound', (username, ore, count) => {
+    if (!glob.miningCount[username])
+        glob.miningCount[username] = { start: dateformat(new Date(), 'isoTime') }
+    const data = glob.miningCount[username]
+    if (!data[ore])
+        data[ore] = 0
+    data[ore] += Number(count)
+    if (glob.logMining) bot.log("[orefound] " + username + " " + ore + " " + data[ore] + "  +" + count)
+})
+
+function checkCount(username) {
+    if (!glob.miningCount[username]) {
+        bot.safechat(username + "さんの採掘記録はありません")
+        return
+    }
+    const data = glob.miningCount[username]
+    var output = username + "さんの採掘記録 " + data.start + "から ";
+    Object.keys(data).forEach(function (key) {
+        if (key == "start") return
+        output += key.replace(" ", "_") + ":" + data[key] + "個, ";
+    })
+    bot.safechat(output);
+}
+
+function deleteCount(username) {
+    glob.miningCount[username] = false
+    bot.safechat(username + "さんの採掘記録を消しました")
+}
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 var prev_minutes;
@@ -248,6 +288,8 @@ function time_signal() {
     catch (e) { console.log(e); }
 }
 
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 glob.auctionCall = 15
 var aucTimeCalled = false;
 var aucDeadline;
@@ -255,14 +297,28 @@ var aucTimeSetting = 0;
 var maxBid = 0;
 var maxBidPlayer = "";
 
+var secretMaxBidPlayer = ""
+var secretMaxBid = 0
+glob.secretLimit = 0
 function secretInit(limit = 0) {
-    glob.secretMaxBidPlayer = ""
-    glob.secretMaxBid = 0
+    secretMaxBidPlayer = ""
+    secretMaxBid = 0
     glob.secretLimit = limit
 }
-glob.secretMaxBidPlayer = ""
-glob.secretMaxBid = 0
-glob.secretLimit = 0
+function secretAuction(username, money) {
+    try {
+        if (secretMaxBid < money) {
+            secretMaxBid = money
+            secretMaxBidPlayer = username
+            bot.log("[secret auction] " + username + "  " + money)
+            if (secretMaxBidPlayer != bot.username && glob.secretLimit > secretMaxBid) {
+                bot.safechat(">" + Math.min(glob.secretLimit, secretMaxBid + Math.floor(secretMaxBid * 0.05 + 1)))
+            }
+        }
+    } catch (e) {
+        console.log(e)
+    }
+}
 
 function bidAuction(username, money) {
     if (money > maxBid) {
