@@ -379,5 +379,5 @@ function mapAt(x, z) {
 }
 
 http.listen(PORT, function () {
-    console.log('server listening. Port:' + PORT);
+    console.log('Radar server listening. Port:' + PORT);
 });

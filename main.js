@@ -1,8 +1,6 @@
 require('dotenv').config();
 const mineflayer = require('mineflayer');
 const events = require('events');
-const eventEmitter = new events.EventEmitter();
-eventEmitter.setMaxListeners(640);
 
 fs = require('fs');
 jsonfile = require('jsonfile');
@@ -10,6 +8,7 @@ Vec3 = require('vec3').Vec3;
 mcData = require("minecraft-data")(process.env.MC_VERSION);
 bucketsJs = require('buckets-js');
 isSame = require("./isSameObject");
+dateformat = require('dateformat')
 
 var steveNum = "";
 
@@ -25,8 +24,6 @@ for (var i = 0; i < process.argv.length; i++) {
   if (arg == "-debug") glob.debug = true;
   else if (arg == "-name") steveNum = process.argv[i + 1];
 }
-
-console.log('starting');
 console.log("repl to debug");
 
 start()
@@ -35,6 +32,7 @@ bot.loadPlugin(require('mineflayer-blockfinder')(mineflayer));
 require("./state_controler")
 require("./inventory_manager")
 require("./event_manager")
+require("./chat_manager")
 require("./chat")
 require("./movement")
 require("./combat")
@@ -56,7 +54,13 @@ function start() {
     });
     console.log('Connecting to [localhost]');
   } else if (glob.useCache) {
-    var sessionCache = jsonfile.readFileSync("session_cache.json")
+    var sessionCache
+    try {
+      sessionCache = jsonfile.readFileSync("session_cache.json")
+    } catch (e) {
+      sessionCache = undefined
+      console.log('Unable to read session_chache. Trying normal start');
+    }
     bot = mineflayer.createBot({
       host: process.env.MC_HOST,
       port: process.env.MC_PORT,
