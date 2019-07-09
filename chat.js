@@ -74,11 +74,11 @@ bot.on('chat', (username, message) => {
     }
 
     //OreFound
-    if (message.match(/^採掘(記録|ログ)$/)) {
+    if (message.match(/^採掘(?:記録|ログ)$/)) {
         checkCount(username)
-    } else if (message.match(/^採掘(記録|ログ) (.+)$/)) {
-        checkCount(RegExp.$2)
-    } else if (message.match(/^採掘(記録|ログ).*削除$/)) {
+    } else if (message.match(/^採掘(?:記録|ログ) (.+)$/)) {
+        checkCount(RegExp.$1)
+    } else if (message.match(/^採掘(?:記録|ログ)削除$/)) {
         deleteCount(username)
     }
 
@@ -197,7 +197,7 @@ glob.miningCount = {}
 glob.logMining = false
 bot.on('orefound', (username, ore, count) => {
     if (!glob.miningCount[username])
-        glob.miningCount[username] = { start: dateformat(new Date(), 'dd,HH:MM:ss') }
+        glob.miningCount[username] = { start: dateformat(new Date(), 'd-HH:MM:ss') }
     ore = ore.replace("ores", "ore")
     const data = glob.miningCount[username]
     if (!data[ore])

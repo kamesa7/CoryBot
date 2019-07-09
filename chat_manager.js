@@ -10,7 +10,7 @@ bot.once('login', () => {
         bot.chatAddPattern(/^(?:\[[^\]]*\])<Super_AI> \[([^ :]*)\] (.*)$/, 'chat', 'kenmomine.club chat');
         bot.chatAddPattern(/^(?:\[Omikuji\]) ([^ :]*)は <(.*)>/, 'omikuji', 'kenmomine.club omikuji');
         bot.chatAddPattern(/^([^ ]*) whispers: (.*)$/, 'whisper', 'kenmomine.club whisper');
-        bot.chatAddPattern(/^([^ :]*) が (.*) を (\d*) 個発見しました$/, 'orefound', 'kenmomine.club orefound');
+        bot.chatAddPattern(/^([^ :]*) が (.*) を (?:over |)(\d*) 個発見しました$/, 'orefound', 'kenmomine.club orefound');
         bot.log('[bot.login] kenmomine');
     } else if (process.env.MC_HOST != null && process.env.MC_HOST == 'pcgamemc.dip.jp') {
         // pcgamemc.dip.jp向けchat/whisperパターン
