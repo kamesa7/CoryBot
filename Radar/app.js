@@ -14,11 +14,15 @@ $(function () {
 
     $('#message_form').submit(function (e) {
         e.preventDefault()
+        emitMessage()
+    })
+    $('#button_msg').click(emitMessage)
+    function emitMessage(){
         let msg = $('#input_msg').val()
         io.emit('message', msg);
         if(logmode) console.log("emit " + msg)
         $('#input_msg').val('');
-    })
+    }
 
     $('#refresh').click(function () {
         console.log("refresh")

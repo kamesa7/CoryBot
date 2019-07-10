@@ -195,15 +195,24 @@ bot.on('spawn', () => {
 //orefound
 glob.miningCount = {}
 glob.logMining = false
-bot.on('orefound', (username, ore, count) => {
+bot.on('orefound', (username, ore, countStr) => {
     if (!glob.miningCount[username])
-        glob.miningCount[username] = { start: dateformat(new Date(), 'd-HH:MM:ss') }
+        glob.miningCount[username] = {
+            start: dateformat(new Date(), 'd::HH:MM:ss'),
+            last: null,
+            sum: 0,
+            data: {}
+        }
     ore = ore.replace("ores", "ore")
-    const data = glob.miningCount[username]
+    const user = glob.miningCount[username]
+    const data = user.data
+    const countNum = Number(countStr)
+    user.last = dateformat(new Date(), 'd::HH:MM:ss')
     if (!data[ore])
         data[ore] = 0
-    data[ore] += Number(count)
-    if (glob.logMining) bot.log("[orefound] " + username + " " + ore + " " + data[ore] + "  +" + count)
+    user.sum += countNum
+    data[ore] += countNum
+    if (glob.logMining) bot.log("[orefound] " + username + " " + ore + " " + (data[ore] - countNum) + " -> " + data[ore] + "  (+" + countNum + ")")
 })
 
 function checkCount(username) {
@@ -211,8 +220,9 @@ function checkCount(username) {
         bot.safechat(username + "さんの採掘記録はありません")
         return
     }
-    const data = glob.miningCount[username]
-    var output = username + "さんの採掘記録 " + data.start + "から "
+    const user = glob.miningCount[username]
+    const data = user.data
+    var output = username + "さんの採掘記録 " + user.start + "から "
     Object.keys(data).forEach(function (key) {
         if (key == "start") return
         output += key.replace(" ", "_") + ":" + data[key] + "個, "
