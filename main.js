@@ -15,6 +15,7 @@ var steveNum = "";
 glob = {
   debug: process.env.MC_LOCAL.match(/^true$/i) ? true : false,
   RADAR_PORT: process.env.MC_RADAR_PORT,
+  NAMECALL_REGEXP: new RegExp(process.env.MC_NAMECALL_REGEXP,"i"),
   useCache: true,
   event: new events.EventEmitter()
 };

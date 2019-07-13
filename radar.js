@@ -3,8 +3,6 @@ var app = express();
 var http = require('http').Server(app);
 var io = require('socket.io')(http);
 
-const PORT = glob.RADAR_PORT;
-
 app.use(express.static(__dirname + "/Radar"));
 
 app.get('/', function (req, res) {
@@ -378,6 +376,7 @@ function mapAt(x, z) {
     return null;
 }
 
-http.listen(PORT, function () {
-    console.log('Radar server listening. Port:' + PORT);
+http.listen(glob.RADAR_PORT, function (e) {
+    if(e) console.log(e)
+    console.log('Radar server listening. Port:' + glob.RADAR_PORT);
 });

@@ -10,12 +10,6 @@ glob.secretInit = secretInit
 glob.checkCount = checkCount
 glob.deleteCount = deleteCount
 
-const keyNames = ["コリドラ", "こりどら", "コリちゃん", "こりちゃん", "Cory"]
-var str = "^(" + keyNames[0]
-for (var i = 1; i < keyNames.length; i++)str += "|" + keyNames[i]
-str += ")"
-const nameCall = new RegExp(str)
-
 setInterval(time_signal, 200)
 
 var prevclock = new Date()
@@ -48,7 +42,7 @@ bot.on('chat', (username, message) => {
         }
 
     //Follow
-    if (message.match(nameCall)) {
+    if (message.match(glob.NAMECALL_REGEXP)) {
         if (message.match(/おいで$/)) {
             if (bot.players[username] && bot.players[username].entity) {
                 bot.log("[move] chat goto " + username)
@@ -224,7 +218,6 @@ function checkCount(username) {
     const data = user.data
     var output = username + "さんの採掘記録 " + user.start + "から "
     Object.keys(data).forEach(function (key) {
-        if (key == "start") return
         output += key.replace(" ", "_") + ":" + data[key] + "個, "
     })
     bot.safechat(output)
