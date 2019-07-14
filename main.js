@@ -37,12 +37,13 @@ require("./chat_manager")
 require("./chat")
 require("./movement")
 require("./combat")
+require("./builder")
+require("./digger")
 require("./elytra")
 require("./radar")
 require("./calculator")
 require("./music_player")
 require("./pearl_golf")
-require("./builder")
 
 function start() {
   if (glob.debug) {

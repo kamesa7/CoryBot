@@ -470,16 +470,14 @@ function followPath(path) {
                             bot.clearControlStates();
                             var newBlockPos = posToVec(plus(node, [0, -1, 0]))
                             var oldBlock = bot.blockAt(newBlockPos)
-                            if (oldBlock && oldBlock.type == 0) { // assert
-                                var item = glob.findItem(CONFIG.pathblocks)
-                                if (!item) bot.log("[move] No Movement Block")
-                                glob.placeBlockAt(item, newBlockPos, (!options.ignore || glob.logMove), (err) => {
-                                    if (err) {
-                                        bot.log(err)
-                                        exception = true
-                                    } else index++
-                                })
-                            }
+                            var item = glob.findItem(CONFIG.pathblocks)
+                            if (!item) bot.log("[move] No Movement Block")
+                            glob.placeBlockAt(item, newBlockPos, (!options.ignore || glob.logMove), (err) => {
+                                if (err) {
+                                    bot.log(err)
+                                    exception = true
+                                } else index++
+                            })
                         }
                         break;
                     case "scafford":
@@ -491,16 +489,14 @@ function followPath(path) {
                         } else if (indexCount == 3) {
                             var newBlockPos = posToVec(plus(node, [0, -1, 0]))
                             var oldBlock = bot.blockAt(newBlockPos)
-                            if (oldBlock && oldBlock.type == 0) { // assert
-                                var item = glob.findItem(CONFIG.pathblocks)
-                                if (!item) bot.log("[move] No Movement Block")
-                                glob.placeBlockAt(item, newBlockPos, (!options.ignore || glob.logMove), (err) => {
-                                    if (err) {
-                                        bot.log(err)
-                                        exception = true
-                                    } else index++
-                                })
-                            }
+                            var item = glob.findItem(CONFIG.pathblocks)
+                            if (!item) bot.log("[move] No Movement Block")
+                            glob.placeBlockAt(item, newBlockPos, (!options.ignore || glob.logMove), (err) => {
+                                if (err) {
+                                    bot.log(err)
+                                    exception = true
+                                } else index++
+                            })
                         }
                         break;
                     default:
@@ -766,7 +762,7 @@ function expandNode(node, options) {
     if (options.bridgeable)
         for (let i = 0; i < bridges.length; i++) {
             pos = plus(prepos, bridges[i]);
-            if (isThroughable(pos) && bot.blockAt(posToVec(plus(pos, [0, -1, 0]))).type == 0) {
+            if (isThroughable(pos) && isPlaceable(plus(pos, [0, -1, 0]))) {
                 pos.push("bridge");
                 ret.push(pos);
             }
@@ -776,7 +772,7 @@ function expandNode(node, options) {
         if (isThroughable(plus(prepos, [0, 1, 0])))
             for (let i = 0; i < buildstairs.length; i++) {
                 pos = plus(prepos, buildstairs[i]);
-                if (isThroughable(pos) && bot.blockAt(posToVec(plus(pos, [0, -1, 0]))).type == 0 && referenceAt(plus(pos, [0, -1, 0]))) {
+                if (isThroughable(pos) && isPlaceable(plus(pos, [0, -1, 0])) && referenceAt(plus(pos, [0, -1, 0]))) {
                     pos.push("buildstair");
                     ret.push(pos);
                 }
@@ -904,19 +900,10 @@ function optimize(path) {
 }
 
 function isNotAvoidance(block) {
-    if (block.name.match(/wall/)
-        || block.name.match(/fence/)
-        // || block.name.match(/web/)
-        //|| block.name.match(/carpet/) // -> empty
-        || block.name.match(/wall/)
-        //minecraft-date snow -> empty
-        || block.name.match(/lava/)
-        || block.name.match(/water/)
-        || block.name.match(/magma/)
-    ) {
+    if (block.name.match(/wall|fence|lava|water|magma/))
         return false;
-    }
-    return true;
+    else
+        return true;
 }
 
 
@@ -947,6 +934,14 @@ function isThroughable(pos) {
     } else {
         return false;
     }
+}
+
+function isPlaceable(pos) {
+    const B = bot.blockAt(posToVec(pos))
+    if (B.boundingBox == "empty" || B.boundingBox == "water")
+        return true
+    else
+        return false
 }
 
 function referenceAt(pos) {

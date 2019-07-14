@@ -22,7 +22,6 @@ glob.rawBuildData;
 glob.buildData;
 
 glob.isLightingMode = false;
-glob.isBuildingMode = false;
 glob.logBuild = false
 
 var builder;
@@ -39,7 +38,8 @@ const roundPos = [
 function stopBuild() {
     glob.stopMoving()
     clearInterval(builder)
-    bot.log("[build] Stop Construction")
+    if (glob.logBuild)
+        bot.log("[build] Stop Construction")
 }
 
 function loadSchematic(file) {
@@ -137,8 +137,8 @@ function posterNext(origin, placing) {
         block = bot.blockAt(origin.plus(placing))
         data = glob.buildData[placing.y][placing.z][placing.x]
         item = glob.findItem(data.type, getConstructiveBlockMetadata(data.type, data.metadata))
-        if (block.type == 0) skip++
-        if (!item && block.type == 0 && skip < glob.buildWorkProgress)
+        if (isPlaceable(block.position)) skip++
+        if (!item && isPlaceable(block.position) && skip < glob.buildWorkProgress)
             NEED["[build] NEED block: " + blockdata(data.type, data.metadata)] += placing
     } while (!item || block.type != 0)
     Object.keys(NEED).forEach(function (key) {
@@ -175,6 +175,7 @@ function buildingGoTo(origin, placing) {
         standadjust: 1,
         strictfin: true,
         bridgeable: true,
+        buildstairable: true,
         scaffordable: true,
         continue: false,
     })
@@ -218,9 +219,9 @@ function buildingNext(origin, placing, open) {
         data = glob.buildData[placing.y][placing.z][placing.x]
         item = glob.findItem(data.type, getConstructiveBlockMetadata(data.type, data.metadata))
         skip++
-        if (!item && block.type == 0 && skip < glob.buildWorkProgress)
+        if (!item && isPlaceable(block.position) && skip < glob.buildWorkProgress)
             NEED["[build] NEED block: " + blockdata(data.type, data.metadata)] += placing
-    } while (!item || block.type != 0)
+    } while (!item || !isPlaceable(block.position))
     Object.keys(NEED).forEach(function (key) {
         bot.log(key + NEED[key].replace("undefined", " at "));
     })
@@ -236,7 +237,6 @@ function buildingNext(origin, placing, open) {
 
 function generalBuild(origin, gotofunc, nextfunc) {
     clearInterval(builder)
-    glob.isBuildingMode = true;
     const buildData = glob.buildData
     var createState = "build";
     var placing = new Vec3(-1, 0, 0);
@@ -327,7 +327,7 @@ function placeBlockAt(item, pos, logMode, cb = noop) {
         cb("[place] No block item : null item")
         return
     }
-    if (!oldBlock || oldBlock.type != 0) {
+    if (!oldBlock || !isPlaceable(pos)) {
         cb("[place] cannot place there : not air pos")
         return
     }
@@ -379,7 +379,7 @@ function placeDirectedBlockAt(item, pos, detail, logMode, cb = noop) {
         cb("[place] No block item : null item")
         return
     }
-    if (!oldBlock || oldBlock.type != 0) {
+    if (!oldBlock || !isPlaceable(pos)) {
         cb("[place] cannot place there : not air pos")
         return
     }
@@ -437,6 +437,14 @@ function referenceAt(vec) {
         }
     }
     return null
+}
+
+function isPlaceable(pos) {
+    const B = bot.blockAt(pos)
+    if (B.boundingBox == "empty" || B.boundingBox == "water")
+        return true
+    else
+        return false
 }
 
 function lighting() {
