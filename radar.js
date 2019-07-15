@@ -72,63 +72,16 @@ io.on('connection', function (client) {
         var item = bot.inventory.slots[slot];
         if (START <= slot) {
             if (item) {
-                bot.equip(item, "hand", function (err) {
-                    equipcb(err)
-                });
+                bot.equip(item, "hand", equipcb);
             } else {
-                bot.unequip("hand", function (err) {
-                    equipcb(err)
-                })
+                bot.unequip("hand", equipcb);
             }
         } else {
             if (item) {
-                switch (slot) {
-                    case 5:
-                        bot.unequip("head", function (err) {
-                            equipcb(err)
-                        });
-                        break;
-                    case 6:
-                        bot.unequip("torso", function (err) {
-                            equipcb(err)
-                        });
-                        break;
-                    case 7:
-                        bot.unequip("legs", function (err) {
-                            equipcb(err)
-                        });
-                        break;
-                    case 8:
-                        bot.unequip("feet", function (err) {
-                            equipcb(err)
-                        });
-                        break;
-                }
+                bot.moveSlotItem(slot, bot.inventory.firstEmptyInventorySlot(), equipcb)
             } else {
                 if (bot.heldItem)
-                    switch (slot) {
-                        case 5:
-                            bot.equip(bot.heldItem, "head", function (err) {
-                                equipcb(err)
-                            });
-                            break;
-                        case 6:
-                            bot.equip(bot.heldItem, "torso", function (err) {
-                                equipcb(err)
-                            });
-                            break;
-                        case 7:
-                            bot.equip(bot.heldItem, "legs", function (err) {
-                                equipcb(err)
-                            });
-                            break;
-                        case 8:
-                            bot.equip(bot.heldItem, "feet", function (err) {
-                                equipcb(err)
-                            });
-                            break;
-                    }
-
+                    bot.moveSlotItem(bot.heldItem.slot, slot, equipcb)
             }
         }
         equipcb()
@@ -287,8 +240,13 @@ glob.event.on("log", (msg) => {
 
 bot.on("move", () => {
     io.json.emit("myentity", bot.entity, glob.getState())
-    if (Math.random() > 0.975)
-        emitInventory()
+})
+
+bot.inventory.on("windowUpdate", () => {
+    emitInventory()
+})
+bot._client.on('set_slot', () => {
+    setTimeout(emitInventory,100)
 })
 
 bot.on("playerJoined", (player) => {
@@ -377,6 +335,6 @@ function mapAt(x, z) {
 }
 
 http.listen(glob.RADAR_PORT, function (e) {
-    if(e) console.log(e)
+    if (e) console.log(e)
     console.log('Radar server listening. Port:' + glob.RADAR_PORT);
 });

@@ -17,10 +17,10 @@ $(function () {
         emitMessage()
     })
     $('#button_msg').click(emitMessage)
-    function emitMessage(){
+    function emitMessage() {
         let msg = $('#input_msg').val()
         io.emit('message', msg);
-        if(logmode) console.log("emit " + msg)
+        if (logmode) console.log("emit " + msg)
         $('#input_msg').val('');
     }
 
@@ -119,12 +119,12 @@ $(function () {
     })
 
     io.on('message', function (msg) {
-        if(logmode) console.log("on message")
+        if (logmode) console.log("on message")
         drawMessage(msg)
     });
 
     io.on('vital', function (msg) {
-        if(logmode) console.log("on vital")
+        if (logmode) console.log("on vital")
         $('#vital').html('<img src="misc/Health_' + Math.min(msg.health, 20) + '.png"> <img src="misc/Hunger_' + Math.min(msg.food, 20) + '.png">')
     })
 
@@ -148,7 +148,7 @@ $(function () {
                 $('#state').text("[state] " + state)
             me = player;
         } else {//init
-            if(logmode) console.log("on init myentity")
+            if (logmode) console.log("on init myentity")
             me = player;
             io.emit('server');
             drawAllEntity();
@@ -156,12 +156,12 @@ $(function () {
     });
 
     io.on('inventory', function (inventory) {
-        if(logmode) console.log("on inventory")
+        if (logmode) console.log("on inventory")
         drawInventory(inventory)
     });
 
     io.on('players', function (newplayers) {
-        if(logmode) console.log("on players")
+        if (logmode) console.log("on players")
         players = newplayers;
         if (prop == null) return;
         $("#playerlist").empty();
@@ -179,7 +179,7 @@ $(function () {
     });
 
     io.on('entityapper', function (entity) {
-        if(logmode) console.log("on appear")
+        if (logmode) console.log("on appear")
         entities.push(entity);
         drawEntity(entity);
     });
@@ -192,13 +192,13 @@ $(function () {
     });
 
     io.on('entitydisapper', function (entity) {
-        if(logmode) console.log("on disapper")
+        if (logmode) console.log("on disapper")
         entities = entities.filter(element => element.id !== entity.id);
         $('#entity' + entity.id).remove();
     });
 
     io.on('map', function (chunk) {
-        if(logmode) console.log("on map")
+        if (logmode) console.log("on map")
         for (var i = 0; i < chunk.data.length; i++) {
             var block = chunk.data[i];
             if (!block) continue;
@@ -210,7 +210,7 @@ $(function () {
     })
 
     io.on('newblock', function (chunk) {
-        if(logmode) console.log("on newblock")
+        if (logmode) console.log("on newblock")
         for (var i = 0; i < chunk.data.length; i++) {
             var block = chunk.data[i];
             if (!block) continue;
@@ -239,13 +239,15 @@ $(function () {
                 var name = "";
                 if (slots[i]) {
                     let item = slots[i];
-                    let dispname = item.displayName.substring(0, 10)
+                    let dispname = item.displayName.substring(0, 13)
                     let metadata = (item.metadata == 0) ? ("") : ("::" + item.metadata)
                     let count = (item.count == 1) ? ("") : (" x" + item.count)
                     name += dispname + metadata + count
                 }
                 if (i == QUICK) {
                     row += '<td class="quickbar" id="slot' + i + '">' + name + '</td>'
+                } else if (5 <= i && i < START) {
+                    row += '<td class="armor" id="slot' + i + '">' + name + '</td>'
                 } else {
                     row += '<td id="slot' + i + '">' + name + '</td>'
                 }

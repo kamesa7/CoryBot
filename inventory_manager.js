@@ -50,17 +50,16 @@ function startEat() {
     var item = findItem(foods);
     if (item != null) {
         glob.queueOnceState("eating", function () {
-            item = findItem(foods);
             bot.equip(item, "hand", function (err) {
                 if (err) {
                     glob.finishState("eating");
                     return;
-                }
+                }                
+                bot.log("[eat] eat: " + item.name);
                 bot.consume(function () {
                     glob.finishState("eating");
                 });
             });
-            bot.log("[eat] eat: " + item.name);
         });
     } else {
         bot.log("[eat] no food")
