@@ -166,14 +166,14 @@ $(function () {
         if (prop == null) return;
         $("#playerlist").empty();
         Object.keys(players).forEach(function (key) {
-            var name = players[key].username;
-            $("#playerlist").append('<span id="player' + name + '" class="playerlist-element"><img class="playerlistimg" src="http://' + prop.host + ':8123/tiles/faces/16x16/' + name + '.png"> ' + name + '</span> ')
-            $('#player' + players[key].username).click(function () {
-                if (players[key].entity)
-                    $('#target_entity').val(players[key].entity.id);
+            const player = players[key]
+            $("#playerlist").append('<span id="player' + player.username + '" class="playerlist-element"><img class="playerlistimg" ' + getPlayerImageSrc(player.uuid) + '> ' + player.username + '</span> ')
+            $('#player' + player.username).click(function () {
+                if (player.entity)
+                    $('#target_entity').val(player.entity.id);
                 else
                     $('#target_entity').val("");
-                $('#target_entity_name').text(players[key].username)
+                $('#target_entity_name').text(player.username)
             })
         });
     });
@@ -307,7 +307,7 @@ $(function () {
             var style = 'style="left: ' + px + '%; top: ' + pz + '%;"'
             if (entity.type == "player") {
                 $('.radar').append('<div class="entity player" id="entity' + entity.id + '" ' + style + '>')
-                $(target).html('<img class="playerimg" src="http://' + prop.host + ':8123/tiles/faces/16x16/' + entity.username + '.png"></div>')
+                $(target).html('<img class="playerimg" ' + getPlayerImageSrc(entity.uuid) + '></div>')
 
             } else if ((entity.type == "mob" && entity.kind != "Projectiles" && entity.kind != "Immobile") || (entity.type == "object" && entity.kind == "Vehicles")) {
                 $('.radar').append('<div class="entity mob" id="entity' + entity.id + '" ' + style + '></div>')
@@ -416,6 +416,10 @@ $(function () {
                 }
             }
         }
+    }
+
+    function getPlayerImageSrc(uuid) {
+        return 'src="https://crafatar.com/avatars/' + uuid + '?size=16.png"'
     }
 
 });
