@@ -1087,11 +1087,11 @@ function getMyPos() {
 }
 
 function lookToVec(arr) {
-    return new Vec3(arr[0], arr[1] + eyeHeight, arr[2]);
+    return new Vec3(arr).offset(0, eyeHeight, 0);
 }
 
 function posToVec(arr) {
-    return new Vec3(arr[0], arr[1], arr[2]);
+    return new Vec3(arr);
 }
 
 function contains(arr, p) {

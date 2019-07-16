@@ -3,10 +3,12 @@ glob.jumpUpOpenElytra = jumpUpOpenElytra
 glob.openElytra = openElytra
 
 const jumpUpOpenElytraTime = 400
+const jumpUpVelocity = 10
 const defaultMaxSpeed = 4.27 // according to the internet
 const maxSpeed = 75
 const fireworkSpeed = 50
 const touchDownSpeed = 10
+const fireWorkId = 401
 glob.reBoostTime = 3000
 glob.elytraUpVec = new Vec3(0, -27 / 19, 0);
 glob.allowElytra = 40
@@ -20,15 +22,25 @@ var elytraFirework = null
 
 function elytraFlyTo(pos, altitude) {
     finalDestination = pos.clone();
-    if (altitude)
-        finalDestination.y = altitude;
-    jumpUpOpenElytra();
+    if (altitude) finalDestination.y = altitude;
+    if (finalDestination.y > 250) finalDestination.y = 250
+    var item = glob.findItem(fireWorkId);
+    if (item != null) {
+        bot.equip(item, "hand", function (err) {
+            if (err)
+                bot.log(err);
+
+            jumpUpOpenElytra();
+        });
+    } else {
+        jumpUpOpenElytra();
+    }
 }
 
 function jumpUpOpenElytra() {
     elytra = bot.inventory.slots[6];
     if (!elytra || elytra.type != 443) return;
-    bot.entity.velocity.add(new Vec3(0, 13, 0))
+    bot.entity.velocity.add(new Vec3(0, jumpUpVelocity, 0))
     setTimeout(function () {
         openElytra();
     }, jumpUpOpenElytraTime)
@@ -105,7 +117,7 @@ function fireBoost() {
         if (bot.entity.position.y > finalDestination.y - glob.allowElytra / 2)
             return
     }
-    if (glob.getState() == "elytra" && bot.heldItem && bot.heldItem.type == 401)
+    if (glob.getState() == "elytra" && bot.heldItem && bot.heldItem.type == fireWorkId)
         bot.activateItem();
     else if (fireBooster)
         clearInterval(fireBooster)

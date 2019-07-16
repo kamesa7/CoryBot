@@ -4,7 +4,7 @@ const events = require('events');
 
 fs = require('fs');
 jsonfile = require('jsonfile');
-Vec3 = require('vec3').Vec3;
+Vec3 = require('vec3');
 mcData = require("minecraft-data")(process.env.MC_VERSION);
 bucketsJs = require('buckets-js');
 isSame = require("./isSameObject");
@@ -13,16 +13,17 @@ dateformat = require('dateformat')
 var steveNum = "";
 
 glob = {
-  debug: process.env.MC_LOCAL.match(/^true$/i) ? true : false,
+  LOCAL: process.env.MC_LOCAL === "true" ? true : false,
+  USE_CACHE: process.env.MC_USE_CACHE === "true" ? true : false,
+  RADAR: process.env.MC_RADAR === "true" ? true : false,
   RADAR_PORT: process.env.MC_RADAR_PORT,
-  NAMECALL_REGEXP: new RegExp(process.env.MC_NAMECALL_REGEXP,"i"),
-  useCache: true,
+  NAMECALL_REGEXP: new RegExp(process.env.MC_NAMECALL_REGEXP, "i"),
   event: new events.EventEmitter()
 };
 
 for (var i = 0; i < process.argv.length; i++) {
   var arg = process.argv[i];
-  if (arg == "-debug") glob.debug = true;
+  if (arg == "-debug") glob.LOCAL = true;
   else if (arg == "-name") steveNum = process.argv[i + 1];
 }
 console.log("repl to debug");
@@ -40,13 +41,13 @@ require("./combat")
 require("./builder")
 require("./digger")
 require("./elytra")
-require("./radar")
 require("./calculator")
 require("./music_player")
 require("./pearl_golf")
+if (glob.RADAR) require("./radar")
 
 function start() {
-  if (glob.debug) {
+  if (glob.LOCAL) {
     bot = mineflayer.createBot({
       host: process.env.MC_LOCAL_HOST,
       port: process.env.MC_LOCAL_PORT,
@@ -55,7 +56,7 @@ function start() {
       verbose: true,
     });
     console.log('Connecting to [localhost]');
-  } else if (glob.useCache) {
+  } else if (glob.USE_CACHE) {
     var sessionCache
     try {
       sessionCache = jsonfile.readFileSync("session_cache.json")
@@ -104,7 +105,7 @@ function start() {
 
   bot.on('end', () => {
     console.log('bot.end :: process exit');
-    if (!glob.debug) jsonfile.writeFileSync("session_cache.json", bot._client.session)
+    if (!glob.LOCAL) jsonfile.writeFileSync("session_cache.json", bot._client.session)
     process.exit();
   });
 

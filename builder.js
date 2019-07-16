@@ -67,6 +67,11 @@ function loadSchematic(file) {
 
         const buildData = []
         glob.buildData = buildData;
+        buildData.size = {
+            height: level.Height,
+            length: level.Length,
+            width: level.Width
+        }
         for (let y = 0; y < level.Height; y++) {
             buildData.push([])
             for (let z = 0; z < level.Length; z++) {
@@ -121,13 +126,13 @@ function posterNext(origin, placing) {
     let NEED = {}
     do {
         // X
-        if (++placing.x == buildData[placing.y][placing.z].length) {
+        if (++placing.x == buildData.size.width) {
             placing.x = 0;
             // Z
-            if (++placing.z == buildData[placing.y].length) {
+            if (++placing.z == buildData.size.length) {
                 placing.z = 0;
                 // Y
-                if (++placing.y == buildData.length) { // assert
+                if (++placing.y == buildData.size.height) { // assert
                     bot.log("[build] Create Poster Finished")
                     clearInterval(builder)
                     return
@@ -191,8 +196,8 @@ function buildingNext(origin, placing, open) {
     do {
         let nearest = null
         let y = placing.y
-        for (let z = 0; z < buildData[y].length; z++) {
-            for (let x = 0; x < buildData[y][z].length; x++) {
+        for (let z = 0; z < buildData.size.length; z++) {
+            for (let x = 0; x < buildData.size.width; x++) {
                 if (open[y][z][x]) {
                     let pos = new Vec3(x, y, z)
                     if (!nearest || placing.distanceTo(pos) < placing.distanceTo(nearest)) {
@@ -202,7 +207,7 @@ function buildingNext(origin, placing, open) {
             }
         }
         if (!nearest) {
-            if (++placing.y == buildData.length) {
+            if (++placing.y == buildData.size.height) {
                 bot.log("[build] Create Building Finished")
                 clearInterval(builder)
                 return
@@ -210,9 +215,7 @@ function buildingNext(origin, placing, open) {
                 continue;
             }
         }
-        placing.x = nearest.x
-        placing.y = nearest.y
-        placing.z = nearest.z
+        placing.update(nearest)
         open[placing.y][placing.z][placing.x] = false
 
         block = bot.blockAt(origin.plus(placing))
@@ -233,6 +236,47 @@ function buildingNext(origin, placing, open) {
         })
     }
     return skip
+}
+
+function nearestNext(origin, placing, open) {
+    var ck = placing.clone()
+    var skip = 0
+    var expanded = []
+    var closed = [];
+    var lastIndex = 0
+    var index = 0
+    expand(ck)
+    while (expanded.length > 0) {
+
+        for (let i = index; i < expanded.length; i++) { // check
+            let pos = expanded[i];
+            closed.push(pos)
+            if (open[pos.y][pos.z][pos.x]) { // find path
+                open[pos.y][pos.z][pos.x] = false
+                return skip;
+            }
+        }
+
+        for (let i = index; i < expanded.length; i++) { // expand
+            let pos = expanded[i];
+            expand(pos)
+        }
+        lastIndex = index
+    }
+    bot.log("[build] Create Building Finished")
+    clearInterval(builder)
+    return;
+
+    function expand(target) {
+        for (let r = 0; r < roundPos.length; r++) {
+            let exp = target.plus(roundPos[r])
+            let i
+            for (i = lastIndex; i < closed.length; i++) {
+                if (exp.equals(closed[i])) break
+            }
+            if (i == closed.length) expanded.push(exp)
+        }
+    }
 }
 
 function generalBuild(origin, gotofunc, nextfunc) {

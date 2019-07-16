@@ -1,6 +1,6 @@
 bot.once('login', () => {
     bot.log('[bot.connect]');
-    if (glob.debug == true) {
+    if (glob.LOCAL) {
         //bot.chatAddPattern(/^<([^ :]*)> (.*)$/, 'chat');
         bot.log('[bot.login] localhost');
     } else if (process.env.MC_HOST != null && ((process.env.MC_HOST == 'kenmomine.club' && process.env.MC_PORT == 25565) || process.env.MC_HOST == 'ironingot.net')) {

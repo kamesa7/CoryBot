@@ -307,7 +307,7 @@ $(function () {
             var style = 'style="left: ' + px + '%; top: ' + pz + '%;"'
             if (entity.type == "player") {
                 $('.radar').append('<div class="entity player" id="entity' + entity.id + '" ' + style + '>')
-                $(target).html('<img class="playerimg" ' + getPlayerImageSrc(entity.uuid) + '></div>')
+                $(target).html('<img class="playerimg" ' + getPlayerImageSrc((players[entity.username] ? players[entity.username].uuid : entity.uuid)) + '></div>')
 
             } else if ((entity.type == "mob" && entity.kind != "Projectiles" && entity.kind != "Immobile") || (entity.type == "object" && entity.kind == "Vehicles")) {
                 $('.radar').append('<div class="entity mob" id="entity' + entity.id + '" ' + style + '></div>')
