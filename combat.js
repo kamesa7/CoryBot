@@ -68,18 +68,19 @@ bot.on("entitySpawn", (entity) => {
 
 var guardTimeout;
 function arrowDefence(arrow) {
+    var dist = arrow.position.distanceTo(bot.entity.position.offset(0, 1, 0))
     var forme = arrow.position.minus(bot.entity.position).unit()
     var forto = new Vec3(-Math.sin(arrow.yaw), Math.sin(arrow.pitch - Math.PI), Math.cos(arrow.yaw)).unit()
     var inpro = forme.innerProduct(forto)
 
-    if (Math.acos(inpro) > Math.PI / 18) return;
+    if (Math.acos(inpro) > Math.PI / Math.max(0, (18 - 32 / dist))) return;
 
     bot.log("[combat] detecting an approaching arrow")
     guard(arrow.position)
 }
 
 function targetedDefence(player) {
-    var forme = player.position.minus(bot.entity.position).unit()
+    var forme = player.position.minus(bot.entity.position.offset(0, 1, 0)).unit()
     var forto = new Vec3(Math.sin(player.yaw), Math.sin(player.pitch - Math.PI), Math.cos(player.yaw)).unit()
     var inpro = forme.innerProduct(forto)
     if (Math.acos(inpro) > Math.PI / 27) return;
@@ -247,6 +248,7 @@ function throwPearl(target) {
             bot.equip(item, "hand", function (err) {
                 if (err) {
                     bot.log(err)
+                    glob.finishState("throwit")
                 } else {
                     throwIt(target);
                 }
@@ -275,12 +277,13 @@ function throwIt(target) { // position
 
     if (isNaN(heightAdjust)) {
         bot.log("[combat] can't throw there")
+        glob.finishState("throwit")
     } else {
         bot.lookAt(target.offset(0, heightAdjust, 0), true, function () {
             bot.activateItem();
+            glob.finishState("throwit")
         });
     }
-    glob.finishState("throwit")
 }
 
 function timeToThrow(target, isHigh) {
