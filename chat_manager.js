@@ -81,15 +81,18 @@ bot.randomchat = (messages, delay = 800) => {
 
 var prevLog = ""
 var logStroke = 1
+var prevTimestamp
 bot.log = (str) => {
     if (prevLog == str) {
         logStroke++
+        prevTimestamp = timestamp()
         return
     } else if (logStroke > 1) {
-        const cache = prevLog + " x" + logStroke
+        const cache = prevTimestamp + prevLog + " x" + logStroke
         prevLog = str
         logStroke = 1
-        bot.log(cache)
+        console.log('\u001b[0m' + cache);
+        glob.event.emit("log", cache)
     } else {
         prevLog = str
     }
@@ -115,7 +118,7 @@ bot.on('error', function (err) {
     bot.log("[Error] " + err.message);
 })
 
-function timestamp(str) {
+function timestamp(str = "") {
     return '[' + dateformat(new Date(), 'isoTime') + '] ' + str;
 }
 

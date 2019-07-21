@@ -72,10 +72,10 @@ function arrowDefence(arrow) {
     var forto = new Vec3(-Math.sin(arrow.yaw), Math.sin(arrow.pitch - Math.PI), Math.cos(arrow.yaw)).unit()
     var inpro = forme.innerProduct(forto)
 
-    if (Math.acos(inpro) > Math.PI / 27) return;
+    if (Math.acos(inpro) > Math.PI / 18) return;
 
     bot.log("[combat] detecting an approaching arrow")
-    bot.log("[combat] No Shield");
+    guard(arrow.position)
 }
 
 function targetedDefence(player) {
