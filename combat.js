@@ -1,5 +1,6 @@
 
-
+glob.isBerserkerMode = false
+glob.isEggBomberMode = false
 glob.isCloseDefenceMode = true;
 glob.isSniperMode = false;
 glob.isHighAngleMode = true;
@@ -34,8 +35,7 @@ glob.hostiles = [];
 
 bot.on('entityMoved', (entity) => {
     var distance = bot.entity.position.distanceTo(entity.position);
-    if ((entity.kind && entity.kind == "Hostile mobs" && !(entity.metadata[2] && entity.metadata[2] != ""))//hostile mob //name recognize is fixed by replace
-        || (entity.username && contains(glob.hostiles, entity.username))) {//hostile player
+    if (isEnemy(entity)) {//hostile player
         if (glob.isCloseDefenceMode && distance < 4 && new Date().getTime() - preAttackTime > swordInterval) {//punch
             punch(entity)
         } else if (glob.isSniperMode && distance < glob.snipeDistance && !(entity.name && entity.name == "enderman")) {//shoot
@@ -43,6 +43,10 @@ bot.on('entityMoved', (entity) => {
                 shoot(entity, false);
             } else if (glob.isHighAngleMode && bot.blockAt(bot.entity.position).skyLight == 15 && bot.blockAt(entity.position).skyLight == 15) {
                 shoot(entity, true);
+            }
+        } else if (glob.isEggBomberMode && distance < glob.snipeDistance) {//egg
+            if (canSeeDirectly(entity.position.offset(0, eyeHeight, 0))) {
+                throwEgg(entity.position.offset(0, eyeHeight, 0));
             }
         }
     }
@@ -81,7 +85,7 @@ bot.on("entitySpawn", (entity) => {
                 }, Math.max(distance / maxArrowSpeed * 3000, 1000));
             });
         } else {
-            bot.log("[combat] no shield");
+            bot.log("[combat] No Shield");
         }
     }
 });
@@ -97,21 +101,22 @@ function punch(entity) {
                     bot.log(err);
                 }
                 bot.attack(entity);
+                glob.finishState("punching")
             });
         } else {
             bot.attack(entity, true);
+            glob.finishState("punching")
         }
         preAttackTime = new Date().getTime();
-        glob.finishState("punching")
     }, entity);
 }
 
 function shoot(entity, isHigh) {
     glob.queueOnceState("shooting", function () {
-        var bow = glob.findItem(261); // bow id
+        var bow = glob.findItem(261, undefined, (item) => { return item.metadata < glob.bowDamageLimit ? true : false }); // bow id
         var arrow = glob.findItem(arrows);
         var previousPosition;
-        if (bow != null && arrow != null && bow.metadata < glob.bowDamageLimit) {
+        if (bow != null && arrow != null) {
             if (entity.name != undefined) bot.log("[combat] shoot: " + entity.name + " " + entity.position.floored());
             else bot.log("[combat] shoot: " + entity.username + " " + entity.position.floored());
             bot.equip(bow, "hand", function (err) {
@@ -160,7 +165,7 @@ function shoot(entity, isHigh) {
                 }, drawingTime)
             });;
         } else {
-            bot.log("[combat] no bow or arrow");
+            bot.log("[combat] No Bow or Arrow");
             glob.finishState("shooting");
         }
     });
@@ -189,25 +194,29 @@ function timeToShoot(target, isHigh) {
 }
 
 function throwEgg(target) {
-    glob.queueOnceState("throwprepare", function () {
-        var item = glob.findItem(344);
+    glob.tryState("throwit", function () {
+        var item;
+        if (bot.heldItem && bot.heldItem.type == 344) item = bot.heldItem
+        else item = glob.findItem(344);
         if (item) {
             bot.equip(item, "hand", function (err) {
                 if (err) {
                     bot.log(err)
+                    glob.finishState("throwit")
                 } else {
                     throwIt(target);
                 }
             });
         } else {
             bot.log("[combat] No Egg")
+            // bot.chat("/give @p minecraft:egg 64")
+            glob.finishState("throwit")
         }
-        glob.finishState("throwprepare")
     })
 }
 
 function throwPearl(target) {
-    glob.queueOnceState("throwprepare", function () {
+    glob.queueOnceState("throwit", function () {
         var item = glob.findItem(368);
         if (item) {
             bot.equip(item, "hand", function (err) {
@@ -220,37 +229,35 @@ function throwPearl(target) {
         } else {
             bot.log("[combat] No Pearl")
         }
-        glob.finishState("throwprepare")
+        glob.finishState("throwit")
     })
 }
 
 function throwIt(target) { // position
-    glob.queueOnceState("throwing", function () {
-        if (bot.heldItem) bot.log("[combat] throw: " + bot.heldItem.displayName + " " + target.floored());
-        else bot.log("[combat] throw: " + target.floored());
-        var x = target.x - bot.entity.position.x;
-        var z = target.z - bot.entity.position.z;
-        var dist = getXZL2(x, z);
+    if (bot.heldItem) bot.log("[combat] throw: " + bot.heldItem.displayName + " " + target.floored());
+    else bot.log("[combat] throw: " + target.floored());
+    var x = target.x - bot.entity.position.x;
+    var z = target.z - bot.entity.position.z;
+    var dist = getXZL2(x, z);
 
-        var isHigh = true;
-        if (canSeeDirectly(target)) isHigh = false
+    var isHigh = true;
+    if (canSeeDirectly(target)) isHigh = false
 
-        var t = timeToThrow(target, isHigh);
+    var t = timeToThrow(target, isHigh);
 
-        var heightAdjust = 0.5 * Gravity * t * t;
-        heightAdjust += t * airResistance;
-        heightAdjust += dist * 0.005
-        if (isHigh) heightAdjust *= highAngleAdjust;
+    var heightAdjust = 0.5 * Gravity * t * t;
+    heightAdjust += t * airResistance;
+    heightAdjust += dist * 0.005
+    if (isHigh) heightAdjust *= highAngleAdjust;
 
-        if (isNaN(heightAdjust)) {
-            bot.log("[combat] can't throw there")
-        } else {
-            bot.lookAt(target.offset(0, heightAdjust, 0), true, function () {
-                bot.activateItem();
-            });
-        }
-        glob.finishState("throwing");
-    });
+    if (isNaN(heightAdjust)) {
+        bot.log("[combat] can't throw there")
+    } else {
+        bot.lookAt(target.offset(0, heightAdjust, 0), true, function () {
+            bot.activateItem();
+        });
+    }
+    glob.finishState("throwit")
 }
 
 function timeToThrow(target, isHigh) {
@@ -316,4 +323,11 @@ function lookAt(entity) {
                 glob.finishState("lookAt")
         }, 100)
     })
+}
+
+function isEnemy(entity) {
+    return (
+        entity.kind && entity.kind == "Hostile mobs" && !(entity.metadata[2] && entity.metadata[2] != ""))//hostile mob //name recognize is fixed by replace
+        || (entity.username && (glob.isBerserkerMode || contains(glob.hostiles, entity.username))
+        )
 }
