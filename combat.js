@@ -52,25 +52,51 @@ bot.on('entityMoved', (entity) => {
     }
 });
 
+bot.on('entityMoved', (entity) => {
+    if (glob.isArrowDefenceMode && isAliveArrow(entity)) {
+        arrowDefence(entity)
+    } else if (entity.username && entity.metadata[6] == 1) {
+        targetedDefence(entity)
+    }
+})
+
 bot.on("entitySpawn", (entity) => {
-    var distance = bot.entity.position.distanceTo(entity.position);
+    if (glob.isArrowDefenceMode && isAliveArrow(entity)) {
+        arrowDefence(entity)
+    }
+});
 
-    if (glob.isArrowDefenceMode && entity.name && entity.name == "arrow" && distance > 4) {
-        var target = entity.position;
-        var x = bot.entity.position.x - target.x;
-        var z = bot.entity.position.z - target.z;
-        var rad = -Math.atan2(x, z);
+var guardTimeout;
+function arrowDefence(arrow) {
+    var forme = arrow.position.minus(bot.entity.position).unit()
+    var forto = new Vec3(-Math.sin(arrow.yaw), Math.sin(arrow.pitch - Math.PI), Math.cos(arrow.yaw)).unit()
+    var inpro = forme.innerProduct(forto)
 
-        if (glob.logCombat) bot.log("[combat] rad:" + (rad / Math.PI * 180) + " yaw:" + (entity.yaw / Math.PI * 180 - 180) + " pitch:" + entity.pitch / Math.PI * 180)
-        if (Math.abs(rad - (entity.yaw - Math.PI)) > Math.PI / 18) return;
+    if (Math.acos(inpro) > Math.PI / 27) return;
 
-        bot.log("[combat] detecting an approaching arrow")
+    bot.log("[combat] detecting an approaching arrow")
+    bot.log("[combat] No Shield");
+}
+
+function targetedDefence(player) {
+    var forme = player.position.minus(bot.entity.position).unit()
+    var forto = new Vec3(Math.sin(player.yaw), Math.sin(player.pitch - Math.PI), Math.cos(player.yaw)).unit()
+    var inpro = forme.innerProduct(forto)
+    if (Math.acos(inpro) > Math.PI / 27) return;
+
+    bot.log("[combat] detecting a player targeting me")
+    guard(player.position.offset(0, 1, 0))
+}
+
+function guard(look) {
+    glob.changeState("guarding")
+
+    bot.lookAt(look, true);
+    if (bot.heldItem && bot.heldItem.type == 422) {
+        bot.activateItem();
+    } else {
         var shield = glob.findItem(442); //shield id
-        if (shield != null) {
-            glob.changeState("guarding")
-
-            bot.lookAt(entity.position.plus(new Vec3(0, 1, 0)), true);
-            bot.activateItem();
+        if (shield) {
             bot.equip(shield, "hand", function (err) {
                 if (err) {
                     bot.log(err)
@@ -78,17 +104,20 @@ bot.on("entitySpawn", (entity) => {
                     return;
                 }
                 bot.activateItem();
-                bot.lookAt(entity.position, true);
-                setTimeout(function () {
-                    bot.deactivateItem();
-                    glob.finishState("guarding");
-                }, Math.max(distance / maxArrowSpeed * 3000, 1000));
-            });
+            })
         } else {
-            bot.log("[combat] No Shield");
+            bot.log("[combat] No Shield")
+            glob.finishState("guarding");
+            return
         }
     }
-});
+
+    clearTimeout(guardTimeout)
+    guardTimeout = setTimeout(function () {
+        bot.deactivateItem();
+        glob.finishState("guarding");
+    }, 1000);
+}
 
 function punch(entity) {
     glob.queueOnceState("punching", function (entity) {
@@ -134,14 +163,12 @@ function shoot(entity, isHigh) {
                     if (entity.isValid) {
                         var target = entity.position;
                         var velocity = target.minus(previousPosition).scaled(1000 / (drawingTime * 0.2) * 0.8);
-                        var x = target.x - bot.entity.position.x;
-                        var z = target.z - bot.entity.position.z;
-                        var dist = getXZL2(x, z);
+                        var dist = target.xzDistanceTo(bot.entity.position)
                         if (isHigh && canSeeDirectly(target.offset(0, eyeHeight, 0))) isHigh = false
 
-                        var t = timeToShoot(target, isHigh);
+                        var t = timeToShoot(bot.entity.position, target, isHigh);
                         target = target.plus(velocity.scaled(t))
-                        t = timeToShoot(target, isHigh);
+                        t = timeToShoot(bot.entity.position, target, isHigh);
 
                         var heightAdjust = 0.5 * Gravity * t * t;
                         heightAdjust += t * airResistance;
@@ -171,11 +198,9 @@ function shoot(entity, isHigh) {
     });
 }
 
-function timeToShoot(target, isHigh) {
-    var x = target.x - bot.entity.position.x;
-    var y = target.y - bot.entity.position.y;
-    var z = target.z - bot.entity.position.z;
-    var dist = getXZL2(x, z);
+function timeToShoot(from, target, isHigh) {
+    var y = target.y - from.y;
+    var dist = target.xzDistanceTo(from)
     var angle = Math.atan(y / dist)
     var ayg = maxArrowSpeed * maxArrowSpeed - y * Gravity;
     var discriminant = (ayg * ayg - Gravity * Gravity * ((dist * dist) + (y * y)));
@@ -183,13 +208,13 @@ function timeToShoot(target, isHigh) {
     var t2 = 2 * (ayg - Math.sqrt(discriminant)) / (Gravity * Gravity);
     if (t1 < 0) t1 = t2;
     else if (t2 < 0) t2 = t1;
-    if (!isHigh) {
-        t = Math.min(t1, t2);
+    if (isHigh) {
+        t = Math.max(t1, t2);
     } else {
-        t = Math.max(t1, t2)
+        t = Math.min(t1, t2)
     }
     t = Math.sqrt(t);
-    if (glob.logCombat) bot.log("[combat] details " + " L2:" + target.distanceTo(bot.entity.position) + " dist:" + dist + " y:" + y + " angle:" + angle / (Math.PI / 180) + " D:" + discriminant + " time:" + t + " target:" + target)
+    if (glob.logCombat) bot.log("[combat] details " + " L2:" + target.distanceTo(from) + " dist:" + dist + " y:" + y + " angle:" + angle / (Math.PI / 180) + " D:" + discriminant + " time:" + t + " target:" + target)
     return t;
 }
 
@@ -236,9 +261,7 @@ function throwPearl(target) {
 function throwIt(target) { // position
     if (bot.heldItem) bot.log("[combat] throw: " + bot.heldItem.displayName + " " + target.floored());
     else bot.log("[combat] throw: " + target.floored());
-    var x = target.x - bot.entity.position.x;
-    var z = target.z - bot.entity.position.z;
-    var dist = getXZL2(x, z);
+    var dist = target.xzDistanceTo(bot.entity.position)
 
     var isHigh = true;
     if (canSeeDirectly(target)) isHigh = false
@@ -261,10 +284,8 @@ function throwIt(target) { // position
 }
 
 function timeToThrow(target, isHigh) {
-    var x = target.x - bot.entity.position.x;
     var y = target.y - bot.entity.position.y;
-    var z = target.z - bot.entity.position.z;
-    var dist = getXZL2(x, z);
+    var dist = target.xzDistanceTo(bot.entity.position)
     var angle = Math.atan(y / dist)
     var ayg = maxEggSpeed * maxEggSpeed - y * Gravity;
     var discriminant = (ayg * ayg - Gravity * Gravity * ((dist * dist) + (y * y)));
@@ -283,20 +304,19 @@ function timeToThrow(target, isHigh) {
 }
 
 function canSeeDirectly(target) {
-    var zero = new Vec3(0, 0, 0);
     var myPos = bot.entity.position.offset(0, eyeHeight, 0);
     var vector = target.minus(myPos);
-    var norm = vector.scaled(1.0 / vector.distanceTo(zero));
-    var limit = vector.distanceTo(zero);
+    var unit = vector.unit()
+    var limit = vector.norm();
     var scale = 1;
-    var search = norm.scaled(scale);
-    while (search.distanceTo(zero) < limit) {
+    var search = unit.scaled(scale);
+    while (search.norm() < limit) {
         var block = bot.blockAt(myPos.plus(search))
         if (block && block.boundingBox == "block") {
             return false;
         }
         scale++;
-        search = norm.scaled(scale);
+        search = unit.scaled(scale);
     }
     return true;
 }
@@ -306,10 +326,6 @@ function contains(arr, val) {
         if (arr[i] == val) return true;
     }
     return false;
-}
-
-function getXZL2(x, z) {
-    return Math.sqrt((x * x) + (z * z));
 }
 
 var lookingEntity;
@@ -330,4 +346,18 @@ function isEnemy(entity) {
         entity.kind && entity.kind == "Hostile mobs" && !(entity.metadata[2] && entity.metadata[2] != ""))//hostile mob //name recognize is fixed by replace
         || (entity.username && (glob.isBerserkerMode || contains(glob.hostiles, entity.username))
         )
+}
+
+function isAliveArrow(entity) {
+    if (entity.name && entity.name.match(/arrow/)) {
+        if (entity.metadata && entity.metadata[6] == 1) {
+            return true
+        } else if (Array.isArray(entity.metadata)) {
+            return true
+        } else {
+            return false
+        }
+    } else {
+        return false
+    }
 }
