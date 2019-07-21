@@ -27,16 +27,16 @@ bot.on('spawn', function () {
 })
 
 bot.on('health', function () {
-    bodyManage();
+    bodyManage(true);
 });
 
 
 bot.on('food', function () {
-    bodyManage();
+    bodyManage(false);
 });
 
-function bodyManage() {
-    bot.log("[body] health: " + Math.round(bot.health) + ", food: " + Math.round(bot.food));
+function bodyManage(log) {
+    if (log) bot.log("[body] health: " + Math.round(bot.health) + ", food: " + Math.round(bot.food));
     if (bot.health < 20 && bot.food < 19) {
         startEat();
     } else if (bot.food <= 10) {
@@ -47,23 +47,25 @@ function bodyManage() {
 }
 
 function startEat() {
-    var item = findItem(foods);
-    if (item != null) {
-        glob.queueOnceState("eating", function () {
+    glob.queueOnceState("eating", function () {
+        let item = findItem(foods);
+        if (item != null) {
             bot.equip(item, "hand", function (err) {
                 if (err) {
+                    bot.log(err)
                     glob.finishState("eating");
                     return;
-                }                
+                }
                 bot.log("[eat] eat: " + item.name);
                 bot.consume(function () {
                     glob.finishState("eating");
                 });
             });
-        });
-    } else {
-        bot.log("[eat] no food")
-    }
+        } else {
+            bot.log("[eat] No Food")
+            glob.finishState("eating");
+        }
+    })
 }
 
 function clearInventory() {
@@ -92,27 +94,35 @@ var helmets = [
     310, 306, 302, 314, 298
 ];
 
-function findItem(target, meta = undefined) {
+function findItem(target, metadata = undefined, isOK = (item) => { return true }) {
+    const slots = bot.inventory.slots
+
     if (Array.isArray(target)) {
-        var item;
-        for (var index = 0; index < target.length; index++) {
-            item = bot.inventory.findInventoryItem(target[index], meta);
-            if (item != null) {
-                if (meta && item.metadata != meta) continue
-                return item;
-            }
+        for (let index = 0; index < target.length; index++) {
+            let item = findInventoryItem(target[index]);
+            if (item != null) return item;
         }
         return null;
     } else {
-        return bot.inventory.findInventoryItem(target, meta);
+        return findInventoryItem(target);
+    }
+
+    function findInventoryItem(type) {
+        for (let index = 0; index < slots.length; index++) {
+            let item = slots[index]
+            if (item && item.type == type && (metadata == undefined || item.metadata == metadata) && isOK(item)) {
+                return item
+            }
+        }
+        return null
     }
 }
 
 function checkItemCount(type, metadata = undefined) {
     const slots = bot.inventory.slots
     var count = 0
-    for (var index = 0; index < slots.length; index++) {
-        var item = slots[index]
+    for (let index = 0; index < slots.length; index++) {
+        let item = slots[index]
         if (item && item.type == type && (metadata == undefined || item.metadata == metadata)) {
             count += item.count
         }
@@ -120,32 +130,67 @@ function checkItemCount(type, metadata = undefined) {
     return count;
 }
 
-function equipArmor(dest = 0) {
-    var item;
-    for (var index = 0; index < helmets.length; index++) {
-        item = findItem(helmets[index] + dest);
-        if (item != null && (item.slot < 5 || 8 < item.slot)) {
-            switch (dest) {
-                case 0: bot.equip(item, "head", function (err) {
-                    if (err) bot.log(err)
-                }); break;
-                case 1: bot.equip(item, "torso", function (err) {
-                    if (err) bot.log(err)
-                }); break;
-                case 2: bot.equip(item, "legs", function (err) {
-                    if (err) bot.log(err)
-                }); break;
-                case 3: bot.equip(item, "feet", function (err) {
-                    if (err) bot.log(err)
-                }); break;
-            }
-            return;
+bot.inventory.on("windowUpdate", () => {
+
+})
+bot.on("playerCollect", (collector, collected) => {
+    if (collector.id != bot.entity.id) return
+    bodyManage(false)
+    checkArmor()
+})
+
+function inventoryItemCount() {
+    const slots = bot.inventory.slots
+    var count = 0
+    for (let index = 0; index < slots.length; index++) {
+        let item = slots[index]
+        if (item) count += item.count
+    }
+    return count
+}
+
+function checkArmor() {
+    const slots = bot.inventory.slots
+    for (let i = 5; i <= 8; i++) {
+        if (slots[i] == null) {
+            equipArmor(i - 5)
         }
     }
 }
 
+function equipArmor(dest) {
+    if (dest == undefined) return
+    glob.queueState("armor", function () {
+        for (let index = 0; index < helmets.length; index++) {
+            let item = findItem(helmets[index] + dest);
+            if (item != null && (item.slot < 5 || 8 < item.slot)) {
+                switch (dest) {
+                    case 0: bot.equip(item, "head", function (err) {
+                        if (err) bot.log(err)
+                        glob.finishState("armor")
+                    }); break;
+                    case 1: bot.equip(item, "torso", function (err) {
+                        if (err) bot.log(err)
+                        glob.finishState("armor")
+                    }); break;
+                    case 2: bot.equip(item, "legs", function (err) {
+                        if (err) bot.log(err)
+                        glob.finishState("armor")
+                    }); break;
+                    case 3: bot.equip(item, "feet", function (err) {
+                        if (err) bot.log(err)
+                        glob.finishState("armor")
+                    }); break;
+                }
+                return
+            }
+        }
+        glob.finishState("armor")
+    })
+}
+
 function equipHead() {
-    var item = findItem(397);
+    let item = findItem(397);
     if (item != null) {
         bot.equip(item, "head", function (err) {
             if (err) bot.log(err)
