@@ -307,7 +307,7 @@ function followPath(path) {
             } else {
                 const node = path[index]
                 const dest = [node[0] + 0.5, node[1], node[2] + 0.5]
-                const look = lookToVec(dest)
+                const look = posToVec(dest).offset(0, eyeHeight, 0)
                 const rad = getRad2(getMyPos(), dest);
                 const distance = getXZL2(getMyPos(), dest)
                 if (indexCount == 0) preRad = rad;
@@ -1059,11 +1059,7 @@ function getRadDiff(rad1, rad2) {
 }
 
 function getPosFromVec3(abvec) {
-    return [
-        Number(abvec.x),
-        Number(abvec.y),
-        Number(abvec.z)
-    ];
+    return abvec.toArray()
 }
 
 function getMinInd(arr) {
@@ -1084,10 +1080,6 @@ function getMinInd(arr) {
 
 function getMyPos() {
     return getPosFromVec3(bot.entity.position);
-}
-
-function lookToVec(arr) {
-    return new Vec3(arr).offset(0, eyeHeight, 0);
 }
 
 function posToVec(arr) {

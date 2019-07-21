@@ -109,4 +109,36 @@ function start() {
     process.exit();
   });
 
+  const Vec3Plus = Vec3.Vec3;
+  Vec3Plus.prototype.norm = function() {
+    return Math.sqrt(this.x * this.x + this.y * this.y + this.z * this.z);
+  };
+  Vec3Plus.prototype.unit = function() {
+    var norm = this.norm();
+    if(norm === 0) {
+      return this.clone();
+    } else {
+      return this.scaled(1 / norm);
+    }
+  };
+  Vec3Plus.prototype.scale = function(scalar) {
+    this.x *= scalar;
+    this.y *= scalar;
+    this.z *= scalar;
+    return this;
+  };
+  Vec3Plus.prototype.xzDistanceTo = function(other) {
+    var dx = other.x - this.x;
+    var dz = other.z - this.z;
+    return Math.sqrt(dx * dx + dz * dz);
+  };
+  Vec3Plus.prototype.innerProduct = function(other) {
+    return this.x * other.x + this.y * other.y + this.z * other.z;
+  };
+  Vec3Plus.prototype.manhattanDistanceTo = function(other) {
+    return Math.abs(other.x - this.x) + Math.abs(other.y - this.y) + Math.abs(other.z - this.z);
+  };
+  Vec3Plus.prototype.toArray = function() {
+    return [this.x, this.y, this.z];
+  };
 }
