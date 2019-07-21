@@ -79,7 +79,20 @@ bot.randomchat = (messages, delay = 800) => {
     setTimeout(safechat, delay, message);
 }
 
+var prevLog = ""
+var logStroke = 1
 bot.log = (str) => {
+    if (prevLog == str) {
+        logStroke++
+        return
+    } else if (logStroke > 1) {
+        const cache = prevLog + " x" + logStroke
+        prevLog = str
+        logStroke = 1
+        bot.log(cache)
+    } else {
+        prevLog = str
+    }
     str = timestamp(str)
     console.log('\u001b[0m' + str);
     glob.event.emit("log", str)
