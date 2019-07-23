@@ -32,8 +32,20 @@ var swords = [276, 267, 272, 283, 268]; //強い順
 var arrows = [262, 439, 440];
 
 glob.hostiles = [];
+glob.neutrals = [];
 
 bot.on('entityMoved', (entity) => {
+    combatCheck(entity)
+});
+
+setInterval(() => {
+    Object.keys(bot.players).forEach((key) => {
+        if (bot.players[key].entity)
+            combatCheck(bot.players[key].entity)
+    })
+}, 200)
+
+function combatCheck(entity) {
     var distance = bot.entity.position.distanceTo(entity.position);
     if (isEnemy(entity)) {//hostile player
         if (glob.isCloseDefenceMode && distance < 4 && new Date().getTime() - preAttackTime > swordInterval) {//punch
@@ -50,7 +62,7 @@ bot.on('entityMoved', (entity) => {
             }
         }
     }
-});
+}
 
 bot.on('entityMoved', (entity) => {
     if (glob.isArrowDefenceMode && isAliveArrow(entity)) {
@@ -324,13 +336,6 @@ function canSeeDirectly(target) {
     return true;
 }
 
-function contains(arr, val) {
-    for (var i = 0; i < arr.length; i++) {
-        if (arr[i] == val) return true;
-    }
-    return false;
-}
-
 var lookingEntity;
 function lookAt(entity) {
     lookingEntity = entity;
@@ -345,10 +350,12 @@ function lookAt(entity) {
 }
 
 function isEnemy(entity) {
-    return (
-        entity.kind && entity.kind == "Hostile mobs" && !(entity.metadata[2] && entity.metadata[2] != ""))//hostile mob //name recognize is fixed by replace
-        || (entity.username && (glob.isBerserkerMode || contains(glob.hostiles, entity.username))
-        )
+    if (entity.id == bot.entity.id) return false
+    if (glob.neutrals.includes(entity.id)) return false
+    if (glob.hostiles.includes(entity.id)) return true
+    if (entity.kind && entity.kind == "Hostile mobs" && !(entity.metadata[2] != "")) return true//hostile mob //name recognize is fixed by replace
+    if (glob.isBerserkerMode && entity.username) return true
+    return false
 }
 
 function isAliveArrow(entity) {

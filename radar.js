@@ -59,14 +59,20 @@ io.on('connection', function (client) {
         if (bot.entities[ID])
             glob.lookAt(bot.entities[ID])
     });
-    client.on('flags', function (flags) {
-        glob.isCloseDefenceMode = flags.isCloseDefenceMode
-        glob.isSniperMode = flags.isSniperMode
-        glob.isArrowDefenceMode = flags.isArrowDefenceMode
-        glob.isCollisionalMode = flags.isCollisionalMode
-        glob.isInterestMode = flags.isInterestMode
-        glob.isIgnoreMode = flags.isIgnoreMode
-    })
+    client.on('hostileize', function (ID) {
+        if (bot.entities[ID]) {
+            const id = Number(ID)
+            glob.hostiles.push(id)
+            glob.neutrals = glob.neutrals.filter(element => element !== id);
+        }
+    });
+    client.on('neutralize', function (ID) {
+        if (bot.entities[ID]) {
+            const id = Number(ID)
+            glob.neutrals.push(id)
+            glob.hostiles = glob.hostiles.filter(element => element !== id);
+        }
+    });
     client.on('equip', function (slot) {
         const START = 9;
         var item = bot.inventory.slots[slot];
@@ -199,6 +205,29 @@ io.on('connection', function (client) {
         if (!sentMap[x]) sentMap[x] = []
         sentMap[x][z] = true;
     }
+
+    client.on('flags', function (flags) {
+        glob.isCloseDefenceMode = flags.isCloseDefenceMode
+        glob.isSniperMode = flags.isSniperMode
+        glob.isArrowDefenceMode = flags.isArrowDefenceMode
+        glob.isCollisionalMode = flags.isCollisionalMode
+        glob.isInterestMode = flags.isInterestMode
+        glob.isIgnoreMode = flags.isIgnoreMode
+        glob.isBerserkerMode = flags.isBerserkerMode
+        bot.log("[rader] received new flags")
+    })
+
+    function emitFlags() {
+        io.json.emit('flags', {
+            isCloseDefenceMode: glob.isCloseDefenceMode,
+            isSniperMode: glob.isSniperMode,
+            isArrowDefenceMode: glob.isArrowDefenceMode,
+            isCollisionalMode: glob.isCollisionalMode,
+            isInterestMode: glob.isInterestMode,
+            isIgnoreMode: glob.isIgnoreMode,
+            isBerserkerMode: glob.isBerserkerMode
+        })
+    }
 });
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -246,7 +275,7 @@ bot.inventory.on("windowUpdate", () => {
     emitInventory()
 })
 bot._client.on('set_slot', () => {
-    setTimeout(emitInventory,100)
+    setTimeout(emitInventory, 100)
 })
 
 bot.on("playerJoined", (player) => {
@@ -285,17 +314,6 @@ function emitServer() {
         username: bot.username,
     })
     io.json.emit('players', bot.players)
-}
-
-function emitFlags() {
-    io.json.emit('flags', {
-        isCloseDefenceMode: glob.isCloseDefenceMode,
-        isSniperMode: glob.isSniperMode,
-        isArrowDefenceMode: glob.isArrowDefenceMode,
-        isCollisionalMode: glob.isCollisionalMode,
-        isInterestMode: glob.isInterestMode,
-        isIgnoreMode: glob.isIgnoreMode,
-    })
 }
 
 function emitVital() {

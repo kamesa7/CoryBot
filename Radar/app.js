@@ -90,7 +90,16 @@ $(function () {
         io.emit('lookat', $('#target_entity').val());
     })
 
+    $('#hostileize').click(function () {
+        io.emit('hostileize', $('#target_entity').val());
+    })
+
+    $('#neutralize').click(function () {
+        io.emit('neutralize', $('#target_entity').val());
+    })
+
     function emitFlags() {
+        console.log("emit flags")
         var flags = {
             isCloseDefenceMode: $('#is-close-defence-mode').prop("checked"),
             isSniperMode: $('#is-sniper-mode').prop("checked"),
@@ -98,6 +107,7 @@ $(function () {
             isCollisionalMode: $('#is-collisional-mode').prop("checked"),
             isInterestMode: $('#is-interest-mode').prop("checked"),
             isIgnoreMode: $('#is-ignore-mode').prop("checked"),
+            isBerserkerMode: $('#is-berserker-mode').prop("checked"),
         }
         io.json.emit('flags', flags)
     }
@@ -110,6 +120,7 @@ $(function () {
         $('#is-collisional-mode').prop("checked", flags.isCollisionalMode)
         $('#is-interest-mode').prop("checked", flags.isInterestMode)
         $('#is-ignore-mode').prop("checked", flags.isIgnoreMode)
+        $('#is-berserker-mode').prop("checked", flags.isBerserkerMode)
     });
 
     io.on('server', function (msg) {
@@ -239,7 +250,7 @@ $(function () {
                 var name = "";
                 if (slots[i]) {
                     let item = slots[i];
-                    let dispname = item.displayName.substring(0, 13)
+                    let dispname = item.name.substring(0, 13)
                     let metadata = (item.metadata == 0) ? ("") : ("::" + item.metadata)
                     let count = (item.count == 1) ? ("") : (" x" + item.count)
                     name += dispname + metadata + count
@@ -307,8 +318,8 @@ $(function () {
             var style = 'style="left: ' + px + '%; top: ' + pz + '%;"'
             if (entity.type == "player") {
                 $('.radar').append('<div class="entity player" id="entity' + entity.id + '" ' + style + '>')
-                $(target).html('<img class="playerimg" ' + getPlayerImageSrc((players[entity.username] ? players[entity.username].uuid : entity.uuid)) + '></div>')
-
+                if (players[entity.username])
+                    $(target).html('<img class="playerimg" ' + getPlayerImageSrc(players[entity.username].uuid) + '></div>')
             } else if ((entity.type == "mob" && entity.kind != "Projectiles" && entity.kind != "Immobile") || (entity.type == "object" && entity.kind == "Vehicles")) {
                 $('.radar').append('<div class="entity mob" id="entity' + entity.id + '" ' + style + '></div>')
 
