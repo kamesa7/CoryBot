@@ -95,7 +95,7 @@ function goToPos(point, options = {}) {
     if (Array.isArray(point)) {
         goal = point;
     } else {
-        goal = getPosFromVec3(point);
+        goal = point.toArray();
     }
     if (!options.ignore) options.ignore = false
     var start = getMyPos()
@@ -145,7 +145,7 @@ function follow(entity) {
 function reFollow(entity) {
     if (!glob.isFollowing) return
     var start = getMyPos();
-    var goal = getPosFromVec3(entity.position);
+    var goal = entity.position.toArray();
     floor(start);
     floor(goal);
     setStandable(start);
@@ -307,7 +307,7 @@ function followPath(path) {
             } else {
                 const node = path[index]
                 const dest = [node[0] + 0.5, node[1], node[2] + 0.5]
-                const look = posToVec(dest).offset(0, eyeHeight, 0)
+                const look = new Vec3(dest).offset(0, eyeHeight, 0)
                 const rad = getRad2(getMyPos(), dest);
                 const distance = getXZL2(getMyPos(), dest)
                 if (indexCount == 0) preRad = rad;
@@ -369,7 +369,7 @@ function followPath(path) {
                         if (indexCount == 0) {
                             bot.setControlState('forward', true);
                         } else if (indexCount == 10) {
-                            bot.entity.position = posToVec(dest).offset(0, onGround, 0)
+                            bot.entity.position = new Vec3(dest).offset(0, onGround, 0)
                         } else if (indexCount > CONFIG.stepError) {
                             exception = true;
                             break;
@@ -407,10 +407,10 @@ function followPath(path) {
                         bot.clearControlStates();
                         bot.lookAt(look, true);
                         bot.setControlState('forward', true);
-                        var door = bot.blockAt(posToVec(node));
+                        var door = bot.blockAt(new Vec3(node));
                         if (door.metadata < 4 || 7 < door.metadata) {
                             if (indexCount % 3 == 0)
-                                bot.lookAt(posToVec(dest), true, function () {
+                                bot.lookAt(new Vec3(dest), true, function () {
                                     bot.activateBlock(door);
                                 });
                         } else {
@@ -421,7 +421,7 @@ function followPath(path) {
                         if (indexCount == 0) {
                             bot.clearControlStates();
                             bot.lookAt(look, true);
-                            bot.entity.position = posToVec(dest).offset(0, onGround, 0)
+                            bot.entity.position = new Vec3(dest).offset(0, onGround, 0)
                         } else {
                             index++;
                         }
@@ -468,7 +468,7 @@ function followPath(path) {
                     case "buildstair":
                         if (indexCount == 0) {
                             bot.clearControlStates();
-                            var newBlockPos = posToVec(plus(node, [0, -1, 0]))
+                            var newBlockPos = new Vec3(node).offset(0, -1, 0)
                             var oldBlock = bot.blockAt(newBlockPos)
                             var item = glob.findItem(CONFIG.pathblocks)
                             if (!item) bot.log("[move] No Movement Block")
@@ -487,7 +487,7 @@ function followPath(path) {
                             bot.setControlState('jump', true);
                             bot.setControlState('jump', false);
                         } else if (indexCount == 3) {
-                            var newBlockPos = posToVec(plus(node, [0, -1, 0]))
+                            var newBlockPos = new Vec3(node).offset(0, -1, 0)
                             var oldBlock = bot.blockAt(newBlockPos)
                             var item = glob.findItem(CONFIG.pathblocks)
                             if (!item) bot.log("[move] No Movement Block")
@@ -807,19 +807,19 @@ function optimize(path) {
     if (path.length == 0) return;
     const options = path.options;
     var start = floor(getMyPos());
-    if (bot.blockAt(posToVec(start)).boundingBox == "door") {
+    if (bot.blockAt(new Vec3(start)).boundingBox == "door") {
         path.splice(0, 0, [start[0], start[1], start[2], "strict"]);
         path.splice(1, 0, [start[0], start[1], start[2], "door"]);
     }
     var s = 0;
-    if (bot.blockAt(posToVec(path[0])).boundingBox == "door") {
+    if (bot.blockAt(new Vec3(path[0])).boundingBox == "door") {
         const pathDoor = path[0];
         path.splice(0, 0, [start[0], start[1], start[2], "strict"]);
         path.splice(1, 0, [pathDoor[0], pathDoor[1], pathDoor[2], "door"]);
         s += 2;
     }
     for (let i = s; i < path.length; i++) {
-        if (bot.blockAt(posToVec(path[i])).boundingBox == "door") {
+        if (bot.blockAt(new Vec3(path[i])).boundingBox == "door") {
             const pathDoor = path[i];
             const doorFront = path[i - 1];
             path.splice(i, 0, [doorFront[0], doorFront[1], doorFront[2], "strict"]);
@@ -908,9 +908,10 @@ function isNotAvoidance(block) {
 
 
 function isStandable(pos) {
-    const B1 = bot.blockAt(new Vec3(pos[0], pos[1] - 1, pos[2]))
-    const B2 = bot.blockAt(new Vec3(pos[0], pos[1], pos[2]))
-    const B3 = bot.blockAt(new Vec3(pos[0], pos[1] + 1, pos[2]))
+    const vec = new Vec3(pos)
+    const B1 = bot.blockAt(vec.offset(0, -1, 0))
+    const B2 = bot.blockAt(vec)
+    const B3 = bot.blockAt(vec.offset(0, 1, 0))
     if (B1.boundingBox == 'block' &&
         B2.boundingBox != 'block' &&
         B3.boundingBox != 'block' &&
@@ -924,8 +925,8 @@ function isStandable(pos) {
 }
 
 function isThroughable(pos) {
-    const B1 = bot.blockAt(new Vec3(pos[0], pos[1], pos[2]))
-    const B2 = bot.blockAt(new Vec3(pos[0], pos[1] + 1, pos[2]))
+    const B1 = bot.blockAt(new Vec3(pos))
+    const B2 = bot.blockAt(new Vec3(pos).offset(0, 1, 0))
     if (B1.boundingBox != 'block' &&
         B2.boundingBox != 'block' &&
         isNotAvoidance(B2)
@@ -937,7 +938,7 @@ function isThroughable(pos) {
 }
 
 function isPlaceable(pos) {
-    const B = bot.blockAt(posToVec(pos))
+    const B = bot.blockAt(new Vec3(pos))
     if (B.boundingBox == "empty" || B.boundingBox == "water")
         return true
     else
@@ -945,7 +946,7 @@ function isPlaceable(pos) {
 }
 
 function referenceAt(pos) {
-    const vec = posToVec(pos)
+    const vec = new Vec3(pos)
     const roundPos = [
         new Vec3(0, -1, 0),
         new Vec3(1, 0, 0),
@@ -1047,7 +1048,7 @@ function getdirection(pos1, pos2) {
 }
 
 function vectorFromTo(pos1, pos2) {
-    return posToVec(pos1).minus(posToVec(pos2))
+    return new Vec3(pos1).minus(new Vec3(pos2))
 }
 
 function getRad2(pos1, pos2) {
@@ -1079,11 +1080,7 @@ function getMinInd(arr) {
 }
 
 function getMyPos() {
-    return getPosFromVec3(bot.entity.position);
-}
-
-function posToVec(arr) {
-    return new Vec3(arr);
+    return bot.entity.position.toArray()
 }
 
 function contains(arr, p) {
