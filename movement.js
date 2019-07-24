@@ -472,7 +472,7 @@ function followPath(path) {
                             var oldBlock = bot.blockAt(newBlockPos)
                             var item = glob.findItem(CONFIG.pathblocks)
                             if (!item) bot.log("[move] No Movement Block")
-                            glob.placeBlockAt(item, newBlockPos, (!options.ignore || glob.logMove), (err) => {
+                            glob.placeBlockAt(item, newBlockPos, (err) => {
                                 if (err) {
                                     bot.log(err)
                                     exception = true
@@ -491,7 +491,7 @@ function followPath(path) {
                             var oldBlock = bot.blockAt(newBlockPos)
                             var item = glob.findItem(CONFIG.pathblocks)
                             if (!item) bot.log("[move] No Movement Block")
-                            glob.placeBlockAt(item, newBlockPos, (!options.ignore || glob.logMove), (err) => {
+                            glob.placeBlockAt(item, newBlockPos, (err) => {
                                 if (err) {
                                     bot.log(err)
                                     exception = true

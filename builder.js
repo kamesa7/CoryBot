@@ -331,12 +331,12 @@ function placeBlockFromSchematic(origin, placing) {
                     bot.log("[build] USED block: " + blockdata(item.type, item.metadata))
 
                 if (placingMethod.look != undefined || placingMethod.direction != undefined) {
-                    placeDirectedBlockAt(item, newBlockPos, placingMethod, glob.logBuild, (err) => {
+                    placeDirectedBlockAt(item, newBlockPos, placingMethod, (err) => {
                         if (err) bot.log(err)
                         glob.finishState("build")
                     })
                 } else {
-                    placeBlockAt(item, newBlockPos, glob.logBuild, (err) => {
+                    placeBlockAt(item, newBlockPos, (err) => {
                         if (err) bot.log(err)
                         glob.finishState("build")
                     })
@@ -351,10 +351,9 @@ function placeBlockFromSchematic(origin, placing) {
 /**
  * @param {*} item 
  * @param {*} pos 
- * @param {*} logMode 
  * @param {*} cb isError
  */
-function placeBlockAt(item, pos, logMode, cb = noop) {
+function placeBlockAt(item, pos, cb = noop) {
     const newBlockPos = pos
     const oldBlock = bot.blockAt(newBlockPos)
     if (!item) {
@@ -381,11 +380,11 @@ function placeBlockAt(item, pos, logMode, cb = noop) {
             face = new Vec3(0, 1, 0)
             isNoRef = true
         }
-        if (logMode) bot.log("[place] place: ref " + refBlock.position + " new " + newBlockPos + " face " + face)
+        if (glob.logBuild) bot.log("[place] place: ref " + refBlock.position + " new " + newBlockPos + " face " + face)
         bot.lookAt(refBlock.position.offset(0.5, 0.5, 0.5), true, () => {
             bot.placeBlock(refBlock, face, (error) => {
                 bot.clearControlStates();
-                if (logMode) {
+                if (glob.logBuild) {
                     const newBlock = bot.blockAt(newBlockPos);
                     bot.log("[place] placed: " + blockdata(newBlock.type, newBlock.metadata))
                 }
@@ -403,10 +402,9 @@ function placeBlockAt(item, pos, logMode, cb = noop) {
  * @param {*} item 
  * @param {*} pos 
  * @param {*} detail 
- * @param {*} logMode 
  * @param {*} cb 
  */
-function placeDirectedBlockAt(item, pos, detail, logMode, cb = noop) {
+function placeDirectedBlockAt(item, pos, detail, cb = noop) {
     const newBlockPos = pos
     const oldBlock = bot.blockAt(newBlockPos)
     if (!item) {
@@ -426,7 +424,7 @@ function placeDirectedBlockAt(item, pos, detail, logMode, cb = noop) {
             cb(error)
             return
         }
-        if (logMode) bot.log("[place] place directed: pos " + newBlockPos + " direct " + detail.direction + " look " + detail.look)
+        if (glob.logBuild) bot.log("[place] place directed: pos " + newBlockPos + " direct " + detail.direction + " look " + detail.look)
         bot.lookAt(detail.look, true, () => {
             if (!bot.heldItem) cbb(new Error('must be holding an item to place a block'))
             bot._client.write('arm_animation', { hand: 0 })
@@ -451,7 +449,7 @@ function placeDirectedBlockAt(item, pos, detail, logMode, cb = noop) {
     })
     function cbb(error) {
         bot.clearControlStates();
-        if (logMode) {
+        if (glob.logBuild) {
             const newBlock = bot.blockAt(newBlockPos);
             bot.log("[place] placed: " + blockdata(newBlock.type, newBlock.metadata))
         }

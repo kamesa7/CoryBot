@@ -46,6 +46,7 @@ setInterval(() => {
 }, 200)
 
 function combatCheck(entity) {
+    if (!bot.entity || !bot.entity.position || !entity.isValid) return
     var distance = bot.entity.position.distanceTo(entity.position);
     if (isEnemy(entity)) {//hostile player
         if (glob.isCloseDefenceMode && distance < 4 && new Date().getTime() - preAttackTime > swordInterval) {//punch

@@ -83,7 +83,7 @@ var prevLog = ""
 var logStroke = 1
 var prevTimestamp
 bot.log = (str) => {
-    if (prevLog == str) {
+    if (String(prevLog) == String(str)) {
         logStroke++
         prevTimestamp = timestamp()
         return
