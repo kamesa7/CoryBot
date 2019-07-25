@@ -1,26 +1,23 @@
+glob.loggingInterval = 10000
+
 bot.once('login', () => {
     bot.log('[bot.connect]');
     if (glob.LOCAL) {
-        //bot.chatAddPattern(/^<([^ :]*)> (.*)$/, 'chat');
-        bot.log('[bot.login] localhost');
-    } else if (process.env.MC_HOST != null && ((process.env.MC_HOST == 'kenmomine.club' && process.env.MC_PORT == 25565) || process.env.MC_HOST == 'ironingot.net')) {
-        // kenmomine.club向けchat/whisperパターン
-        bot.chatPatterns = [];// remove default
-        bot.chatAddPattern(/^(?:\[[^\]]*\])<([^ :]*)> (.*)$/, 'chat', 'kenmomine.club chat');
-        bot.chatAddPattern(/^(?:\[[^\]]*\])<Super_AI> \[([^ :]*)\] (.*)$/, 'chat', 'kenmomine.club chat');
-        bot.chatAddPattern(/^(?:\[Omikuji\]) ([^ :]*)は <(.*)>/, 'omikuji', 'kenmomine.club omikuji');
-        bot.chatAddPattern(/^([^ ]*) whispers: (.*)$/, 'whisper', 'kenmomine.club whisper');
-        bot.chatAddPattern(/^([^ :]*) が (.*) を (?:over |)(\d*) 個発見しました$/, 'orefound', 'kenmomine.club orefound');
-        bot.log('[bot.login] kenmomine');
-    } else if (process.env.MC_HOST != null && process.env.MC_HOST == 'pcgamemc.dip.jp') {
-        // pcgamemc.dip.jp向けchat/whisperパターン
-        bot.chatAddPattern(/^(?:\[[^\]]*\])<([^ :]*)> (.*)$/, 'chat', 'pcgamemc.dip.jp chat');
-        bot.chatAddPattern(/^([^ ]*) -> (.*)$/, 'whisper', 'pcgamemc.dip.jp whisper(Chatco)');
-        bot.log('[bot.login]PCG');
+        // normal
+        bot.log('[chat pattern] vanilla');
+    } else if (process.env.MC_HOST != null) {
+        // server with plugins  sample
+        //bot.chatPatterns = [];// remove default
+        //bot.chatAddPattern(/^(?:\[[^\]]*\])<([^ :]*)> (.*)$/, 'chat', '[world]<username> message');
+        bot.chatAddPattern(/^(?:\[[^\]]*\])<Super_AI> \[([^ :]*)\] (.*)$/, 'chat', '[world]<Super_AI> message');
+        bot.chatAddPattern(/^(?:\[Omikuji\]) ([^ :]*)は <(.*)>/, 'omikuji', '[Omikuji] usernameは <fortune>');
+        bot.chatAddPattern(/^([^ ]*) whispers: (.*)$/, 'whisper', 'username whispers: message');
+        bot.chatAddPattern(/^([^ :]*) が (.*) を (?:over |)(\d*) 個発見しました$/, 'orefound', 'username が ore(s) を (over) count 個発見しました');
+        bot.log('[chat pattern] multiverse');
     } else {
-        bot.log('[bot.login] unknown host');
+        // normal
+        bot.log('[chat pattern] vanilla');
     }
-    bot.log('[bot.chatAdded]');
 });
 
 /// 同じメッセージのループ送信、短時間での大量送信などを
@@ -82,10 +79,13 @@ bot.randomchat = (messages, delay = 800) => {
 var prevLog = ""
 var logStroke = 1
 var prevTimestamp
+var loggingWaiter = null
 bot.log = (str) => {
+    clearTimeout(loggingWaiter)
     if (String(prevLog) == String(str)) {
         logStroke++
         prevTimestamp = timestamp()
+        loggingWaiter = setTimeout(clearPrevLog, glob.loggingInterval)
         return
     } else if (logStroke > 1) {
         const cache = prevTimestamp + prevLog + " x" + logStroke
@@ -97,6 +97,14 @@ bot.log = (str) => {
         prevLog = str
     }
     str = timestamp(str)
+    console.log('\u001b[0m' + str);
+    glob.event.emit("log", str)
+}
+
+function clearPrevLog() {
+    const str = prevTimestamp + prevLog + " x" + logStroke
+    prevLog = ""
+    logStroke = 1
     console.log('\u001b[0m' + str);
     glob.event.emit("log", str)
 }

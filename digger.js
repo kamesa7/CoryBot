@@ -95,9 +95,9 @@ function mining(direction, length = 100) {
             break
         case "s": dir = new Vec3(0, 0, 1)
             break
-        case "w": dir = new Vec3(1, 0, 0)
+        case "e": dir = new Vec3(1, 0, 0)
             break
-        case "e": dir = new Vec3(-1, 0, 0)
+        case "w": dir = new Vec3(-1, 0, 0)
             break
         default:
             dir = new Vec3(0, -1, 0)
@@ -169,7 +169,7 @@ function mining(direction, length = 100) {
                     }
                 }
                 if (minedLength - prevMinedLength >= glob.miningWorkProgress) {
-                    bot.log("[mining] Construction " + minedLength + " " + (100 * minedLength / length) + "% ")
+                    bot.log("[mining] Digging " + minedLength + "m " + (100 * minedLength / length) + "% ")
                     prevMinedLength = minedLength
                 }
                 miningState = "movewait";

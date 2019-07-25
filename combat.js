@@ -38,6 +38,10 @@ bot.on('entityMoved', (entity) => {
     combatCheck(entity)
 });
 
+bot.on("entitySpawn", (entity) => {
+    combatCheck(entity)
+});
+
 setInterval(() => {
     Object.keys(bot.players).forEach((key) => {
         if (bot.players[key].entity)
@@ -47,37 +51,31 @@ setInterval(() => {
 
 function combatCheck(entity) {
     if (!bot.entity || !bot.entity.position || !entity.isValid) return
-    var distance = bot.entity.position.distanceTo(entity.position);
-    if (isEnemy(entity)) {//hostile player
+    const distance = bot.entity.position.distanceTo(entity.position);
+    if (glob.isArrowDefenceMode && isAliveArrow(entity)) {// arrows
+        arrowDefence(entity)
+    }
+    if (entity.username) {//player
+        if (entity.metadata[6] == 1) {//bowing
+            targetedDefence(entity)
+        }
+    }
+    if (isEnemy(entity)) {//hostile
         if (glob.isCloseDefenceMode && distance < 4 && new Date().getTime() - preAttackTime > swordInterval) {//punch
             punch(entity)
         } else if (glob.isSniperMode && distance < glob.snipeDistance && !(entity.name && entity.name == "enderman")) {//shoot
-            if (canSeeDirectly(entity.position.offset(0, eyeHeight, 0))) {
+            if (canSeeDirectly(entity.position.offset(0, eyeHeight, 0))) {//direct
                 shoot(entity, false);
-            } else if (glob.isHighAngleMode && bot.blockAt(bot.entity.position).skyLight == 15 && bot.blockAt(entity.position).skyLight == 15) {
+            } else if (glob.isHighAngleMode && bot.blockAt(bot.entity.position).skyLight == 15 && bot.blockAt(entity.position).skyLight == 15) {//undirect
                 shoot(entity, true);
             }
         } else if (glob.isEggBomberMode && distance < glob.snipeDistance) {//egg
-            if (canSeeDirectly(entity.position.offset(0, eyeHeight, 0))) {
+            if (canSeeDirectly(entity.position.offset(0, eyeHeight, 0))) {//direct
                 throwEgg(entity.position.offset(0, eyeHeight, 0));
             }
         }
     }
 }
-
-bot.on('entityMoved', (entity) => {
-    if (glob.isArrowDefenceMode && isAliveArrow(entity)) {
-        arrowDefence(entity)
-    } else if (entity.username && entity.metadata[6] == 1) {
-        targetedDefence(entity)
-    }
-})
-
-bot.on("entitySpawn", (entity) => {
-    if (glob.isArrowDefenceMode && isAliveArrow(entity)) {
-        arrowDefence(entity)
-    }
-});
 
 var guardTimeout;
 function arrowDefence(arrow) {
@@ -354,7 +352,7 @@ function isEnemy(entity) {
     if (entity.id == bot.entity.id) return false
     if (glob.neutrals.includes(entity.id)) return false
     if (glob.hostiles.includes(entity.id)) return true
-    if (entity.kind && entity.kind == "Hostile mobs" && !(entity.metadata[2] != "")) return true//hostile mob //name recognize is fixed by replace
+    if (entity.kind && entity.kind == "Hostile mobs" && !(entity.metadata[2] && entity.metadata[2] != "")) return true//hostile mob //name recognize is fixed by replace
     if (glob.isBerserkerMode && entity.username) return true
     return false
 }
