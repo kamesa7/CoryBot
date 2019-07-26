@@ -36,6 +36,10 @@ const roundPos = [
     new Vec3(0, 1, 0)
 ]
 
+bot.on('death', () => {
+    stopBuild()
+});
+
 function stopBuild() {
     glob.stopMoving()
     clearInterval(builder)
@@ -354,7 +358,7 @@ function placeBlockFromSchematic(origin, placing) {
  * @param {*} cb isError
  */
 function placeBlockAt(item, pos, cb = noop) {
-    const newBlockPos = pos
+    const newBlockPos = pos.floored()
     const oldBlock = bot.blockAt(newBlockPos)
     if (!item) {
         cb("[place] No block item : null item")
@@ -405,7 +409,7 @@ function placeBlockAt(item, pos, cb = noop) {
  * @param {*} cb 
  */
 function placeDirectedBlockAt(item, pos, detail, cb = noop) {
-    const newBlockPos = pos
+    const newBlockPos = pos.floored()
     const oldBlock = bot.blockAt(newBlockPos)
     if (!item) {
         cb("[place] No block item : null item")

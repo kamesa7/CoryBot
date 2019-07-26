@@ -13,6 +13,29 @@ const pickaxe = []
 const axe = []
 const shears = 359
 
+const overpassBlock = [4, 1, 3]
+const checkUp = [
+    new Vec3(0, -1, 0),
+    new Vec3(1, 0, 0),
+    new Vec3(-1, 0, 0),
+    new Vec3(0, 0, 1),
+    new Vec3(0, 0, -1),
+    new Vec3(0, 1, 0)
+]
+
+const shieldMining = [
+    new Vec3(0, -1, 0),
+    new Vec3(1, 0, 0),
+    new Vec3(-1, 0, 0),
+    new Vec3(0, 0, 1),
+    new Vec3(0, 0, -1),
+    new Vec3(1, 1, 0),
+    new Vec3(-1, 1, 0),
+    new Vec3(0, 1, 1),
+    new Vec3(0, 1, -1),
+    new Vec3(0, 2, 0)
+]
+
 for (let i = 0; i < shovel.length; i++) {
     pickaxe.push(shovel[i] + 1)
     axe.push(shovel[i] + 2)
@@ -22,7 +45,8 @@ function digBlockAt(pos, cb = noop) {
     pos = pos.floored();
     const block = bot.blockAt(pos)
     if (!block || !block.material || !bot.canDigBlock(block)) {
-        cb("[dig] unable to dig block at " + pos)
+        if (block) cb("[dig] unable to dig " + block.name + " at " + pos)
+        else cb("[dig] unable to dig block at " + pos)
         return
     }
     let tool = null
@@ -79,30 +103,36 @@ function digBlockAt(pos, cb = noop) {
 //     if (glob.logDig) bot.log("[dig] blockBroken")
 // })
 
+bot.on('death', () => {
+    stopDigging()
+});
+
 function stopDigging() {
     glob.stopMoving()
     clearInterval(miner)
-    if(glob.logDig)
+    if (glob.logDig)
         bot.log("[dig] stop digging")
 }
 
 var miner;
-function mining(direction, length = 100) {
+function mining(d, length = 100) {
     clearInterval(miner)
-    var dir
-    switch (direction) {
-        case "n": dir = new Vec3(0, 0, -1)
+    var direction
+    switch (d) {
+        case "n": direction = new Vec3(0, 0, -1)
             break
-        case "s": dir = new Vec3(0, 0, 1)
+        case "s": direction = new Vec3(0, 0, 1)
             break
-        case "e": dir = new Vec3(1, 0, 0)
+        case "e": direction = new Vec3(1, 0, 0)
             break
-        case "w": dir = new Vec3(-1, 0, 0)
+        case "w": direction = new Vec3(-1, 0, 0)
             break
         default:
-            dir = new Vec3(0, -1, 0)
+            direction = new Vec3(0, -1, 0)
     }
+    bot.log("[mining] Mining Start  Direction:" + d + " Length:" + length)
     var origin = bot.entity.position.floored()
+    bot.log("[mining] From:" + origin + " To:" + origin.plus(direction.scaled(length)))
     var miningState = "mining";
     var digging = new Vec3(0, 0, 0);
     var minedLength = 0;
@@ -117,8 +147,6 @@ function mining(direction, length = 100) {
                     allowGoal: 3,
                     standadjust: 0,
                     strictfin: true,
-                    bridgeable: true,
-                    scaffordable: true,
                     continue: false,
                 })
                 miningState = "move"
@@ -129,11 +157,13 @@ function mining(direction, length = 100) {
                 break
             case "miningWait":
                 if (!glob.doNothing()) return;
-                let type = bot.blockAt(origin.plus(digging)).type
-                glob.tryState("mining", digBlockAt, origin.plus(digging), (err) => {
-                    if (err) bot.log(err)
+                let block = bot.blockAt(origin.plus(digging))
+                if (!block) break
+                let type = block.type
+                glob.queueOnceState("mining", digBlockAt, origin.plus(digging), (err) => {
                     glob.finishState("mining")
-                    if (type == 12 || type == 13 || type == 251) {
+                    if (err) bot.log(err)
+                    if (err || type == 12 || type == 13 || type == 251) {
                         miningState = "gravel"
                         setTimeout(() => {
                             miningState = "mining"
@@ -147,7 +177,16 @@ function mining(direction, length = 100) {
                 break
             case "mining":
                 if (!glob.doNothing()) return;
-                digging = new Vec3(0, 0, 0)
+
+                for (let i = 0; i < checkUp.length; i++) {
+                    let pos = origin.plus(digging).plus(checkUp[i])
+                    let block = bot.blockAt(pos)
+                    if (block && block.name.match(/_ore$/)) {
+                        bot.log("[mining] Found " + block.name + " at " + bot.entity.position.floored())
+                    }
+                }
+
+                digging = digging.minus(direction.scaled(Math.floor(Math.min(minedLength, 3))))
                 while (true) {
                     let block = bot.blockAt(origin.plus(digging))
                     if (block && block.boundingBox != "empty") break
@@ -159,17 +198,35 @@ function mining(direction, length = 100) {
                     if (bot.blockAt(origin.offset(digging.x, 0, digging.z)).boundingBox == "empty"
                         && bot.blockAt(origin.offset(digging.x, 1, digging.z)).boundingBox == "empty"
                     ) {
-                        digging.add(dir)
-                        minedLength = digging.distanceTo(new Vec3(0, 0, 0))
-                        if (minedLength > length) {
-                            clearInterval(miner)
-                            bot.log("[mining] Mining Finished  " + length)
+                        const stand = origin.offset(digging.x, -1, digging.z)
+                        if (bot.blockAt(stand).boundingBox != "block") {
+                            bot.log("[mining] place overpass")
+                            let item = glob.findItem(overpassBlock)
+                            if (!item) {
+                                bot.log("[mining] No overpass Block")
+                                glob.stopDigging()
+                                return
+                            }
+                            glob.queueOnceState("bridge", function () {
+                                glob.placeBlockAt(item, stand, (err) => {
+                                    if (err) bot.log(err)
+                                    glob.finishState("bridge")
+                                })
+                            })
                             return
+                        } else {
+                            digging.add(direction)
+                            minedLength = digging.norm()
+                            if (minedLength > length) {
+                                clearInterval(miner)
+                                bot.log("[mining] Mining Finished  " + length)
+                                return
+                            }
                         }
                     }
                 }
                 if (minedLength - prevMinedLength >= glob.miningWorkProgress) {
-                    bot.log("[mining] Digging " + minedLength + "m " + (100 * minedLength / length) + "% ")
+                    bot.log("[mining] Digging " + minedLength + "m " + (100 * minedLength / length) + "% at " + bot.entity.position.floored())
                     prevMinedLength = minedLength
                 }
                 miningState = "movewait";

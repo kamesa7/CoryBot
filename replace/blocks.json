@@ -2432,6 +2432,7 @@
     "stackSize": 64,
     "diggable": true,
     "boundingBox": "block",
+    "material": "rock",
     "variations": [
       {
         "metadata": 0,
