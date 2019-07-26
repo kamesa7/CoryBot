@@ -27,8 +27,9 @@ MC_LOCAL_PORT="25565"
 
 #### その他(makedir)
 log, nbt, PlayLists, MineMusicディレクトリを作成してください。
-#### その他(radar)
-画像を入れてください、詳しくはRadarフォルダ内のREADMEへ
+
+#### その他(replace)
+replaceフォルダ内のソースコードでmineflayer, minecraft-data 内のものを書き換えてください。 
 
 ## Functions
 ### チャット

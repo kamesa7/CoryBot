@@ -12,7 +12,4 @@ test.js
 log
 *.log
 
-Radar/blocks
-Radar/mobs
-Radar/misc
 golf_cache.json
