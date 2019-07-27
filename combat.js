@@ -6,7 +6,6 @@ glob.isSniperMode = false;
 glob.isHighAngleMode = true;
 glob.isArrowDefenceMode = true;
 
-glob.bowDamageLimit = 350;
 glob.snipeDistance = 96;
 
 glob.logCombat = false;
@@ -18,6 +17,7 @@ glob.throwPearl = throwPearl;
 glob.throwIt = throwIt;
 glob.lookAt = lookAt
 
+const bowDamageLimit = 350;
 const airResistance = 0;
 const highAngleAdjust = 0.58;
 const eyeHeight = 1.10;
@@ -61,7 +61,7 @@ function combatCheck(entity) {
         }
     }
     if (isEnemy(entity)) {//hostile
-        if (glob.isCloseDefenceMode && distance < 4 && new Date().getTime() - preAttackTime > swordInterval) {//punch
+        if (glob.isCloseDefenceMode && distance < 4.5 && new Date().getTime() - preAttackTime > swordInterval) {//punch
             punch(entity)
         } else if (glob.isSniperMode && distance < glob.snipeDistance && !(entity.name && entity.name == "enderman")) {//shoot
             if (canSeeDirectly(entity.position.offset(0, eyeHeight, 0))) {//direct
@@ -154,7 +154,7 @@ function punch(entity) {
 
 function shoot(entity, isHigh) {
     glob.queueOnceState("shooting", function () {
-        var bow = glob.findItem(261, undefined, (item) => { return item.metadata < glob.bowDamageLimit ? true : false }); // bow id
+        var bow = glob.findItem(261, undefined, (item) => { return item.metadata < bowDamageLimit ? true : false }); // bow id
         var arrow = glob.findItem(arrows);
         var previousPosition;
         if (bow != null && arrow != null) {

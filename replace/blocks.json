@@ -1821,7 +1821,7 @@
     "hardness": 5,
     "stackSize": 64,
     "diggable": true,
-    "boundingBox": "block",
+    "boundingBox": "door",
     "material": "rock",
     "harvestTools": {
       "257": true,

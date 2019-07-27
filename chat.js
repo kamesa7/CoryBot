@@ -34,12 +34,13 @@ bot.on('playerJoined', (player) => {
 //normalchat
 bot.on('chat', (username, message) => {
     if (username == "Super_AI") return
-    if (username.match)
-        //Calculator
-        if (message.match(/(.*)=$/)) {
-            var calcMessage = glob.Calc(message)
-            if (!calcMessage.match(/¬/)) bot.safechat(calcMessage)
-        }
+    if (bot.username === username) return
+    
+    //Calculator
+    if (message.match(/(.*)=$/)) {
+        var calcMessage = glob.Calc(message)
+        if (!calcMessage.match(/¬/)) bot.safechat(calcMessage)
+    }
 
     //Follow
     if (message.match(glob.NAMECALL_REGEXP)) {
@@ -126,9 +127,6 @@ bot.on('chat', (username, message) => {
     if (message.match(/^equip head$/i)) {
         glob.equipHead()
     }
-
-    //selfchat
-    if (bot.username === username) return
 
     //hi
     if (username === last_joined_player) {

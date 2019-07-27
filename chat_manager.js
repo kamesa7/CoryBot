@@ -1,4 +1,5 @@
 glob.loggingInterval = 10000
+glob.logChat = false;
 
 bot.once('login', () => {
     bot.log('[bot.connect]');
@@ -116,6 +117,10 @@ bot.on("message", (jmes) => {
     logfile_out(str);
     console.log('\u001b[0m' + ansi);
     glob.event.emit("log", motd)
+});
+
+bot.on("chat", (username, message) => {
+    if (glob.logChat) bot.log("[chat] " + username + "  " + message)
 });
 
 bot.on("actionBar", (jmes) => {

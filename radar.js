@@ -24,6 +24,8 @@ io.on('connection', function (client) {
     client.on('stopmove', function () {
         glob.stopMoving()
         glob.stopBuild()
+        glob.stopMusic()
+        glob.stopDigging()
     });
     client.on('dismount', function () {
         bot.dismount();
