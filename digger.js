@@ -13,6 +13,8 @@ const pickaxe = []
 const axe = []
 const shears = 359
 
+const diamondDamageLimit = 1500
+
 const overpassBlock = [4, 1, 3]
 const checkUp = [
     new Vec3(0, -1, 0),
@@ -41,6 +43,8 @@ for (let i = 0; i < shovel.length; i++) {
     axe.push(shovel[i] + 2)
 }
 
+var protectDiamondTool = (item) => { return item.metadata < diamondDamageLimit ? true : false }
+
 function digBlockAt(pos, cb = noop) {
     pos = pos.floored();
     const block = bot.blockAt(pos)
@@ -52,13 +56,13 @@ function digBlockAt(pos, cb = noop) {
     let tool = null
     switch (block.material) {
         case "dirt":
-            tool = glob.findItem(shovel)
+            tool = glob.findItem(shovel, undefined, protectDiamondTool)
             break
         case "rock":
-            tool = glob.findItem(pickaxe)
+            tool = glob.findItem(pickaxe, undefined, protectDiamondTool)
             break
         case "plant":
-            tool = glob.findItem(axe)
+            tool = glob.findItem(axe, undefined, protectDiamondTool)
             break
         case "web":
         case "wool": tool = glob.findItem(shears)
@@ -119,13 +123,13 @@ function mining(d, length = 100) {
     clearInterval(miner)
     var direction
     switch (d) {
-        case "n": direction = new Vec3(0, 0, -1)
+        case "N": case "n": direction = new Vec3(0, 0, -1)
             break
-        case "s": direction = new Vec3(0, 0, 1)
+        case "S": case "s": direction = new Vec3(0, 0, 1)
             break
-        case "e": direction = new Vec3(1, 0, 0)
+        case "E": case "e": direction = new Vec3(1, 0, 0)
             break
-        case "w": direction = new Vec3(-1, 0, 0)
+        case "W": case "w": direction = new Vec3(-1, 0, 0)
             break
         default:
             direction = new Vec3(0, -1, 0)
@@ -133,14 +137,14 @@ function mining(d, length = 100) {
     bot.log("[mining] Mining Start  Direction:" + d + " Length:" + length)
     var origin = bot.entity.position.floored()
     bot.log("[mining] From:" + origin + " To:" + origin.plus(direction.scaled(length)))
-    var miningState = "mining";
+    var miningState = "check";
     var digging = new Vec3(0, 0, 0);
     var minedLength = 0;
     var prevMinedLength = 0;
     miner = setInterval(miningControl, glob.miningInterval)
     function miningControl() {
         switch (miningState) {
-            case "movewait":
+            case "move":
                 if (!glob.doNothing()) return;
                 glob.goToPos(origin.plus(digging), {
                     ignore: !glob.logDig,
@@ -149,13 +153,9 @@ function mining(d, length = 100) {
                     strictfin: true,
                     continue: false,
                 })
-                miningState = "move"
+                miningState = "mining"
                 break
-            case "move":
-                if (!glob.doNothing()) return;
-                miningState = "miningWait"
-                break
-            case "miningWait":
+            case "mining":
                 if (!glob.doNothing()) return;
                 let block = bot.blockAt(origin.plus(digging))
                 if (!block) break
@@ -166,16 +166,16 @@ function mining(d, length = 100) {
                     if (err || type == 12 || type == 13 || type == 251) {
                         miningState = "gravel"
                         setTimeout(() => {
-                            miningState = "mining"
+                            miningState = "check"
                         }, 300)
                     } else {
-                        miningState = "mining"
+                        miningState = "check"
                     }
                 })
                 break
             case "gravel":
                 break
-            case "mining":
+            case "check":
                 if (!glob.doNothing()) return;
 
                 for (let i = 0; i < checkUp.length; i++) {
@@ -201,18 +201,14 @@ function mining(d, length = 100) {
                         const stand = origin.offset(digging.x, -1, digging.z)
                         if (bot.blockAt(stand).boundingBox != "block") {
                             bot.log("[mining] place overpass")
-                            let item = glob.findItem(overpassBlock)
-                            if (!item) {
-                                bot.log("[mining] No overpass Block")
-                                glob.stopDigging()
-                                return
-                            }
-                            glob.queueOnceState("bridge", function () {
-                                glob.placeBlockAt(item, stand, (err) => {
-                                    if (err) bot.log(err)
-                                    glob.finishState("bridge")
-                                })
+                            glob.goToPos(stand, {
+                                ignore: !glob.logDig,
+                                allowGoal: 4,
+                                standadjust: 0,
+                                strictfin: true,
+                                continue: false,
                             })
+                            miningState = "bridge"
                             return
                         } else {
                             digging.add(direction)
@@ -226,10 +222,27 @@ function mining(d, length = 100) {
                     }
                 }
                 if (minedLength - prevMinedLength >= glob.miningWorkProgress) {
-                    bot.log("[mining] Digging " + minedLength + "m " + (100 * minedLength / length) + "% at " + bot.entity.position.floored())
+                    bot.log("[mining] Mining " + minedLength + "m " + (100 * minedLength / length) + "% at " + bot.entity.position.floored())
                     prevMinedLength = minedLength
                 }
-                miningState = "movewait";
+                miningState = "move";
+                break;
+            case "bridge":
+                if (!glob.doNothing()) return;
+                const stand = origin.offset(digging.x, -1, digging.z)
+                let item = glob.findItem(overpassBlock)
+                if (!item) {
+                    bot.log("[mining] No overpass Block")
+                    glob.stopDigging()
+                    return
+                }
+                glob.queueOnceState("bridge", function () {
+                    glob.placeBlockAt(item, stand, (err) => {
+                        if (err) bot.log(err)
+                        glob.finishState("bridge")
+                    })
+                })
+                miningState = "check"
                 break;
         }
     }

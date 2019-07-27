@@ -25,7 +25,7 @@ glob.moveConfig = {
     randomCollar: Infinity,
     randomHeight: 3,
     randomWait: 50,
-    randomCostLimit: 100,
+    randomLengthLimit: 100,
     pathblocks: [3]//dirt
 }
 
@@ -108,8 +108,7 @@ function goToPos(point, options = {}) {
     else setStandable(goal);
     if (msgable) bot.log("[move] goto " + goal + " from " + start);
     if (logable) var pathfindtime = new Date().getTime();
-    var path = [];
-    var cost = bestFirstSearch(path, start, goal, options);
+    var path = bestFirstSearch(start, goal, options);
     if (path.pathBlockCnt > 0) {
         let sum = 0;
         for (let i = 0; i < CONFIG.pathblocks.length; i++) {
@@ -118,11 +117,8 @@ function goToPos(point, options = {}) {
         if (msgable) bot.log("[move] path blocks " + path.pathBlockCnt + "/" + sum);
         if (path.pathBlockCnt > sum) bot.log("[move] NEED more path blocks : " + (path.pathBlockCnt - sum) + " : " + path.pathBlockCnt + "/" + sum);
     }
-    if (logable) {
-        bot.log("[move] pathfind took: " + (new Date().getTime() - pathfindtime) + "ms");
-        bot.log("[move] cost: " + cost);
-    }
-    if (cost < Infinity) {
+    if (logable) bot.log("[move] pathfind took: " + (new Date().getTime() - pathfindtime) + "ms");
+    if (path != null) {
         glob.queueOnceState("move", followPath, path)
     } else {
         if (msgable) bot.log("[move] cannot find path");
@@ -162,10 +158,7 @@ function reFollow(entity) {
             entity
         )
     } else {
-        var path = [];
-        var cost = bestFirstSearch(path, start, goal, { allowGoal: CONFIG.allowFollow });
-        if (glob.logMove)
-            bot.log("[move] cost: " + cost);
+        var path = bestFirstSearch(start, goal, { allowGoal: CONFIG.allowFollow });
 
         if (CONFIG.followInterval < path.length) {
             path[CONFIG.followInterval][3] = "follow"
@@ -201,12 +194,9 @@ function reRandom() {
     if (glob.logMove) {
         bot.log("[move] random revice " + goal);
     }
-    var path = [];
-    var cost = bestFirstSearch(path, start, goal, { landable: false });
-    if (glob.logMove)
-        bot.log("[move] cost: " + cost);
-    if (CONFIG.randomCostLimit < cost) {
-        reRandom(path);
+    var path = bestFirstSearch(start, goal, { landable: false });
+    if (CONFIG.randomLengthLimit < path.length) {
+        reRandom();
         return;
     }
     if (CONFIG.randomInterval < path.length) {
@@ -590,7 +580,6 @@ function moveCost(move) {
 
 /**
  * returns the cost of finalpath
- * @param {*} finalPath path destination
  * @param {*} start start pos
  * @param {*} goal goal pos
  * @param {*} options 
@@ -598,7 +587,8 @@ function moveCost(move) {
  * landable : bridgeable : buildstairable : scaffordable
  * ignore : continue
  */
-function bestFirstSearch(finalPath, start, goal, options) {
+function bestFirstSearch(start, goal, options) {
+    const path = []
     if (options) {
         if (options.allowGoal == undefined)
             options.allowGoal = CONFIG.allowGoal
@@ -645,7 +635,7 @@ function bestFirstSearch(finalPath, start, goal, options) {
         bot.log("[move] invalid options")
         return Infinity
     }
-    finalPath.options = options;
+    path.options = options;
     var closed = [];
     var open = new bucketsJs.PriorityQueue(compare);
     var node;
@@ -656,9 +646,10 @@ function bestFirstSearch(finalPath, start, goal, options) {
     while (!open.isEmpty()) {
         node = open.dequeue();
         if (isGoal(node.p, goal, options.allowGoal, options.rejectGoal)) { // find path
-            let cost = convertNode(finalPath, node);
-            optimize(finalPath);
-            return cost;
+            let cost = convertNode(path, node);
+            optimize(path);
+            if (glob.logMove) bot.log("[move] cost: " + cost);
+            return path;
         } else if (count++ > options.searchLimit) { // limit over
             let nearDistances = [];
             for (let i = 0; i < closed.length; i++) {
@@ -668,7 +659,7 @@ function bestFirstSearch(finalPath, start, goal, options) {
             bot.log("[move] nearest: " + closed[nearest]);
             options.allowGoal = 0
             options.rejectGoal = -1
-            return bestFirstSearch(finalPath, start, closed[nearest], options);
+            return bestFirstSearch(start, closed[nearest], options);
         }
         expanded = expandNode(node, options);
         for (let i = 0; i < expanded.length; i++) { // expand
@@ -681,7 +672,7 @@ function bestFirstSearch(finalPath, start, goal, options) {
         }
     }
     bot.log("[move] impossible to go there");
-    return Infinity;
+    return null;
 }
 
 function expandNode(node, options) {
