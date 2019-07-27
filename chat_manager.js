@@ -6,10 +6,10 @@ bot.once('login', () => {
     if (glob.LOCAL) {
         // normal
         bot.log('[chat pattern] vanilla');
-    } else if (process.env.MC_HOST != null) {
+    } else if (!glob.VANILLA_CHAT) {
         // server with plugins  sample
-        //bot.chatPatterns = [];// remove default
-        //bot.chatAddPattern(/^(?:\[[^\]]*\])<([^ :]*)> (.*)$/, 'chat', '[world]<username> message');
+        bot.chatPatterns = [];// remove default
+        bot.chatAddPattern(/^(?:\[[^\]]*\])<([^ :]*)> (.*)$/, 'chat', '[world]<username> message');
         bot.chatAddPattern(/^(?:\[[^\]]*\])<Super_AI> \[([^ :]*)\] (.*)$/, 'chat', '[world]<Super_AI> message');
         bot.chatAddPattern(/^(?:\[Omikuji\]) ([^ :]*)は <(.*)>/, 'omikuji', '[Omikuji] usernameは <fortune>');
         bot.chatAddPattern(/^([^ ]*) whispers: (.*)$/, 'whisper', 'username whispers: message');

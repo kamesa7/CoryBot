@@ -13,3 +13,4 @@ log
 *.log
 
 golf_cache.json
+chat_cache.json

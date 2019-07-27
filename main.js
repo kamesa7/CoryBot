@@ -17,7 +17,9 @@ glob = {
   USE_CACHE: process.env.MC_USE_CACHE === "true" ? true : false,
   RADAR: process.env.MC_RADAR === "true" ? true : false,
   RADAR_PORT: process.env.MC_RADAR_PORT,
+  VANILLA_CHAT: process.env.MC_VANILLA_CHAT === "true" ? true : false,
   NAMECALL_REGEXP: new RegExp(process.env.MC_NAMECALL_REGEXP, "i"),
+  CHATPROXY: process.env.MC_CHATPROXY === "true" ? true : false,
   event: new events.EventEmitter()
 };
 
@@ -25,6 +27,9 @@ for (var i = 0; i < process.argv.length; i++) {
   var arg = process.argv[i];
   if (arg == "-debug") glob.LOCAL = true;
   else if (arg == "-name") steveNum = process.argv[i + 1];
+  else if (arg == "-host") { process.env.MC_LOCAL_HOST = process.argv[i + 1]; process.env.MC_HOST = process.argv[i + 1]; }
+  else if (arg == "-port") { process.env.MC_LOCAL_PORT = process.argv[i + 1]; process.env.MC_PORT = process.argv[i + 1]; }
+  else if (arg == "-rport") glob.RADAR_PORT = process.argv[i + 1];
 }
 console.log("repl to debug");
 
@@ -45,6 +50,7 @@ require("./calculator")
 require("./music_player")
 require("./pearl_golf")
 if (glob.RADAR) require("./radar")
+if (glob.CHATPROXY) require("./chat_proxy")
 
 function start() {
   if (glob.LOCAL) {
