@@ -5,6 +5,7 @@ glob.isCloseDefenceMode = true;
 glob.isSniperMode = false;
 glob.isHighAngleMode = true;
 glob.isArrowDefenceMode = true;
+glob.antiZombiePigmanMode = false
 
 glob.snipeDistance = 96;
 
@@ -142,7 +143,7 @@ function punch(entity) {
                     bot.log(err);
                 }
                 bot.attack(entity);
-                glob.finishState("punching")
+                setTimeout(glob.finishState, "100", "punching")
             });
         } else {
             bot.attack(entity, true);
@@ -352,7 +353,10 @@ function isEnemy(entity) {
     if (entity.id == bot.entity.id) return false
     if (glob.neutrals.includes(entity.id)) return false
     if (glob.hostiles.includes(entity.id)) return true
-    if (entity.kind && entity.kind == "Hostile mobs" && !(entity.metadata[2] && entity.metadata[2] != "")) return true//hostile mob //name recognize is fixed by replace
+    //Hostile && NotNamed && NotZombiePig
+    if (entity.name && entity.kind && entity.kind == "Hostile mobs" && !(entity.metadata[2] && entity.metadata[2] != "") && (glob.antiZombiePigmanMode || entity.name != "zombie_pigman")) {
+        return true
+    }
     if (glob.isBerserkerMode && entity.username) return true
     return false
 }

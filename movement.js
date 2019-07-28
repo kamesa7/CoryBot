@@ -109,7 +109,7 @@ function goToPos(point, options = {}) {
     if (msgable) bot.log("[move] goto " + goal + " from " + start);
     if (logable) var pathfindtime = new Date().getTime();
     var path = bestFirstSearch(start, goal, options);
-    if (path.pathBlockCnt > 0) {
+    if (path && path.pathBlockCnt > 0) {
         let sum = 0;
         for (let i = 0; i < CONFIG.pathblocks.length; i++) {
             sum += glob.checkItemCount(CONFIG.pathblocks[i])

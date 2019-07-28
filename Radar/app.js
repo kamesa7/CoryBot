@@ -384,6 +384,9 @@ $(function () {
         ctx.strokeRect(canvasSize / 2 - blockRange * grid, canvasSize / 2 - blockRange * grid, blockRange * 2 * grid, blockRange * 2 * grid)
 
         ctx.beginPath();
+        ctx.arc(canvasSize / 2, canvasSize / 2, 2 * grid, 0, Math.PI * 2, false);
+        ctx.stroke();
+        ctx.beginPath();
         ctx.arc(canvasSize / 2, canvasSize / 2, 16 * grid, 0, Math.PI * 2, false);
         ctx.stroke();
         ctx.beginPath();

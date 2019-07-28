@@ -1,7 +1,5 @@
-/*
-const QUICK_BAR_COUNT = 9
 const QUICK_BAR_START = 36
-
+/*
 const armorSlots = {
   head: 5,
   torso: 6,
@@ -108,13 +106,23 @@ function findItem(target, metadata = undefined, isOK = (item) => { return true }
     }
 
     function findInventoryItem(type) {
-        for (let index = 0; index < slots.length; index++) {
+        for (let index = QUICK_BAR_START; index < slots.length; index++) {
             let item = slots[index]
-            if (item && item.type == type && (metadata == undefined || item.metadata == metadata) && isOK(item)) {
-                return item
-            }
+            if (isCollect(item)) return item
+        }
+        for (let index = 9; index < QUICK_BAR_START; index++) {
+            let item = slots[index]
+            if (isCollect(item)) return item
+        }
+        for (let index = 0; index < 9; index++) {
+            let item = slots[index]
+            if (isCollect(item)) return item
         }
         return null
+
+        function isCollect(item) {
+            return (item && item.type == type && (metadata == undefined || item.metadata == metadata) && isOK(item))
+        }
     }
 }
 
