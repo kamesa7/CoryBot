@@ -19,7 +19,8 @@ glob = {
   RADAR_PORT: process.env.MC_RADAR_PORT,
   VANILLA_CHAT: process.env.MC_VANILLA_CHAT === "true" ? true : false,
   NAMECALL_REGEXP: new RegExp(process.env.MC_NAMECALL_REGEXP, "i"),
-  CHATPROXY: process.env.MC_CHATPROXY === "true" ? true : false,
+  CHATPROXY_SEND: process.env.MC_CHATPROXY_SEND === "true" ? true : false,
+  CHATPROXY_READ: process.env.MC_CHATPROXY_READ === "true" ? true : false,
   event: new events.EventEmitter()
 };
 
@@ -50,7 +51,7 @@ require("./calculator")
 require("./music_player")
 require("./pearl_golf")
 if (glob.RADAR) require("./radar")
-if (glob.CHATPROXY) require("./chat_proxy")
+if (glob.CHATPROXY_SEND || glob.CHATPROXY_READ) require("./chat_proxy")
 
 function start() {
   if (glob.LOCAL) {

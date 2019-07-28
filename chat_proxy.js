@@ -1,7 +1,9 @@
 const FileName = "chat_cache.json"
 jsonfile.writeFile(FileName, { elements: [] })
 
+
 bot.on("chat", function (username, message) {
+    if (!glob.CHATPROXY_SEND) return
     if (username == "Super_AI") return
     if (bot.username === username) return
 
@@ -23,6 +25,7 @@ bot.on("chat", function (username, message) {
 setInterval(checkChat, 1500)
 var lastTime = getTime()
 function checkChat() {
+    if (!glob.CHATPROXY_READ) return
     jsonfile.readFile(FileName, {}, (err, data) => {
         if (err) {
             console.log(err)
