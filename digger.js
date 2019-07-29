@@ -161,8 +161,16 @@ function mining(d, length = 100) {
                 if (!block) break
                 let type = block.type
                 glob.queueOnceState("mining", digBlockAt, origin.plus(digging), (err) => {
-                    glob.finishState("mining")
-                    if (err) bot.log(err)
+                    if (err) {
+                        bot.log(err)
+                        glob.goToPos(origin.plus(digging), {
+                            allowGoal: 5,
+                            rejectGoal: 4,
+                            standadjust: 1,
+                            strictfin: true,
+                            continue: false,
+                        })
+                    }
                     if (err || type == 12 || type == 13 || type == 251) {
                         miningState = "gravel"
                         setTimeout(() => {
@@ -171,6 +179,7 @@ function mining(d, length = 100) {
                     } else {
                         miningState = "check"
                     }
+                    glob.finishState("mining")
                 })
                 break
             case "gravel":
