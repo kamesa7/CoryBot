@@ -58,6 +58,10 @@ $(function () {
         io.emit('deactitem');
     })
 
+    $('#clear').click(function () {
+        io.emit('clear');
+    })
+
     $('.checkbox-input').click(function () {
         emitFlags();
     })

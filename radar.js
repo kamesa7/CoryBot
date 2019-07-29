@@ -21,6 +21,9 @@ io.on('connection', function (client) {
         emitInventory();
         emitFlags();
     });
+    client.on('stopstate', function () {
+        glob.finishState();
+    });
     client.on('stopmove', function () {
         glob.stopMoving()
         glob.stopBuild()
@@ -30,9 +33,27 @@ io.on('connection', function (client) {
     client.on('dismount', function () {
         bot.dismount();
     });
-    client.on('stopstate', function () {
-        glob.finishState();
-    });
+    client.on('tossitem', function () {
+        var item = bot.heldItem;
+        if (item)
+            bot.tossStack(item);
+    })
+    client.on('actitem', function () {
+        var item = bot.heldItem;
+        if (item)
+            bot.activateItem();
+    })
+    client.on('deactitem', function () {
+        var item = bot.heldItem;
+        if (item)
+            bot.deactivateItem();
+    })
+    client.on('clear', function () {
+        glob.clearInventory()
+    })
+
+
+
     client.on('goto', function (ID) {
         if (bot.entities[ID])
             glob.goToPos(bot.entities[ID].position)
@@ -75,6 +96,8 @@ io.on('connection', function (client) {
             glob.hostiles = glob.hostiles.filter(element => element !== id);
         }
     });
+
+
     client.on('equip', function (slot) {
         const START = 9;
         var item = bot.inventory.slots[slot];
@@ -98,24 +121,6 @@ io.on('connection', function (client) {
             emitInventory()
         }
     })
-    client.on('tossitem', function () {
-        var item = bot.heldItem;
-        if (item)
-            bot.tossStack(item);
-    })
-
-    client.on('actitem', function () {
-        var item = bot.heldItem;
-        if (item)
-            bot.activateItem();
-    })
-
-    client.on('deactitem', function () {
-        var item = bot.heldItem;
-        if (item)
-            bot.deactivateItem();
-    })
-
     /// for client
 
     var prevPos;
@@ -334,7 +339,7 @@ function emitInventory() {
 
 function mapAt(x, z) {
     var initialY = Math.floor(bot.entity.position.y) + 1;
-    var initialblock = bot.blockAt(new Vec3(x, initialY + 1, z))
+    var initialblock = bot.blockAt(new Vec3(x, initialY, z))
     if (!initialblock) return null;
     if (initialblock.boundingBox == 'empty') {
         for (var y = initialY; y >= initialY - 16 && y >= 1; y--) {
