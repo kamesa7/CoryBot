@@ -354,8 +354,10 @@ function isEnemy(entity) {
     if (glob.neutrals.includes(entity.id)) return false
     if (glob.hostiles.includes(entity.id)) return true
     //Hostile && NotNamed && NotZombiePig
-    if (entity.name && entity.kind && entity.kind == "Hostile mobs" && !(entity.metadata[2] && entity.metadata[2] != "") && (glob.antiZombiePigmanMode || entity.name != "zombie_pigman")) {
-        return true
+    if (entity.name && entity.kind && entity.kind == "Hostile mobs"){
+        if(entity.metadata[2] && entity.metadata[2] != "");// is named
+        else if(entity.name == "zombie_pigman" && !(glob.antiZombiePigmanMode || entity.metadata[14]));// not attackable
+        else return true
     }
     if (glob.isBerserkerMode && entity.username) return true
     return false
