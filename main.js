@@ -26,15 +26,20 @@ glob = {
 
 for (var i = 0; i < process.argv.length; i++) {
   var arg = process.argv[i];
-  if (arg == "-debug") glob.LOCAL = true;
-  else if (arg == "-name") steveNum = process.argv[i + 1];
+  if (arg == "-debug") { glob.LOCAL = true; }
+  else if (arg == "-name") { steveNum = process.argv[i + 1]; }
   else if (arg == "-host") { process.env.MC_LOCAL_HOST = process.argv[i + 1]; process.env.MC_HOST = process.argv[i + 1]; }
   else if (arg == "-port") { process.env.MC_LOCAL_PORT = process.argv[i + 1]; process.env.MC_PORT = process.argv[i + 1]; }
-  else if (arg == "-rport") glob.RADAR_PORT = process.argv[i + 1];
+  else if (arg == "-rport") { glob.RADAR_PORT = process.argv[i + 1]; glob.RADAR = true; }
+  else if (arg == "-vchat") { glob.VANILLA_CHAT = true; }
+  else if (arg == "-frader") { glob.RADAR = false; }
+  else if (arg == "-fproxy") { glob.CHATPROXY_SEND = false; glob.CHATPROXY_READ = false; }
 }
 console.log("repl to debug");
 
-start()
+initialize()
+dirCheck()
+addVectorPrototype()
 
 bot.loadPlugin(require('mineflayer-blockfinder')(mineflayer));
 require("./state_controler")
@@ -51,9 +56,9 @@ require("./calculator")
 require("./music_player")
 require("./pearl_golf")
 if (glob.RADAR) require("./radar")
-if (glob.CHATPROXY_SEND || glob.CHATPROXY_READ) require("./chat_proxy")
+if (!glob.LOCAL && (glob.CHATPROXY_SEND || glob.CHATPROXY_READ)) require("./chat_proxy")
 
-function start() {
+function initialize() {
   if (glob.LOCAL) {
     bot = mineflayer.createBot({
       host: process.env.MC_LOCAL_HOST,
@@ -116,7 +121,25 @@ function start() {
     if (!glob.LOCAL) jsonfile.writeFileSync("session_cache.json", bot._client.session)
     process.nextTick(process.exit);
   });
+}
 
+function dirCheck() {
+  check("log")
+  check("MineMusic")
+  check("nbt")
+  check("PlayLists")
+
+  function check(path) {
+    fs.access(path, fs.constants.R_OK | fs.constants.W_OK, (err) => {
+      if (err) {
+        console.log(err)
+        fs.mkdir(path)
+      }
+    })
+  }
+}
+
+function addVectorPrototype() {
   const Vec3Plus = Vec3.Vec3;
   Vec3Plus.prototype.norm = function () {
     return Math.sqrt(this.x * this.x + this.y * this.y + this.z * this.z);
