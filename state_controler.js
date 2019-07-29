@@ -27,7 +27,7 @@ class State {
  * @param  {...any} args 
  */
 function queueOnceState(str, cb, ...args) {
-    if (queue.contains(new State(str, cb, args), (a, b) => a.state == b.state ? true : false))
+    if (queue.contains(new State(str, cb, ...args), (a, b) => a.state == b.state ? true : false))
         return false
     return queueState(str, cb, ...args)
 }
@@ -44,7 +44,7 @@ function queueState(str, cb, ...args) {
         cb(...args);
         return true
     } else {
-        queue.add(new State(str, cb, args))
+        queue.add(new State(str, cb, ...args))
         return false
     }
 }

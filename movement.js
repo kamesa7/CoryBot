@@ -89,39 +89,41 @@ bot.on('respawn', () => {
     stopMoving()
 });
 
-function goToPos(point, options = {}) {
+/**
+ * options
+ * allowGoal : rejectGoal : searchLimit : strictfin : standadjust
+ * landable : bridgeable : buildstairable : scaffordable
+ * ignore : continue
+ */
+function goToPos(point, reqOptions) {
     stopMoving();
+    const options = setDefaultOptions(reqOptions)
+    var start = getMyPos()
     var goal;
     if (Array.isArray(point)) {
         goal = point;
     } else {
         goal = point.toArray();
     }
-    if (!options.ignore) options.ignore = false
-    var start = getMyPos()
-    var msgable = glob.logMove || !options.ignore
-    var logable = glob.logMove
-    floor(goal);
     floor(start);
+    floor(goal);
     setStandable(start);
-    if (options.standadjust >= 0) setStandable(goal, options.standadjust);
-    else setStandable(goal);
+
+    const msgable = glob.logMove || !options.ignore
+    const logable = glob.logMove
     if (msgable) bot.log("[move] goto " + goal + " from " + start);
     if (logable) var pathfindtime = new Date().getTime();
-    var path = bestFirstSearch(start, goal, options);
-    if (path && path.pathBlockCnt > 0) {
-        let sum = 0;
-        for (let i = 0; i < CONFIG.pathblocks.length; i++) {
-            sum += glob.checkItemCount(CONFIG.pathblocks[i])
-        }
-        if (msgable) bot.log("[move] path blocks " + path.pathBlockCnt + "/" + sum);
-        if (path.pathBlockCnt > sum) bot.log("[move] NEED more path blocks : " + (path.pathBlockCnt - sum) + " : " + path.pathBlockCnt + "/" + sum);
-    }
+    const path = bestFirstSearch(start, goal, options);
     if (logable) bot.log("[move] pathfind took: " + (new Date().getTime() - pathfindtime) + "ms");
-    if (path != null) {
+    if (path) {
+        if (path.pathBlockCnt > 0) {
+            let sum = 0;
+            for (let i = 0; i < CONFIG.pathblocks.length; i++)
+                sum += glob.checkItemCount(CONFIG.pathblocks[i])
+            if (msgable) bot.log("[move] path blocks " + path.pathBlockCnt + "/" + sum);
+            if (path.pathBlockCnt > sum) bot.log("[move] NEED more path blocks : " + (path.pathBlockCnt - sum) + " : " + path.pathBlockCnt + "/" + sum);
+        }
         glob.queueOnceState("move", followPath, path)
-    } else {
-        if (msgable) bot.log("[move] cannot find path");
     }
 }
 
@@ -140,17 +142,11 @@ function follow(entity) {
 
 function reFollow(entity) {
     if (!glob.isFollowing) return
-    var start = getMyPos();
-    var goal = entity.position.toArray();
-    floor(start);
-    floor(goal);
+    var start = floor(getMyPos());
+    var goal = entity.position.floored().toArray();
     setStandable(start);
-    setStandable(goal);
 
-    if (glob.logMove) {
-        bot.log("[move] follow revice " + goal);
-    }
-
+    if (glob.logMove) bot.log("[move] follow revice " + goal);
     if (entity.position.distanceTo(bot.entity.position) < CONFIG.allowFollow) {
         setTimeout(
             reFollow,
@@ -158,8 +154,8 @@ function reFollow(entity) {
             entity
         )
     } else {
-        var path = bestFirstSearch(start, goal, { allowGoal: CONFIG.allowFollow });
-
+        var path = bestFirstSearch(start, goal, { allowGoal: CONFIG.allowFollow, continue: false });
+        if (!path) return
         if (CONFIG.followInterval < path.length) {
             path[CONFIG.followInterval][3] = "follow"
         } else {
@@ -180,7 +176,7 @@ function randomWalk(range = Infinity) {
 
 function reRandom() {
     if (!glob.isRandomWalking) return;
-    var start = getMyPos();
+    var start = floor(getMyPos())
     setStandable(start);
     var goal = getRandomPos(start, Math.min(CONFIG.randomDistance, CONFIG.randomCollar), CONFIG.randomHeight);
     if (getL2(goal, randomOrigin) > CONFIG.randomCollar) {
@@ -188,14 +184,10 @@ function reRandom() {
         reRandom()
         return
     }
-    floor(start);
-    floor(goal);
 
-    if (glob.logMove) {
-        bot.log("[move] random revice " + goal);
-    }
-    var path = bestFirstSearch(start, goal, { landable: false });
-    if (CONFIG.randomLengthLimit < path.length) {
+    if (glob.logMove) bot.log("[move] random revice " + goal);
+    var path = bestFirstSearch(start, goal, { landable: false, continue: false });
+    if (!path || CONFIG.randomLengthLimit < path.length) {
         reRandom();
         return;
     }
@@ -251,6 +243,10 @@ function chase(entity) {
 
 var mover;
 function followPath(path) {
+    if (!path) {
+        bot.log("[move] null path")
+        return
+    }
     var index = 0;
     var exception = false;
     var preRad;
@@ -578,6 +574,27 @@ function moveCost(move) {
     return Cost[move]
 }
 
+const DefalutOptions = {
+    allowGoal: CONFIG.allowGoal,
+    rejectGoal: -1,
+    searchLimit: CONFIG.searchLimit,
+    strictfin: false,
+    standadjust: -1,
+
+    landable: true,
+    bridgeable: false,
+    buildstairable: false,
+    scaffordable: false,
+
+    ignore: false,
+    continue: true
+}
+function setDefaultOptions(options = {}) {
+    Object.keys(DefalutOptions).forEach((key) => {
+        if (options[key] == undefined) options[key] = DefalutOptions[key]
+    })
+    return options
+}
 /**
  * returns the cost of finalpath
  * @param {*} start start pos
@@ -587,54 +604,21 @@ function moveCost(move) {
  * landable : bridgeable : buildstairable : scaffordable
  * ignore : continue
  */
-function bestFirstSearch(start, goal, options) {
+function bestFirstSearch(start, goal, reqOptions) {
     const path = []
-    if (options) {
-        if (options.allowGoal == undefined)
-            options.allowGoal = CONFIG.allowGoal
-        if (options.rejectGoal == undefined)
-            options.rejectGoal = -1
-        if (options.searchLimit == undefined)
-            options.searchLimit = CONFIG.searchLimit
-        if (options.strictfin == undefined)
-            options.strictfin = false
-        if (options.standadjust == undefined)
-            options.standadjust = -1
+    const options = setDefaultOptions(reqOptions)
 
-        if (options.landable == undefined)
-            options.landable = true;
-        if (options.bridgeable == undefined)
-            options.bridgeable = false
-        if (options.buildstairable == undefined)
-            options.buildstairable = false
-        if (options.scaffordable == undefined)
-            options.scaffordable = false
+    if (options.standadjust >= 0) setStandable(goal, options.standadjust);
+    else setStandable(goal);
 
-        if (options.ignore == undefined)
-            options.ignore = false
-        if (options.continue == undefined)
-            options.continue = true
-    } else {
-        options = {
-            allowGoal: CONFIG.allowGoal,
-            rejectGoal: -1,
-            searchLimit: CONFIG.searchLimit,
-            strictfin: false,
-            standadjust: -1,
+    path.start = start
+    path.goal = goal
 
-            landable: true,
-            bridgeable: false,
-            buildstairable: false,
-            scaffordable: false,
-
-            ignore: false,
-            continue: true
-        }
-    }
     if (options.allowGoal <= options.rejectGoal) {
         bot.log("[move] invalid options")
-        return Infinity
+        return null
     }
+
     path.options = options;
     var closed = [];
     var open = new bucketsJs.PriorityQueue(compare);
@@ -955,6 +939,7 @@ function referenceAt(pos) {
 }
 
 function setStandable(pos, limit = 15) {
+    floor(pos)
     if (limit == 0) return isStandable(pos)
     if (!isStandable(pos)) {
         var direct = 1;
