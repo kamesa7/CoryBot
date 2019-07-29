@@ -55,8 +55,10 @@ function startEat() {
                     return;
                 }
                 bot.log("[eat] eat: " + item.name);
+                var stat = setTimeout(glob.finishState, 4500, "eating")
                 bot.consume(function () {
                     glob.finishState("eating");
+                    clearTimeout(stat)
                 });
             });
         } else {
