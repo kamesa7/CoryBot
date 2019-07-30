@@ -12,7 +12,7 @@ const eyeHeight = 1.42;
 
 glob.moveConfig = {
     stepTime: 60,
-    stepError: 20,
+    stepError: 30,
     searchLimit: 5000,
     onPos: 0.2,
     stopRad: Math.PI / 4,
@@ -265,7 +265,7 @@ function followPath(path) {
             prePos = myPosition().floor()
             if (exception || (!glob.isWaiting && stopCount > CONFIG.stepError)) { // exception = true or stopping long time
                 bot.clearControlStates();
-                bot.log("[move] path error end : " + path[index] + " stops: " + stopCount);
+                bot.log("[move] path error end : " + path[index] + path[index].action +" stops: " + stopCount);
                 if (glob.isFollowing) {
                     if (targetEntity && targetEntity.isValid) {
                         stopPath();
@@ -588,7 +588,6 @@ function setDefaultOptions(options = {}) {
     return options
 }
 /**
- * returns the cost of finalpath
  * @param {*} start start pos
  * @param {*} goal goal pos
  * @param {*} options 
@@ -600,6 +599,7 @@ function bestFirstSearch(start, goal, reqOptions) {
     const path = []
     const options = setDefaultOptions(reqOptions)
 
+    setStandable(start)
     if (options.standadjust >= 0) setStandable(goal, options.standadjust);
     else setStandable(goal);
 
@@ -614,13 +614,11 @@ function bestFirstSearch(start, goal, reqOptions) {
     path.options = options;
     var closed = [];
     var open = new bucketsJs.PriorityQueue(compare);
-    var node;
-    var expanded;
     var count = 0;
     closed.push(start);
-    open.enqueue(new NodeElement(start, start.manhattanDistanceTo(goal), node));
+    open.enqueue(new NodeElement(start, start.manhattanDistanceTo(goal), undefined));
     while (!open.isEmpty()) {
-        node = open.dequeue();
+        let node = open.dequeue();
         if (isGoal(node.p, goal, options.allowGoal, options.rejectGoal)) { // find path
             let cost = convertNode(path, node);
             optimize(path);
@@ -632,15 +630,18 @@ function bestFirstSearch(start, goal, reqOptions) {
                 nearDistances.push(closed[i].manhattanDistanceTo(goal));
             }
             let nearest = getMinInd(nearDistances);
+            if (nearest == -1) {
+                bot.log("[move] Something Error Nearest ");
+            }
             bot.log("[move] nearest: " + closed[nearest]);
             options.allowGoal = 0
             options.rejectGoal = -1
             return bestFirstSearch(start, closed[nearest], options);
         }
-        expanded = expandNode(node, options);
+        let expanded = expandNode(node, options);
         for (let i = 0; i < expanded.length; i++) { // expand
             let pos = expanded[i];
-            if (!contains(closed, pos)) {
+            if (!containPos(closed, pos)) {
                 closed.push(pos);
                 let newNode = new NodeElement(pos, pos.manhattanDistanceTo(goal) + moveCost(pos.action), node);
                 open.enqueue(newNode);
@@ -684,7 +685,7 @@ function expandNode(node, options) {
 
     for (let i = 0; i < downstairs.length; i++) {
         pos = prepos.plus(downstairs[i]);
-        if (isStandable(pos) && isThroughable(prepos.plus(0, 1, 0))) {
+        if (isStandable(pos) && isThroughable(prepos.offset(0, 1, 0))) {
             pos.action = "downstair";
             ret.push(pos);
         }
@@ -1005,9 +1006,9 @@ function myPosition() {
     return bot.entity.position.clone()
 }
 
-function contains(arr, p) {
+function containPos(arr, p) {
     for (var i = 0; i < arr.length; i++) {
-        if (isSame(arr[i], p)) {
+        if (p.manhattanDistanceTo(arr[i]) == 0) {
             return true;
         }
     }
