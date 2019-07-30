@@ -172,4 +172,16 @@ function addVectorPrototype() {
   Vec3Plus.prototype.toArray = function () {
     return [this.x, this.y, this.z];
   };
+  Vec3Plus.prototype.round = function () {
+    this.x = Math.round(this.x);
+    this.y = Math.round(this.y);
+    this.z = Math.round(this.z);
+    return this;
+  };
+  Vec3Plus.prototype.rounded = function () {
+    var rx = Math.round(this.x);
+    var ry = Math.round(this.y);
+    var rz = Math.round(this.z);
+    return new Vec3(rx, ry, rz);
+  };
 }

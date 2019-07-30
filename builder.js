@@ -361,11 +361,11 @@ function placeBlockAt(item, pos, cb = noop) {
     const newBlockPos = pos.floored()
     const oldBlock = bot.blockAt(newBlockPos)
     if (!item) {
-        cb("[place] No block item : null item")
+        cb("[place] Not block item")
         return
     }
     if (!oldBlock || !isPlaceable(pos)) {
-        cb("[place] cannot place there : not air pos")
+        cb("[place] cannot place there")
         return
     }
     bot.setControlState("sneak", true)

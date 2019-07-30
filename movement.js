@@ -89,26 +89,50 @@ bot.on('respawn', () => {
     stopMoving()
 });
 
+
+const DefalutOptions = {
+    allowGoal: CONFIG.allowGoal,
+    rejectGoal: -1,
+    searchLimit: CONFIG.searchLimit,
+    strictfin: false,
+    standadjust: -1,
+
+    landable: true,
+    bridgeable: false,
+    buildstairable: false,
+    scaffordable: false,
+
+    ignore: false,
+    continue: true
+}
+
 /**
- * options
- * allowGoal : rejectGoal : searchLimit : strictfin : standadjust
- * landable : bridgeable : buildstairable : scaffordable
- * ignore : continue
+ * go to the position
+ * @param {*} point goal
+ * @param {*} reqOptions 
+ * options  
+ * allowGoal : rejectGoal 
+ * searchLimit  
+ * strictfin  
+ * standadjust    
+ * landable : bridgeable : buildstairable : scaffordable  
+ * ignore  
+ * continue  
  */
 function goToPos(point, reqOptions) {
     stopMoving();
     const options = setDefaultOptions(reqOptions)
     var start = myPosition().floor()
     var goal = point.floored();
-    setStandable(start);
 
     const msgable = glob.logMove || !options.ignore
     const logable = glob.logMove
-    if (msgable) bot.log("[move] goto " + goal + " from " + start);
+    if (logable) bot.log("[move] before adjust: goto " + goal + " from " + start);
     if (logable) var pathfindtime = new Date().getTime();
     const path = bestFirstSearch(start, goal, options);
     if (logable) bot.log("[move] pathfind took: " + (new Date().getTime() - pathfindtime) + "ms");
     if (path) {
+        if (msgable) bot.log("[move] goto " + path.goal + " from " + path.start);
         if (path.pathBlockCnt > 0) {
             let sum = 0;
             for (let i = 0; i < CONFIG.pathblocks.length; i++)
@@ -265,7 +289,7 @@ function followPath(path) {
             prePos = myPosition().floor()
             if (exception || (!glob.isWaiting && stopCount > CONFIG.stepError)) { // exception = true or stopping long time
                 bot.clearControlStates();
-                bot.log("[move] path error end : " + path[index] + path[index].action +" stops: " + stopCount);
+                bot.log("[move] path error end : " + path[index] + path[index].action + " stops: " + stopCount);
                 if (glob.isFollowing) {
                     if (targetEntity && targetEntity.isValid) {
                         stopPath();
@@ -566,21 +590,6 @@ function moveCost(move) {
     return Cost[move]
 }
 
-const DefalutOptions = {
-    allowGoal: CONFIG.allowGoal,
-    rejectGoal: -1,
-    searchLimit: CONFIG.searchLimit,
-    strictfin: false,
-    standadjust: -1,
-
-    landable: true,
-    bridgeable: false,
-    buildstairable: false,
-    scaffordable: false,
-
-    ignore: false,
-    continue: true
-}
 function setDefaultOptions(options = {}) {
     Object.keys(DefalutOptions).forEach((key) => {
         if (options[key] == undefined) options[key] = DefalutOptions[key]
@@ -591,9 +600,6 @@ function setDefaultOptions(options = {}) {
  * @param {*} start start pos
  * @param {*} goal goal pos
  * @param {*} options 
- * allowGoal : rejectGoal : searchLimit : strictfin : standadjust
- * landable : bridgeable : buildstairable : scaffordable
- * ignore : continue
  */
 function bestFirstSearch(start, goal, reqOptions) {
     const path = []
@@ -612,6 +618,7 @@ function bestFirstSearch(start, goal, reqOptions) {
     }
 
     path.options = options;
+    if (glob.logMove) bot.log("[move] options " + JSON.stringify(options))
     var closed = [];
     var open = new bucketsJs.PriorityQueue(compare);
     var count = 0;
@@ -631,7 +638,7 @@ function bestFirstSearch(start, goal, reqOptions) {
             }
             let nearest = getMinInd(nearDistances);
             if (nearest == -1) {
-                bot.log("[move] Something Error Nearest ");
+                bot.log("[move] Something Error Nearest " + goal);
             }
             bot.log("[move] nearest: " + closed[nearest]);
             options.allowGoal = 0
@@ -648,7 +655,7 @@ function bestFirstSearch(start, goal, reqOptions) {
             }
         }
     }
-    bot.log("[move] impossible to go there");
+    bot.log("[move] impossible to goto " + goal + " from " + start);
     return null;
 }
 
@@ -884,10 +891,9 @@ function isNotAvoidance(block) {
 
 
 function isStandable(pos) {
-    const vec = pos
-    const B1 = bot.blockAt(vec.offset(0, -1, 0))
-    const B2 = bot.blockAt(vec)
-    const B3 = bot.blockAt(vec.offset(0, 1, 0))
+    const B1 = bot.blockAt(pos.offset(0, -1, 0))
+    const B2 = bot.blockAt(pos)
+    const B3 = bot.blockAt(pos.offset(0, 1, 0))
     if (B1.boundingBox == 'block' &&
         B2.boundingBox != 'block' &&
         B3.boundingBox != 'block' &&
@@ -942,18 +948,17 @@ function referenceAt(pos) {
 function setStandable(pos, limit = 15) {
     pos.floor()
     if (limit == 0) return isStandable(pos)
-    if (!isStandable(pos)) {
-        var direct = 1;
-        var tmp = pos.offset(0, direct, 0);
-        while (!isStandable(tmp)) {
-            direct *= -1;
-            if (direct > 0) direct++;
-            if (direct > limit) return false;
+    if (isStandable(pos)) return true
+    var direct = 1;
+    var tmp = pos.offset(0, direct, 0);
+    while (!isStandable(tmp)) {
+        direct *= -1;
+        if (direct > 0) direct++;
+        if (direct > limit) return false;
 
-            tmp = pos.offset(0, direct, 0);
-        }
-        pos.add(new Vec3(0, direct, 0));
+        tmp = pos.offset(0, direct, 0);
     }
+    pos.update(tmp);
     return true;
 }
 
@@ -969,52 +974,27 @@ function getRandomPos(root, distance, height = 2) {
     return root;
 }
 
-function isGoal(pos, goal, allowGoal, rejectGoal) {
-    if (pos.manhattanDistanceTo(goal) <= allowGoal && xzManhattanDustance(pos, goal) > rejectGoal && xzManhattanDustance(pos.offset(0, 1, 0), goal) > rejectGoal) return true;
-    else return false;
-}
-
 function xzManhattanDustance(pos, target) {
     return Math.abs(target.x - pos.x) + Math.abs(target.z - pos.z);
 }
 
+// walk optimise
 function getRad2(pos1, pos2) {
     return Math.atan2(pos1.x - pos2.x, pos1.z - pos2.z)
 }
 
+// over run check
 function getRadDiff(rad1, rad2) {
     return Math.min(Math.abs(rad1 - rad2), Math.abs(2 * Math.PI + Math.min(rad1, rad2) - Math.max(rad1, rad2)))
 }
 
-function getMinInd(arr) {
-    if (arr.length > 0) {
-        var ret = 0;
-        var minn = arr[0];
-        for (var i = 1; i < arr.length; i++) {
-            if (minn > arr[i]) {
-                minn = arr[i];
-                ret = i;
-            }
-        }
-        return ret;
-    } else {
-        return -1;
-    }
-}
 
 function myPosition() {
     return bot.entity.position.clone()
 }
 
-function containPos(arr, p) {
-    for (var i = 0; i < arr.length; i++) {
-        if (p.manhattanDistanceTo(arr[i]) == 0) {
-            return true;
-        }
-    }
-    return false;
-}
 
+// for the path finder
 class NodeElement {
     constructor(p, cost, parent) {
         try {
@@ -1034,6 +1014,39 @@ function compare(a, b) {
     }
     // a must be equal to b
     return 0;
+}
+
+// goal position
+function isGoal(pos, goal, allowGoal, rejectGoal) {
+    if (pos.manhattanDistanceTo(goal) <= allowGoal && xzManhattanDustance(pos, goal) > rejectGoal && xzManhattanDustance(pos.offset(0, 1, 0), goal) > rejectGoal) return true;
+    else return false;
+}
+
+// closed node
+function containPos(arr, p) {
+    for (var i = 0; i < arr.length; i++) {
+        if (p.manhattanDistanceTo(arr[i]) == 0) {
+            return true;
+        }
+    }
+    return false;
+}
+
+// nearest node
+function getMinInd(arr) {
+    if (arr.length > 0) {
+        var ret = 0;
+        var minn = arr[0];
+        for (var i = 1; i < arr.length; i++) {
+            if (minn > arr[i]) {
+                minn = arr[i];
+                ret = i;
+            }
+        }
+        return ret;
+    } else {
+        return -1;
+    }
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////
