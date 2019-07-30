@@ -98,15 +98,8 @@ bot.on('respawn', () => {
 function goToPos(point, reqOptions) {
     stopMoving();
     const options = setDefaultOptions(reqOptions)
-    var start = getMyPos()
-    var goal;
-    if (Array.isArray(point)) {
-        goal = point;
-    } else {
-        goal = point.toArray();
-    }
-    floor(start);
-    floor(goal);
+    var start = myPosition().floor()
+    var goal = point.floored();
     setStandable(start);
 
     const msgable = glob.logMove || !options.ignore
@@ -142,8 +135,8 @@ function follow(entity) {
 
 function reFollow(entity) {
     if (!glob.isFollowing) return
-    var start = floor(getMyPos());
-    var goal = entity.position.floored().toArray();
+    var start = myPosition().floor();
+    var goal = entity.position.floored();
     setStandable(start);
 
     if (glob.logMove) bot.log("[move] follow revice " + goal);
@@ -157,9 +150,10 @@ function reFollow(entity) {
         var path = bestFirstSearch(start, goal, { allowGoal: CONFIG.allowFollow, continue: false });
         if (!path) return
         if (CONFIG.followInterval < path.length) {
-            path[CONFIG.followInterval][3] = "follow"
+            path[CONFIG.followInterval].action = "follow"
         } else {
-            path.push([start[0], start[1], start[2], "follow"]);
+            let folw = start.clone(); folw.action = "follow"
+            path.push(folw);
         }
         glob.queueOnceState("move", followPath, path)
     }
@@ -170,17 +164,17 @@ function randomWalk(range = Infinity) {
     bot.log("[move] random walk ");
     glob.isRandomWalking = true;
     CONFIG.randomCollar = range
-    randomOrigin = getMyPos()
+    randomOrigin = myPosition().floor()
     reRandom();
 }
 
 function reRandom() {
     if (!glob.isRandomWalking) return;
-    var start = floor(getMyPos())
+    var start = myPosition().floor()
     setStandable(start);
     var goal = getRandomPos(start, Math.min(CONFIG.randomDistance, CONFIG.randomCollar), CONFIG.randomHeight);
-    if (getL2(goal, randomOrigin) > CONFIG.randomCollar) {
-        if (glob.logMove) bot.log("[move] too far: reRandom " + getL2(goal, randomOrigin))
+    if (goal.distanceTo(randomOrigin) > CONFIG.randomCollar) {
+        if (glob.logMove) bot.log("[move] too far: reRandom " + goal.distanceTo(randomOrigin))
         reRandom()
         return
     }
@@ -192,9 +186,10 @@ function reRandom() {
         return;
     }
     if (CONFIG.randomInterval < path.length) {
-        path[CONFIG.randomInterval][3] = "random";
+        path[CONFIG.randomInterval].action = "random";
     } else {
-        path.push([goal[0], goal[1], goal[2], "random"]);
+        let gl = goal.clone(); gl.action = "random";
+        path.push(gl);
     }
     setTimeout(function () {
         glob.queueOnceState("move", followPath, path)
@@ -243,14 +238,11 @@ function chase(entity) {
 
 var mover;
 function followPath(path) {
-    if (!path) {
-        bot.log("[move] null path")
-        return
-    }
+    if (!path || !path.options) throw new Error("Invalid path or options")
     var index = 0;
     var exception = false;
     var preRad;
-    var prePos = getMyPos();
+    var prePos = myPosition();
     var preIndex = -1;
     var indexCount;
     var waitCount = 0;
@@ -265,12 +257,12 @@ function followPath(path) {
                 indexCount = 0;
                 preIndex = index;
             }
-            if (getL1(floor(getMyPos()), prePos) == 0) {
+            if (myPosition().floor().manhattanDistanceTo(prePos) == 0) {
                 stopCount++;
             } else {
                 stopCount = 0;
             }
-            prePos = floor(getMyPos())
+            prePos = myPosition().floor()
             if (exception || (!glob.isWaiting && stopCount > CONFIG.stepError)) { // exception = true or stopping long time
                 bot.clearControlStates();
                 bot.log("[move] path error end : " + path[index] + " stops: " + stopCount);
@@ -291,15 +283,15 @@ function followPath(path) {
                 }
                 return
             } else {
-                const node = path[index]
-                const dest = [node[0] + 0.5, node[1], node[2] + 0.5]
-                const look = new Vec3(dest).offset(0, eyeHeight, 0)
-                const rad = getRad2(getMyPos(), dest);
-                const distance = getXZL2(getMyPos(), dest)
+                const elem = path[index]
+                const dest = elem.offset(0.5, 0, 0.5)
+                const look = dest.offset(0, eyeHeight, 0)
+                const rad = getRad2(myPosition(), dest);
+                const distance = myPosition().xzDistanceTo(dest)
                 if (indexCount == 0) preRad = rad;
-                const height = getMyPos()[1];
-                if (logable) bot.log("[move] " + node + "  cnt: " + indexCount + " stop: " + stopCount + " dist: " + Math.floor(1000 * distance) / 1000 + " rad: " + Math.floor(1000 * getRadDiff(preRad, rad) / Math.PI * 180) / 1000);
-                switch (node[3]) {
+                const height = myPosition().y;
+                if (logable) bot.log("[move] " + elem + "  cnt: " + indexCount + " stop: " + stopCount + " dist: " + Math.floor(1000 * distance) / 1000 + " rad: " + Math.floor(1000 * getRadDiff(preRad, rad) / Math.PI * 180) / 1000);
+                switch (elem.action) {
                     case "walk":
                         if (indexCount == 0) {
                             bot.lookAt(look, true);
@@ -340,7 +332,7 @@ function followPath(path) {
                             break;
                         }
                         if ((height - onGround) % 1 != 0) break;
-                        if (dest[1] != height - onGround && indexCount > 1) {
+                        if (dest.y != height - onGround && indexCount > 1) {
                             exception = true;
                             break;
                         } else if (getRadDiff(preRad, rad) > CONFIG.stopRad || distance <= CONFIG.onPos) {
@@ -355,7 +347,7 @@ function followPath(path) {
                         if (indexCount == 0) {
                             bot.setControlState('forward', true);
                         } else if (indexCount == 10) {
-                            bot.entity.position = new Vec3(dest).offset(0, onGround, 0)
+                            bot.entity.position = dest.offset(0, onGround, 0)
                         } else if (indexCount > CONFIG.stepError) {
                             exception = true;
                             break;
@@ -363,7 +355,7 @@ function followPath(path) {
                         if (getRadDiff(preRad, rad) > CONFIG.stopRad || distance <= CONFIG.onPos) {
                             bot.clearControlStates();
                         }
-                        if ((dest[1] == height - onGround) && ((height - onGround) % 1 == 0)) {//onGround
+                        if ((dest.y == height - onGround) && ((height - onGround) % 1 == 0)) {//onGround
                             bot.clearControlStates();
                             index++;
                             break;
@@ -379,7 +371,7 @@ function followPath(path) {
                             bot.setControlState('forward', true);
                         }
                         if ((height - onGround) % 1 != 0) break;
-                        if (dest[1] != height - onGround) {
+                        if (dest.y != height - onGround) {
                             exception = true;
                             break;
                         }
@@ -393,10 +385,10 @@ function followPath(path) {
                         bot.clearControlStates();
                         bot.lookAt(look, true);
                         bot.setControlState('forward', true);
-                        var door = bot.blockAt(new Vec3(node));
+                        var door = bot.blockAt(elem);
                         if (door.metadata < 4 || 7 < door.metadata) {
                             if (indexCount % 3 == 0)
-                                bot.lookAt(new Vec3(dest), true, function () {
+                                bot.lookAt(dest, true, function () {
                                     bot.activateBlock(door);
                                 });
                         } else {
@@ -407,7 +399,7 @@ function followPath(path) {
                         if (indexCount == 0) {
                             bot.clearControlStates();
                             bot.lookAt(look, true);
-                            bot.entity.position = new Vec3(dest).offset(0, onGround, 0)
+                            bot.entity.position = dest.offset(0, onGround, 0)
                         } else {
                             index++;
                         }
@@ -428,7 +420,7 @@ function followPath(path) {
                     case "freeze":
                         if (indexCount == 0) {
                             bot.clearControlStates();
-                            waitCount = node[4];
+                            waitCount = elem.metadata;
                         } else if (indexCount >= waitCount) {
                             index++;
                             break;
@@ -440,7 +432,7 @@ function followPath(path) {
                             bot.clearControlStates();
                             glob.isWaiting = true;
                             glob.finishState("move")
-                            waitCount = node[4];
+                            waitCount = node.metadata;
                         } else if (indexCount >= waitCount) {
                             glob.queueOnceState("move", function () {
                                 index++;
@@ -454,7 +446,7 @@ function followPath(path) {
                     case "buildstair":
                         if (indexCount == 0) {
                             bot.clearControlStates();
-                            var newBlockPos = new Vec3(node).offset(0, -1, 0)
+                            var newBlockPos = elem.offset(0, -1, 0)
                             var oldBlock = bot.blockAt(newBlockPos)
                             var item = glob.findItem(CONFIG.pathblocks)
                             if (!item) bot.log("[move] No Movement Block")
@@ -473,7 +465,7 @@ function followPath(path) {
                             bot.setControlState('jump', true);
                             bot.setControlState('jump', false);
                         } else if (indexCount == 3) {
-                            var newBlockPos = new Vec3(node).offset(0, -1, 0)
+                            var newBlockPos = elem.offset(0, -1, 0)
                             var oldBlock = bot.blockAt(newBlockPos)
                             var item = glob.findItem(CONFIG.pathblocks)
                             if (!item) bot.log("[move] No Movement Block")
@@ -494,70 +486,70 @@ function followPath(path) {
             }
         } else {
             stopMoving();
-            if (msgable) bot.log("[move] path complete : " + floor(getMyPos()));
+            if (msgable) bot.log("[move] path complete : " + myPosition().floor());
         }
     }
 }
 
 const walks = [
-    [1, 0, 0],
-    [-1, 0, 0],
-    [0, 0, 1],
-    [0, 0, -1]
+    new Vec3(1, 0, 0),
+    new Vec3(-1, 0, 0),
+    new Vec3(0, 0, 1),
+    new Vec3(0, 0, -1)
 ];
 const crosses = [
-    [1, 0, 1], [0, 0, 1], [1, 0, 0],
-    [-1, 0, 1], [0, 0, 1], [-1, 0, 0],
-    [1, 0, -1], [0, 0, -1], [1, 0, 0],
-    [-1, 0, -1], [0, 0, -1], [-1, 0, 0]
+    new Vec3(1, 0, 1), new Vec3(0, 0, 1), new Vec3(1, 0, 0),
+    new Vec3(-1, 0, 1), new Vec3(0, 0, 1), new Vec3(-1, 0, 0),
+    new Vec3(1, 0, -1), new Vec3(0, 0, -1), new Vec3(1, 0, 0),
+    new Vec3(-1, 0, -1), new Vec3(0, 0, -1), new Vec3(-1, 0, 0)
 ];
 const upstairs = [
-    [1, 1, 0],
-    [-1, 1, 0],
-    [0, 1, 1],
-    [0, 1, -1]
+    new Vec3(1, 1, 0),
+    new Vec3(-1, 1, 0),
+    new Vec3(0, 1, 1),
+    new Vec3(0, 1, -1)
 ];
 const downstairs = [
-    [1, -1, 0],
-    [-1, -1, 0],
-    [0, -1, 1],
-    [0, -1, -1]
+    new Vec3(1, -1, 0),
+    new Vec3(-1, -1, 0),
+    new Vec3(0, -1, 1),
+    new Vec3(0, -1, -1)
 ];
 const jumpovers = [
-    [2, 0, 0], [1, -1, 0],
-    [-2, 0, 0], [-1, -1, 0],
-    [0, 0, 2], [0, -1, 1],
-    [0, 0, -2], [0, -1, -1]
+    new Vec3(2, 0, 0), new Vec3(1, -1, 0),
+    new Vec3(-2, 0, 0), new Vec3(-1, -1, 0),
+    new Vec3(0, 0, 2), new Vec3(0, -1, 1),
+    new Vec3(0, 0, -2), new Vec3(0, -1, -1)
 ];
 const longjumpovers = [
-    [3, 0, 0], [1, -1, 0], [2, -1, 0],
-    [-3, 0, 0], [-1, -1, 0], [-2, -1, 0],
-    [0, 0, 3], [0, -1, 1], [0, -1, 2],
-    [0, 0, -3], [0, -1, -1], [0, -1, -2]
+    new Vec3(3, 0, 0), new Vec3(1, -1, 0), new Vec3(2, -1, 0),
+    new Vec3(-3, 0, 0), new Vec3(-1, -1, 0), new Vec3(-2, -1, 0),
+    new Vec3(0, 0, 3), new Vec3(0, -1, 1), new Vec3(0, -1, 2),
+    new Vec3(0, 0, -3), new Vec3(0, -1, -1), new Vec3(0, -1, -2)
 ];
 const lands = [
-    [1, -2, 0],
-    [-1, -2, 0],
-    [0, -2, 1],
-    [0, -2, -1],
-    [1, -3, 0],
-    [-1, -3, 0],
-    [0, -3, 1],
-    [0, -3, -1]
+    new Vec3(1, -2, 0),
+    new Vec3(-1, -2, 0),
+    new Vec3(0, -2, 1),
+    new Vec3(0, -2, -1),
+    new Vec3(1, -3, 0),
+    new Vec3(-1, -3, 0),
+    new Vec3(0, -3, 1),
+    new Vec3(0, -3, -1)
 ];
 const bridges = [
-    [1, 0, 0],
-    [-1, 0, 0],
-    [0, 0, 1],
-    [0, 0, -1]
+    new Vec3(1, 0, 0),
+    new Vec3(-1, 0, 0),
+    new Vec3(0, 0, 1),
+    new Vec3(0, 0, -1)
 ];
 const buildstairs = [
-    [1, 1, 0],
-    [-1, 1, 0],
-    [0, 1, 1],
-    [0, 1, -1]
+    new Vec3(1, 1, 0),
+    new Vec3(-1, 1, 0),
+    new Vec3(0, 1, 1),
+    new Vec3(0, 1, -1)
 ];
-const scafford = [0, 1, 0]
+const scafford = new Vec3(0, 1, 0)
 const Cost = {
     "walk": 1,
     "upstair": 5,
@@ -626,7 +618,7 @@ function bestFirstSearch(start, goal, reqOptions) {
     var expanded;
     var count = 0;
     closed.push(start);
-    open.enqueue(new NodeElement(start, getL1(start, goal), node));
+    open.enqueue(new NodeElement(start, start.manhattanDistanceTo(goal), node));
     while (!open.isEmpty()) {
         node = open.dequeue();
         if (isGoal(node.p, goal, options.allowGoal, options.rejectGoal)) { // find path
@@ -637,7 +629,7 @@ function bestFirstSearch(start, goal, reqOptions) {
         } else if (count++ > options.searchLimit) { // limit over
             let nearDistances = [];
             for (let i = 0; i < closed.length; i++) {
-                nearDistances.push(getL1(closed[i], goal));
+                nearDistances.push(closed[i].manhattanDistanceTo(goal));
             }
             let nearest = getMinInd(nearDistances);
             bot.log("[move] nearest: " + closed[nearest]);
@@ -650,7 +642,7 @@ function bestFirstSearch(start, goal, reqOptions) {
             let pos = expanded[i];
             if (!contains(closed, pos)) {
                 closed.push(pos);
-                let newNode = new NodeElement(pos, getL1(pos, goal) + moveCost(pos[3]), node);
+                let newNode = new NodeElement(pos, pos.manhattanDistanceTo(goal) + moveCost(pos.action), node);
                 open.enqueue(newNode);
             }
         }
@@ -664,62 +656,62 @@ function expandNode(node, options) {
     const prepos = node.p
     var pos;
     for (let i = 0; i < walks.length; i++) {
-        pos = plus(prepos, walks[i]);
+        pos = prepos.plus(walks[i]);
         if (isStandable(pos)) {
-            pos.push("walk");
+            pos.action = "walk";
             ret.push(pos);
         }
     }
     for (let i = 0; i < crosses.length; i += 3) {
-        pos = plus(prepos, crosses[i]);
+        pos = prepos.plus(crosses[i]);
         if (isStandable(pos) &&
-            isThroughable(plus(prepos, crosses[i + 1])) && isThroughable(plus(prepos, crosses[i + 2]))
+            isThroughable(prepos.plus(crosses[i + 1])) && isThroughable(prepos.plus(crosses[i + 2]))
         ) {
-            pos.push("walk");
+            pos.action = "walk";
             ret.push(pos);
         }
     }
 
-    if (isThroughable(plus(prepos, [0, 1, 0]))) {
+    if (isThroughable(prepos.offset(0, 1, 0))) {
         for (let i = 0; i < upstairs.length; i++) {
-            pos = plus(prepos, upstairs[i]);
+            pos = prepos.plus(upstairs[i]);
             if (isStandable(pos)) {
-                pos.push("upstair");
+                pos.action = "upstair";
                 ret.push(pos);
             }
         }
     }
 
     for (let i = 0; i < downstairs.length; i++) {
-        pos = plus(prepos, downstairs[i]);
-        if (isStandable(pos) && isThroughable(plus(pos, [0, 1, 0]))) {
-            pos.push("downstair");
+        pos = prepos.plus(downstairs[i]);
+        if (isStandable(pos) && isThroughable(prepos.plus(0, 1, 0))) {
+            pos.action = "downstair";
             ret.push(pos);
         }
     }
 
-    if (isThroughable(plus(prepos, [0, 1, 0]))) {
+    if (isThroughable(prepos.offset(0, 1, 0))) {
         for (let i = 0; i < jumpovers.length; i += 2) {
-            pos = plus(prepos, jumpovers[i]);
-            let midpos = plus(prepos, jumpovers[i + 1]);
-            if (isStandable(pos) && isThroughable(midpos) && isThroughable(plus(midpos, [0, 2, 0]))
-                && isThroughable(plus(pos, [0, 1, 0]))) {
-                pos.push("jumpover");
+            pos = prepos.plus(jumpovers[i]);
+            let midpos = prepos.plus(jumpovers[i + 1]);
+            if (isStandable(pos) && isThroughable(midpos) && isThroughable(midpos.offset(0, 2, 0))
+                && isThroughable(pos.offset(0, 1, 0))) {
+                pos.action = "jumpover";
                 ret.push(pos);
             }
         }
     }
 
-    if (isThroughable(plus(prepos, [0, 1, 0]))) {
+    if (isThroughable(prepos.offset(0, 1, 0))) {
         for (let i = 0; i < longjumpovers.length; i += 3) {
-            pos = plus(prepos, longjumpovers[i]);
-            let midpos1 = plus(prepos, longjumpovers[i + 1]);
-            let midpos2 = plus(prepos, longjumpovers[i + 2]);
+            pos = prepos.plus(longjumpovers[i]);
+            let midpos1 = prepos.plus(longjumpovers[i + 1]);
+            let midpos2 = prepos.plus(longjumpovers[i + 2]);
             if (isStandable(pos)
-                && isThroughable(midpos1) && isThroughable(plus(midpos1, [0, 2, 0]))
-                && isThroughable(midpos2) && isThroughable(plus(midpos2, [0, 2, 0]))
-                && isThroughable(plus(pos, [0, 1, 0]))) {
-                pos.push("longjumpover");
+                && isThroughable(midpos1) && isThroughable(midpos1.offset(0, 2, 0))
+                && isThroughable(midpos2) && isThroughable(midpos2.offset(0, 2, 0))
+                && isThroughable(pos.offset(0, 1, 0))) {
+                pos.action = "longjumpover";
                 ret.push(pos);
             }
         }
@@ -727,36 +719,36 @@ function expandNode(node, options) {
 
     if (options.landable)
         for (let i = 0; i < lands.length; i++) {
-            pos = plus(prepos, lands[i]);
-            if (isStandable(pos) && isThroughable(plus(pos, [0, 2, 0])) && isThroughable(plus(pos, [0, 4, 0]))) {
-                pos.push("land");
+            pos = prepos.plus(lands[i]);
+            if (isStandable(pos) && isThroughable(pos.offset(0, 2, 0)) && isThroughable(pos.offset(0, 4, 0))) {
+                pos.action = "land";
                 ret.push(pos);
             }
         }
 
     if (options.bridgeable)
         for (let i = 0; i < bridges.length; i++) {
-            pos = plus(prepos, bridges[i]);
-            if (isThroughable(pos) && isPlaceable(plus(pos, [0, -1, 0]))) {
-                pos.push("bridge");
+            pos = prepos.plus(bridges[i]);
+            if (isThroughable(pos) && isPlaceable(pos.offset(0, -1, 0))) {
+                pos.action = "bridge";
                 ret.push(pos);
             }
         }
 
     if (options.buildstairable)
-        if (isThroughable(plus(prepos, [0, 1, 0])))
+        if (isThroughable(prepos.offset(0, 1, 0)))
             for (let i = 0; i < buildstairs.length; i++) {
-                pos = plus(prepos, buildstairs[i]);
-                if (isThroughable(pos) && isPlaceable(plus(pos, [0, -1, 0])) && referenceAt(plus(pos, [0, -1, 0]))) {
-                    pos.push("buildstair");
+                pos = prepos.plus(buildstairs[i]);
+                if (isThroughable(pos) && isPlaceable(pos.offset(0, -1, 0)) && referenceAt(pos.offset(0, -1, 0))) {
+                    pos.action = "buildstair";
                     ret.push(pos);
                 }
             }
 
     if (options.scaffordable) {
-        pos = plus(prepos, scafford);
+        pos = prepos.plus(scafford);
         if (isThroughable(pos)) {
-            pos.push("scafford");
+            pos.action = "scafford";
             ret.push(pos);
         }
     }
@@ -768,10 +760,10 @@ function convertNode(path, node) {
     var sum = 0;
     var tmp = node;
 
-    finalDestination = [tmp.p[0], tmp.p[1], tmp.p[2]];
+    finalDestination = tmp.p.clone();
     while (tmp.parent != null) {
-        path.push([tmp.p[0], tmp.p[1], tmp.p[2], tmp.p[3]]);
-        sum += moveCost(tmp.p[3]);
+        path.push(tmp.p);
+        sum += moveCost(tmp.p.action);
         tmp = tmp.parent;
     }
     path.reverse();
@@ -781,24 +773,27 @@ function convertNode(path, node) {
 function optimize(path) {
     if (path.length == 0) return;
     const options = path.options;
-    var start = floor(getMyPos());
-    if (bot.blockAt(new Vec3(start)).boundingBox == "door") {
-        path.splice(0, 0, [start[0], start[1], start[2], "strict"]);
-        path.splice(1, 0, [start[0], start[1], start[2], "door"]);
+    var start = myPosition().floor();
+    if (bot.blockAt(start).boundingBox == "door") {
+        let strict = start.clone(); strict.action = "strict";
+        let door = start.clone(); door.action = "door";
+        path.splice(0, 0, strict);
+        path.splice(1, 0, door);
     }
     var s = 0;
-    if (bot.blockAt(new Vec3(path[0])).boundingBox == "door") {
-        const pathDoor = path[0];
-        path.splice(0, 0, [start[0], start[1], start[2], "strict"]);
-        path.splice(1, 0, [pathDoor[0], pathDoor[1], pathDoor[2], "door"]);
+    if (bot.blockAt(path[0]).boundingBox == "door") {
+        let strict = myPosition().floor(); strict.action = "strict";
+        let pathDoor = path[0].clone(); pathDoor.action = "door";
+        path.splice(0, 0, strict);
+        path.splice(1, 0, pathDoor);
         s += 2;
     }
     for (let i = s; i < path.length; i++) {
-        if (bot.blockAt(new Vec3(path[i])).boundingBox == "door") {
-            const pathDoor = path[i];
-            const doorFront = path[i - 1];
-            path.splice(i, 0, [doorFront[0], doorFront[1], doorFront[2], "strict"]);
-            path.splice(i + 1, 0, [pathDoor[0], pathDoor[1], pathDoor[2], "door"]);
+        if (bot.blockAt(path[i]).boundingBox == "door") {
+            const doorFront = path[i - 1].clone(); doorFront.action = "strict";
+            const pathDoor = path[i].clone(); pathDoor.action = "door";
+            path.splice(i, 0, doorFront);
+            path.splice(i + 1, 0, pathDoor);
             i += 2;
         }
     }
@@ -808,19 +803,19 @@ function optimize(path) {
     var preDir;
     var fin = false;
     for (let i = 0; i < path.length; i++) {
-        if (path[i][3] == "walk") {
+        if (path[i].action == "walk") {
             if (cnt == 0) {
                 startInd = i;
                 cnt++;
                 continue;
             }
             if (cnt == 1) {
-                dir = getdirection(path[i - 1], path[i]);
+                dir = getRad2(path[i - 1], path[i]);
                 preDir = dir;
                 cnt++;
             }
             if (cnt >= 2) {
-                dir = getdirection(path[i - 1], path[i]);
+                dir = getRad2(path[i - 1], path[i]);
                 if (dir == preDir) {
                     cnt++;
                 } else if (cnt >= 3) {
@@ -842,7 +837,7 @@ function optimize(path) {
         }
         if (fin) {
             fin = false;
-            path[i - 1][3] = "sprint";
+            path[i - 1].action = "sprint";
             var goal = path[i - 1];
             path.splice(startInd + 1, i - startInd - 1, goal);
             cnt = 0;
@@ -851,26 +846,31 @@ function optimize(path) {
     }
     var pathBlockCnt = 0
     for (let i = 0; i < path.length; i++) {
-        const blockPos = path[i];
-        switch (blockPos[3]) {
+        const blockPos = path[i].clone();
+        switch (path[i].action) {
             case "bridge":
-                path.splice(i + 1, 0, [blockPos[0], blockPos[1], blockPos[2], "walk"]);
+                blockPos.action = "walk"
+                path.splice(i + 1, 0, blockPos);
                 pathBlockCnt++
                 break
             case "buildstair":
-                path.splice(i + 1, 0, [blockPos[0], blockPos[1], blockPos[2], "upstair"]);
+                blockPos.action = "upstair"
+                path.splice(i + 1, 0, blockPos);
                 pathBlockCnt++
                 break
             case "scafford":
-                path.splice(i + 1, 0, [blockPos[0], blockPos[1], blockPos[2], "freeze", 6]);
+                blockPos.action = "freeze"
+                blockPos.metadata = 6
+                path.splice(i + 1, 0, blockPos);
                 pathBlockCnt++
                 break
         }
     }
     path.pathBlockCnt = pathBlockCnt
     if (options.strictfin) {
-        const fin = path[path.length - 1];
-        path.push([fin[0], fin[1], fin[2], "strict"])
+        const fin = path[path.length - 1].clone();
+        fin.action = "strict"
+        path.push(fin)
     }
 }
 
@@ -883,7 +883,7 @@ function isNotAvoidance(block) {
 
 
 function isStandable(pos) {
-    const vec = new Vec3(pos)
+    const vec = pos
     const B1 = bot.blockAt(vec.offset(0, -1, 0))
     const B2 = bot.blockAt(vec)
     const B3 = bot.blockAt(vec.offset(0, 1, 0))
@@ -900,8 +900,8 @@ function isStandable(pos) {
 }
 
 function isThroughable(pos) {
-    const B1 = bot.blockAt(new Vec3(pos))
-    const B2 = bot.blockAt(new Vec3(pos).offset(0, 1, 0))
+    const B1 = bot.blockAt(pos)
+    const B2 = bot.blockAt(pos.offset(0, 1, 0))
     if (B1.boundingBox != 'block' &&
         B2.boundingBox != 'block' &&
         isNotAvoidance(B2)
@@ -913,23 +913,23 @@ function isThroughable(pos) {
 }
 
 function isPlaceable(pos) {
-    const B = bot.blockAt(new Vec3(pos))
+    const B = bot.blockAt(pos)
     if (B.boundingBox == "empty" || B.boundingBox == "water")
         return true
     else
         return false
 }
 
+const roundPos = [
+    new Vec3(0, -1, 0),
+    new Vec3(1, 0, 0),
+    new Vec3(-1, 0, 0),
+    new Vec3(0, 0, 1),
+    new Vec3(0, 0, -1),
+    new Vec3(0, 1, 0)
+]
 function referenceAt(pos) {
-    const vec = new Vec3(pos)
-    const roundPos = [
-        new Vec3(0, -1, 0),
-        new Vec3(1, 0, 0),
-        new Vec3(-1, 0, 0),
-        new Vec3(0, 0, 1),
-        new Vec3(0, 0, -1),
-        new Vec3(0, 1, 0)
-    ]
+    const vec = pos
     for (let i = 0; i < roundPos.length; i++) {
         if (bot.blockAt(vec.plus(roundPos[i])).type != 0) {
             return bot.blockAt(vec.plus(roundPos[i]))
@@ -939,19 +939,19 @@ function referenceAt(pos) {
 }
 
 function setStandable(pos, limit = 15) {
-    floor(pos)
+    pos.floor()
     if (limit == 0) return isStandable(pos)
     if (!isStandable(pos)) {
         var direct = 1;
-        var tmp = plus(pos, [0, direct, 0]);
+        var tmp = pos.offset(0, direct, 0);
         while (!isStandable(tmp)) {
             direct *= -1;
             if (direct > 0) direct++;
             if (direct > limit) return false;
 
-            tmp = plus(pos, [0, direct, 0]);
+            tmp = pos.offset(0, direct, 0);
         }
-        add(pos, [0, direct, 0]);
+        pos.add(new Vec3(0, direct, 0));
     }
     return true;
 }
@@ -961,82 +961,28 @@ function getRandomPos(root, distance, height = 2) {
     var ret;
     for (var i = 0; i < limit; i++) {
         var rad = Math.random() * 2 * Math.PI;
-        var pl = [Math.random() * distance * Math.sin(rad), 0, Math.random() * distance * Math.cos(rad)];
-        ret = plus(root, pl);
+        var pl = new Vec3(Math.random() * distance * Math.sin(rad), 0, Math.random() * distance * Math.cos(rad));
+        ret = root.plus(pl);
         if (setStandable(ret, height)) return ret;
     }
     return root;
 }
 
 function isGoal(pos, goal, allowGoal, rejectGoal) {
-    if (getL1(pos, goal) <= allowGoal && getXZL1(pos, goal) > rejectGoal && getXZL1(plus(pos, [0, 1, 0]), goal) > rejectGoal) return true;
+    if (pos.manhattanDistanceTo(goal) <= allowGoal && xzManhattanDustance(pos, goal) > rejectGoal && xzManhattanDustance(pos.offset(0, 1, 0), goal) > rejectGoal) return true;
     else return false;
 }
 
-function getL1(pos, target) {
-    return Math.abs(target[0] - pos[0]) + Math.abs(target[1] - pos[1]) + Math.abs(target[2] - pos[2]);
-}
-
-function getXZL1(pos, target) {
-    return Math.abs(target[0] - pos[0]) + Math.abs(target[2] - pos[2]);
-}
-
-function getL2(pos, target) {
-    return Math.sqrt(Math.pow(target[0] - pos[0], 2) + Math.pow(target[1] - pos[1], 2) + Math.pow(target[2] - pos[2], 2));
-}
-
-function getXZL2(pos, target) {
-    return Math.sqrt((target[0] - pos[0]) * (target[0] - pos[0]) + (target[2] - pos[2]) * (target[2] - pos[2]));
-}
-
-function plus(pos, vel) {
-    return ([
-        pos[0] + vel[0],
-        pos[1] + vel[1],
-        pos[2] + vel[2]
-    ]);
-}
-
-function add(pos, vel) {
-    pos[0] += vel[0];
-    pos[1] += vel[1];
-    pos[2] += vel[2];
-    return pos;
-}
-
-function floor(pos) {
-    pos[0] = Math.floor(pos[0]);
-    pos[1] = Math.floor(pos[1]);
-    pos[2] = Math.floor(pos[2]);
-    return pos;
-}
-
-
-function scale(pos, scale) {
-    pos[0] *= scale;
-    pos[1] *= scale;
-    pos[2] *= scale;
-    return pos;
-}
-
-function getdirection(pos1, pos2) {
-    return Math.atan2(pos1[0] - pos2[0], pos1[2] - pos2[2])
-}
-
-function vectorFromTo(pos1, pos2) {
-    return new Vec3(pos1).minus(new Vec3(pos2))
+function xzManhattanDustance(pos, target) {
+    return Math.abs(target.x - pos.x) + Math.abs(target.z - pos.z);
 }
 
 function getRad2(pos1, pos2) {
-    return Math.atan2(pos1[0] - pos2[0], pos1[2] - pos2[2])
+    return Math.atan2(pos1.x - pos2.x, pos1.z - pos2.z)
 }
 
 function getRadDiff(rad1, rad2) {
     return Math.min(Math.abs(rad1 - rad2), Math.abs(2 * Math.PI + Math.min(rad1, rad2) - Math.max(rad1, rad2)))
-}
-
-function getPosFromVec3(abvec) {
-    return abvec.toArray()
 }
 
 function getMinInd(arr) {
@@ -1055,17 +1001,13 @@ function getMinInd(arr) {
     }
 }
 
-function getMyPos() {
-    return bot.entity.position.toArray()
+function myPosition() {
+    return bot.entity.position.clone()
 }
 
 function contains(arr, p) {
     for (var i = 0; i < arr.length; i++) {
-        if (arr[i][0] == p[0] &&
-            arr[i][1] == p[1] &&
-            arr[i][2] == p[2] &&
-            arr[i][3] == p[3]
-        ) {
+        if (isSame(arr[i], p)) {
             return true;
         }
     }
@@ -1114,8 +1056,8 @@ function setInterestEntity(entity = null) {
 bot.on('entityMoved', (entity) => {
     var distance = bot.entity.position.distanceTo(entity.position);
 
-    var collideDistance = getXZL2(getMyPos(), getPosFromVec3(entity.position));
-    var collideHeight = Math.abs(getMyPos()[1] - getPosFromVec3(entity.position)[1])
+    var collideDistance = myPosition().xzDistanceTo(entity.position);
+    var collideHeight = Math.abs(myPosition().y - entity.position.y)
 
     // 至近距離にプレイヤーがいる場合少し動く
     if (entity.type === 'player' && collideDistance < 0.8 && collideHeight < 1.5 && glob.doNothing() && glob.isCollisionalMode) {
