@@ -1,26 +1,37 @@
 const FileName = "chat_cache.json"
 jsonfile.writeFile(FileName, { elements: [] })
 
+bot.on("playerJoined", (player) => {
+    sendMessage(player.username + " joined the game")
+})
+
+bot.on("playerLeft", (player) => {
+    sendMessage(player.username + " left the game")
+})
 
 bot.on("chat", function (username, message) {
     if (!glob.CHATPROXY_SEND) return
     if (username == "Super_AI") return
     if (bot.username === username) return
 
+    sendMessage("{" + username + "} " + message)
+})
+
+function sendMessage(message) {
     jsonfile.readFile(FileName, {}, (err, data) => {
         if (err) {
             console.log(err)
             jsonfile.writeFile(FileName, { elements: [] })
             return
         }
-        data.elements.push({ pid: process.pid, time: getTime(), chat: "{" + username + "} " + message })
+        data.elements.push({ pid: process.pid, time: getTime(), chat: message })
         jsonfile.writeFileSync(FileName, data, {}, (err) => {
             console.log(err)
             jsonfile.writeFile(FileName, { elements: [] })
             return
         })
     })
-})
+}
 
 setInterval(checkChat, 1500)
 var lastTime = getTime()

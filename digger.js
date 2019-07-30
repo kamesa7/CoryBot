@@ -113,12 +113,14 @@ bot.on('death', () => {
 
 function stopDigging() {
     glob.stopMoving()
+    if (miner && !miner._destroyed) {
+        bot.log("[dig] stop digging : mined " + minedLength + "m")
+    }
     clearInterval(miner)
-    if (glob.logDig)
-        bot.log("[dig] stop digging")
 }
 
 var miner;
+var minedLength;
 function mining(d, length = 100) {
     clearInterval(miner)
     var direction
@@ -139,7 +141,7 @@ function mining(d, length = 100) {
     bot.log("[mining] From:" + origin + " To:" + origin.plus(direction.scaled(length)))
     var miningState = "check";
     var digging = new Vec3(0, 0, 0);
-    var minedLength = 0;
+    minedLength = 0;
     var prevMinedLength = 0;
     miner = setInterval(miningControl, glob.miningInterval)
     function miningControl() {
@@ -221,7 +223,7 @@ function mining(d, length = 100) {
                             return
                         } else {
                             digging.add(direction)
-                            minedLength = digging.norm()
+                            minedLength = Math.floor(digging.norm())
                             if (minedLength > length) {
                                 clearInterval(miner)
                                 bot.log("[mining] Mining Finished  " + length)
@@ -231,7 +233,7 @@ function mining(d, length = 100) {
                     }
                 }
                 if (minedLength - prevMinedLength >= glob.miningWorkProgress) {
-                    bot.log("[mining] Mining " + minedLength + "m " + (100 * minedLength / length) + "% at " + bot.entity.position.floored())
+                    bot.log("[mining] Mining " + minedLength + "m " + Math.floor(100 * minedLength / length) + "% at " + bot.entity.position.floored())
                     prevMinedLength = minedLength
                 }
                 miningState = "move";

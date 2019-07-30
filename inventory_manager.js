@@ -69,6 +69,7 @@ function startEat() {
 }
 
 function clearInventory() {
+    bot.log("[inventory] clear inventory");
     var stacks = 0;
     toss();
     function toss(err) {
