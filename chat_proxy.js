@@ -2,11 +2,11 @@ const FileName = "chat_cache.json"
 jsonfile.writeFile(FileName, { elements: [] })
 
 bot.on("playerJoined", (player) => {
-    sendMessage(player.username + " joined the game")
+    sendMessage(player.username + ": joined the game")
 })
 
 bot.on("playerLeft", (player) => {
-    sendMessage(player.username + " left the game")
+    sendMessage(player.username + ": left the game")
 })
 
 bot.on("chat", function (username, message) {

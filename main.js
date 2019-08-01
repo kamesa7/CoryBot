@@ -119,7 +119,7 @@ function initialize() {
     console.log('bot.end :: process exit');
     glob.event.emit("log", "---[[bot.end]]---")
     if (!glob.LOCAL) jsonfile.writeFileSync("session_cache.json", bot._client.session)
-    process.nextTick(process.exit);
+    setTimeout(process.exit, 500);
   });
 }
 

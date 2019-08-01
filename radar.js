@@ -221,7 +221,7 @@ io.on('connection', function (client) {
         glob.isInterestMode = flags.isInterestMode
         glob.isIgnoreMode = flags.isIgnoreMode
         glob.isBerserkerMode = flags.isBerserkerMode
-        bot.log("[rader] received new flags")
+        bot.log("[radar] received new flags")
     })
 
     function emitFlags() {
