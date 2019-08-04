@@ -140,7 +140,7 @@ $(function () {
 
     io.on('vital', function (msg) {
         if (logmode) console.log("on vital")
-        $('#vital').html('<img src="misc/Health_' + Math.min(msg.health, 20) + '.png"> <img src="misc/Hunger_' + Math.min(msg.food, 20) + '.png">')
+        $('#vital').html('<img src="misc/Health_' + Math.min(msg.health, 20) + '.png"> <img src="misc/Hunger_' + Math.min(msg.food, 20) + '.png"> ' + msg.level + " level")
     })
 
     io.on('myentity', function (player, state) {
@@ -150,10 +150,14 @@ $(function () {
                 drawAllEntity();
             }
             var hand;
-            if (me.heldItem)
-                hand = "[hand] " + me.heldItem.displayName
-            else
+            if (me.heldItem) {
+                const item = me.heldItem;
+                const metadata = (item.metadata == 0) ? ("") : ("::" + item.metadata)
+                const count = (item.count == 1) ? ("") : (" x" + item.count)
+                hand = "[hand] " + item.displayName + metadata + count
+            } else {
                 hand = "[hand] null"
+            }
             if (hand != $('#hand').text())
                 $('#hand').text(hand)
             var pos = "[pos] " + Math.round(me.position.x) + ", " + Math.round(me.position.y) + ", " + Math.round(me.position.z);

@@ -326,7 +326,8 @@ function emitServer() {
 function emitVital() {
     io.json.emit('vital', {
         health: Math.round(bot.health),
-        food: Math.round(bot.food)
+        food: Math.round(bot.food),
+        level: bot.experience.level
     })
 }
 
