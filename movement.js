@@ -158,10 +158,17 @@ function follow(entity) {
 }
 
 function reFollow(entity) {
-    if (!glob.isFollowing) return
+    if (!glob.isFollowing) return    
+    if (!entity || !entity.isValid) {
+        bot.log("[move] cannot find entity")
+        stopMoving();
+        return
+    }
     var start = myPosition().floor();
     var goal = entity.position.floored();
     setStandable(start);
+    
+    bot.lookAt(entity.position.offset(0, eyeHeight, 0), false)
 
     if (glob.logMove) bot.log("[move] follow revice " + goal);
     if (entity.position.distanceTo(bot.entity.position) < CONFIG.allowFollow) {
@@ -291,12 +298,8 @@ function followPath(path) {
                 bot.clearControlStates();
                 bot.log("[move] path error end : " + path[index] + path[index].action + " stops: " + stopCount);
                 if (glob.isFollowing) {
-                    if (targetEntity && targetEntity.isValid) {
-                        stopPath();
-                        reFollow(targetEntity);
-                    } else {
-                        stopMoving();
-                    }
+                    stopPath();
+                    reFollow(targetEntity);
                 } else if (glob.isRandomWalking) {
                     stopPath();
                     reRandom();
@@ -428,14 +431,9 @@ function followPath(path) {
                             index++;
                         }
                         break;
-                    case "follow":
-                        if (targetEntity && targetEntity.isValid) {
-                            bot.lookAt(targetEntity.position.offset(0, eyeHeight, 0), false)
-                            stopPath()
-                            reFollow(targetEntity);
-                        } else {
-                            stopMoving()
-                        }
+                    case "follow":                      
+                        stopPath()              
+                        reFollow(targetEntity);
                         break;
                     case "random":
                         stopPath()

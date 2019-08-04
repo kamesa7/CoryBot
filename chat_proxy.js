@@ -1,16 +1,25 @@
+console.log("CHAT PROXY send:" + glob.CHATPROXY_SEND + " read:" + glob.CHATPROXY_READ)
+
 const FileName = "chat_cache.json"
-jsonfile.writeFile(FileName, { elements: [] })
+bot.once('login', () => {
+    jsonfile.writeFile(FileName, {
+        elements: [
+            { pid: process.pid, time: getTime(), chat: bot.username + ": joined the game" }
+        ]
+    })
+})
+bot.on('end', () => {
+    sendMessage(bot.username + ": left the game")
+});
 
 bot.on("playerJoined", (player) => {
     sendMessage(player.username + ": joined the game")
 })
-
 bot.on("playerLeft", (player) => {
     sendMessage(player.username + ": left the game")
 })
 
 bot.on("chat", function (username, message) {
-    if (!glob.CHATPROXY_SEND) return
     if (username == "Super_AI") return
     if (bot.username === username) return
 
@@ -18,6 +27,7 @@ bot.on("chat", function (username, message) {
 })
 
 function sendMessage(message) {
+    if (!glob.CHATPROXY_SEND) return
     jsonfile.readFile(FileName, {}, (err, data) => {
         if (err) {
             console.log(err)

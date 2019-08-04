@@ -42,9 +42,10 @@ bot.on('death', () => {
 
 function stopBuild() {
     glob.stopMoving()
-    clearInterval(builder)
-    if (glob.logBuild)
+    if (builder && !builder._destroyed) {
         bot.log("[build] Stop Construction")
+    }
+    clearInterval(builder)
 }
 
 function loadSchematic(file) {
@@ -97,7 +98,7 @@ function loadSchematic(file) {
 var posterSlideRight = true
 function buildPoster(origin) {
     const buildData = glob.buildData
-    clearInterval(builder)
+    stopBuild()
     if (origin) {
         origin = origin.floored()
     } else {
@@ -140,7 +141,7 @@ function posterNext(origin, placing, open) {
                 // Y
                 if (++placing.y == buildData.size.height) { // assert
                     bot.log("[build] Create Poster Finished")
-                    clearInterval(builder)
+                    stopBuild()
                     return null
                 }
             }
@@ -151,7 +152,7 @@ function posterNext(origin, placing, open) {
 
 function buildBuilding(origin) {
     const buildData = glob.buildData
-    clearInterval(builder)
+    stopBuild()
     if (origin) {
         origin = origin.floored()
     } else {
@@ -198,7 +199,7 @@ function buildingNext(origin, placing, open) {
         }
     }
     bot.log("[build] Create Building Finished")
-    clearInterval(builder)
+    stopBuild()
     return null
 }
 
@@ -228,7 +229,7 @@ function nearestNext(origin, placing, open) {
         index = explength
     }
     bot.log("[build] Create Building Finished")
-    clearInterval(builder)
+    stopBuild()
     return null;
 
     function expand(target) {
@@ -247,7 +248,7 @@ function nearestNext(origin, placing, open) {
 }
 
 function generalBuild(origin, start, gotofunc, nextfunc) {
-    clearInterval(builder)
+    stopBuild()
     const buildData = glob.buildData
     var createState = "build";
     var placing = start;
@@ -291,7 +292,7 @@ function generalBuild(origin, start, gotofunc, nextfunc) {
                 do {
                     if (new Date().getTime() - prevTime > buildTimeout) {
                         bot.log("[build] Timeout in Serching Next")
-                        clearInterval(builder)
+                        stopBuild()
                         return
                     }
                     result = nextfunc(origin, placing, open)

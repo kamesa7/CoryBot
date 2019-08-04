@@ -247,10 +247,10 @@ function auctionSignal(clock) {
             }
             if (aucTimeSetting > glob.auctionCall && aucTimeCalled == false && aucDeadline.getTime() - clock.getTime() <= glob.auctionCall * 1000) {
                 aucTimeCalled = true
-                bot.chat(">残り" + glob.auctionCall + "秒未満です  現在Max: " + maxBidPlayer + " " + maxBid + " 締切: " + aucDeadline)
+                bot.chat(">残り" + glob.auctionCall + "秒未満です  現在Max: " + maxBidPlayer + " " + maxBid + " 締切: " + dateformat(aucDeadline, 'isoTime'))
             }
             if (clock.getTime() >= aucDeadline.getTime()) {//auction
-                bot.chat(">落札！ Max: " + maxBidPlayer + " " + maxBid)
+                bot.chat(">時間です！ Max: " + maxBidPlayer + " " + maxBid)
                 glob.isAuctioning = false
                 aucTimeSetting = 0
             }
@@ -264,9 +264,9 @@ function bidAuction(username, money) {
     if (money > maxBid) {
         maxBid = money
         maxBidPlayer = username
-        bot.log("[Auction Bid Accept]" + username + " " + money)
+        bot.log("[Auction Bid Accept] " + username + " " + money)
     } else {
-        bot.log("[Auction Bid Deny]" + username + " " + money)
+        bot.log("[Auction Bid Deny] " + username + " " + money)
     }
     setAuction(aucTimeSetting)
 }
