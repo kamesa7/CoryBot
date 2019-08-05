@@ -91,8 +91,11 @@ var foods = [
     260, 297, 320, 322, 350, 357, 360, 364, 366, 367, 391, 393, 400, 412, 424, 396
 ];
 
-var helmets = [
-    310, 306, 302, 314, 298
+var armors = [
+    [310, 306, 302, 314, 298],
+    [311, 307, 303, 315, 299],
+    [312, 308, 304, 316, 300],
+    [313, 309, 305, 317, 301]
 ];
 
 function findItem(target, metadata = undefined, isOK = (item) => { return true }) {
@@ -146,8 +149,10 @@ bot.inventory.on("windowUpdate", () => {
 })
 bot.on("playerCollect", (collector, collected) => {
     if (collector.id != bot.entity.id) return
-    bodyManage(false)
-    checkArmor()
+    setTimeout(function () {
+        bodyManage(false)
+        checkArmor()
+    }, 300);
 })
 
 function inventoryItemCount() {
@@ -172,9 +177,9 @@ function checkArmor() {
 function equipArmor(dest) {
     if (dest == undefined) return
     glob.queueState("armor", function () {
-        for (let index = 0; index < helmets.length; index++) {
-            let item = findItem(helmets[index] + dest);
-            if (item != null && (item.slot < 5 || 8 < item.slot)) {
+        let item = findItem(armors[dest]);
+        if (item != null && (item.slot < 5 || 8 < item.slot)) {
+            setTimeout(() => {
                 switch (dest) {
                     case 0: bot.equip(item, "head", function (err) {
                         if (err) bot.log(err)
@@ -193,10 +198,10 @@ function equipArmor(dest) {
                         glob.finishState("armor")
                     }); break;
                 }
-                return
-            }
+            }, 300);
+        } else {
+            glob.finishState("armor")
         }
-        glob.finishState("armor")
     })
 }
 

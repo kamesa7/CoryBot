@@ -85,7 +85,7 @@ function arrowDefence(arrow) {
     var forto = new Vec3(-Math.sin(arrow.yaw), Math.sin(arrow.pitch - Math.PI), Math.cos(arrow.yaw)).unit()
     var inpro = forme.innerProduct(forto)
 
-    if (Math.acos(inpro) > Math.PI / Math.max(0, (18 - 32 / dist))) return;
+    if (Math.acos(inpro) > Math.PI / Math.max(6, (27 - 0.65 * (32 - dist)))) return;
 
     bot.log("[combat] detecting an approaching arrow")
     guard(arrow.position)
@@ -354,9 +354,9 @@ function isEnemy(entity) {
     if (glob.neutrals.includes(entity.id)) return false
     if (glob.hostiles.includes(entity.id)) return true
     //Hostile && NotNamed && NotZombiePig
-    if (entity.name && entity.kind && entity.kind == "Hostile mobs"){
-        if(entity.metadata[2] && entity.metadata[2] != "");// is named
-        else if(entity.name == "zombie_pigman" && !(glob.antiZombiePigmanMode || entity.metadata[14]));// not attackable
+    if (entity.name && entity.kind && entity.kind == "Hostile mobs") {
+        if (entity.metadata[2] && entity.metadata[2] != "");// is named
+        else if (entity.name == "zombie_pigman" && !(glob.antiZombiePigmanMode || entity.metadata[14]));// not attackable
         else return true
     }
     if (glob.isBerserkerMode && entity.username) return true
