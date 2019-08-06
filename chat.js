@@ -42,8 +42,12 @@ bot.on('chat', (username, message) => {
         if (!calcMessage.match(/¬/)) bot.safechat(calcMessage)
     }
 
-    //Follow
     if (message.match(glob.NAMECALL_REGEXP)) {
+        if (message.match(/omikuji$/)) {
+            bot.safechat("/omikuji")
+        }
+        
+        //Follow
         if (message.match(/おいで$/)) {
             if (bot.players[username] && bot.players[username].entity) {
                 bot.log("[move] chat goto " + username)
@@ -101,12 +105,6 @@ bot.on('chat', (username, message) => {
         } else {
             bot.safechat("今は" + glob.currentMusic.title + "を演奏中です。")
         }
-    }
-
-    //combat
-    if (message.match(/^enemy (.*)$/i)) {
-        glob.hostiles.push(RegExp.$1)
-        bot.log("[combat] add hostile : " + RegExp.$1)
     }
 
     if (message.match(/^fire$/i)) {

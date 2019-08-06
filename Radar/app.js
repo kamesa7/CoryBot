@@ -160,7 +160,7 @@ $(function () {
             }
             if (hand != $('#hand').text())
                 $('#hand').text(hand)
-            var pos = "[pos] " + Math.round(me.position.x) + ", " + Math.round(me.position.y) + ", " + Math.round(me.position.z);
+            var pos = "[pos] " + Math.floor(me.position.x) + ", " + Math.floor(me.position.y) + ", " + Math.floor(me.position.z);
             if (pos != $('#position').text())
                 $('#position').text(pos)
             if (("[state] " + state) != $('#state').text())
@@ -442,6 +442,10 @@ $(function () {
 
     function getPlayerImageSrc(uuid) {
         return 'src="https://crafatar.com/avatars/' + uuid + '?size=16.png"'
+    }
+
+    function getVec3string(v) {
+        return "(" + Math.floor(v.x) + ", " + Math.floor(v.y) + ", " + Math.floor(v.z) + ")"
     }
 
 });

@@ -1,29 +1,31 @@
 console.log("CHAT PROXY send:" + glob.CHATPROXY_SEND + " read:" + glob.CHATPROXY_READ)
 
 const FileName = "chat_cache.json"
-bot.once('login', () => {
-    jsonfile.writeFileSync(FileName, {
-        elements: [
-            { pid: process.pid, time: getTime(), chat: bot.username + ": joined the game" }
-        ]
+jsonfile.writeFile(FileName, {
+    elements: [
+        { pid: process.pid, time: getTime(), chat: "I joined the game" }
+    ]
+}, undefined, () => {
+
+    bot.on('end', () => {
+        sendMessage("I left the game")
+    });
+
+    bot.on("playerJoined", (player) => {
+        sendMessage(player.username + ": joined the game")
     })
-})
-bot.on('end', () => {
-    sendMessage(bot.username + ": left the game")
-});
+    bot.on("playerLeft", (player) => {
+        sendMessage(player.username + ": left the game")
+    })
 
-bot.on("playerJoined", (player) => {
-    sendMessage(player.username + ": joined the game")
-})
-bot.on("playerLeft", (player) => {
-    sendMessage(player.username + ": left the game")
-})
+    bot.on("chat", function (username, message) {
+        if (username == "Super_AI") return
+        if (bot.username === username) return
 
-bot.on("chat", function (username, message) {
-    if (username == "Super_AI") return
-    if (bot.username === username) return
+        sendMessage("{" + username + "} " + message)
+    })
 
-    sendMessage("{" + username + "} " + message)
+    setInterval(checkChat, 1500)
 })
 
 function sendMessage(message) {
@@ -43,7 +45,6 @@ function sendMessage(message) {
     })
 }
 
-setInterval(checkChat, 1500)
 var lastTime = getTime()
 function checkChat() {
     if (!glob.CHATPROXY_READ) return
