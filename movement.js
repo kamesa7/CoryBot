@@ -881,7 +881,7 @@ function optimize(path) {
 }
 
 function isNotAvoidance(block) {
-    if (block.name.match(/wall|fence|lava|water|magma/))
+    if (block.name.match(/wall|fence|lava|magma/))
         return false;
     else
         return true;
@@ -895,6 +895,7 @@ function isStandable(pos) {
     if (B1.boundingBox == 'block' &&
         B2.boundingBox != 'block' &&
         B3.boundingBox != 'block' &&
+        B3.boundingBox != 'water' &&
         isNotAvoidance(B1) &&
         isNotAvoidance(B2)
     ) {
