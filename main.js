@@ -35,10 +35,11 @@ for (var i = 0; i < process.argv.length; i++) {
   else if (arg == "-frader") { glob.RADAR = false; }
   else if (arg == "-fproxy") { glob.CHATPROXY_SEND = false; glob.CHATPROXY_READ = false; }
 }
-console.log("repl to debug");
+console.log("starting");
 
 initialize()
 dirCheck()
+moduleReplace()
 addVectorPrototype()
 
 bot.loadPlugin(require('mineflayer-blockfinder')(mineflayer));
@@ -121,6 +122,33 @@ function initialize() {
     if (!glob.LOCAL) jsonfile.writeFileSync("session_cache.json", bot._client.session)
     setTimeout(process.exit, 500);
   });
+}
+
+function moduleReplace() {
+  check("blocks.json", "minecraft-data/minecraft-data/data/pc/1.12")
+  check("instruments.json", "minecraft-data/minecraft-data/data/pc/1.12")
+  check("entities.js", "mineflayer/lib/plugins")
+  check("digging.js", "mineflayer/lib/plugins")
+  check("inventory.js", "mineflayer/lib/plugins")
+  check("physics.js", "mineflayer/lib/plugins")
+
+  function check(source, targetdir) {
+    const src = __dirname + "/replace/" + source;
+    const dest = __dirname + "/node_modules/" + targetdir + "/" + source;
+    fs.stat(src, function (err, stats) {
+      if (err) throw err;
+      let date1 = stats.mtimeMs;
+      fs.stat(dest, function (err, stats) {
+        if (err) throw err;
+        let date2 = stats.mtimeMs;
+        if (date1 == date2) return
+        fs.copyFile(src, dest, function (err) {
+          if (err) throw err;
+          console.log("Replaced module " + source)
+        })
+      })
+    })
+  }
 }
 
 function dirCheck() {
