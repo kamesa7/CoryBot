@@ -7,8 +7,8 @@ glob.isOmikujiReactionMode = false
 glob.setAuction = setAuction
 glob.autoAuction = autoAuction
 glob.secretInit = secretInit
-glob.checkCount = checkCount
-glob.deleteCount = deleteCount
+glob.oreCheckCount = oreCheckCount
+glob.oreDeleteCount = oreDeleteCount
 
 setInterval(time_signal, 200)
 
@@ -18,6 +18,11 @@ function time_signal() {
     newDayOmikuji(clock)
     auctionSignal(clock)
     prevclock = clock
+}
+function newDayOmikuji(clock) {
+    if (clock.getHours() == 0 && clock.getHours() != prevclock.getHours()) {
+        bot.safechat('/omikuji', 9000)
+    }
 }
 
 //hi
@@ -33,20 +38,58 @@ bot.on('playerJoined', (player) => {
 
 //normalchat
 bot.on('chat', (username, message) => {
-    if (username == "Super_AI") return
     if (bot.username === username) return
-    
+    onMessage(username, message, chat)
+
+    //Auction
+    if (message.match(/^>\s*(\d+)$/)) {
+        const money = Number(RegExp.$1)
+        if (glob.isAuctioning) {
+            bidAuction(username, money)
+        } else {
+            secretAuction(username, money)
+        }
+    }
+    if (message.match(/^(Auction|オークション)$/i)) {
+        setAuction(60)
+    }
+    if (message.match(/^(Auction|オークション) \s*(-?\w+)\s*$/i)) {
+        setAuction(Number(RegExp.$2))
+    }
+})
+
+//whisper
+bot.on('whisper', (username, message) => {
+    if (bot.username === username) bot.log('[botselfcommand]')
+    onMessage(username, message, whisper)
+
+    if (message.match(/^autoAuction \s*(-?\w+)\s*/i)) {
+        autoAuction(username, Number(RegExp.$1))
+    }
+})
+
+function onMessage(username, message, cb) {
+    if (username == "Super_AI") return
+
+    //hi
+    if (username === last_joined_player) {
+        if (message.match(/^(?:hi|hai|ひ|日|はい|へ|hi \(日\))$/))
+            safechat('hi', 2000)
+        last_joined_player = null
+    }
+
     //Calculator
     if (message.match(/(.*)=$/)) {
         var calcMessage = glob.Calc(message)
-        if (!calcMessage.match(/¬/)) bot.safechat(calcMessage)
+        if (!calcMessage.match(/¬/)) safechat(calcMessage)
     }
 
+    //Name Call
     if (message.match(glob.NAMECALL_REGEXP)) {
         if (message.match(/omikuji$/)) {
-            bot.safechat("/omikuji")
+            safechat("/omikuji")
         }
-        
+
         //Follow
         if (message.match(/おいで$/)) {
             if (bot.players[username] && bot.players[username].entity) {
@@ -70,40 +113,32 @@ bot.on('chat', (username, message) => {
             glob.stopMoving()
             bot.log("[move] chat stop ")
         }
+
+        if (message.match(/返事/)) {
+            safechat("はい")
+        }
+
+        if (message.match(/かわいい/)) {
+            safechat("^_^")
+        }
     }
 
     //OreFound
     if (message.match(/^採掘(?:記録|ログ)$/)) {
-        checkCount(username)
+        safechat(oreCheckCount(username))
     } else if (message.match(/^採掘(?:記録|ログ) (.+)$/)) {
-        checkCount(RegExp.$1)
+        safechat(oreCheckCount(RegExp.$1))
     } else if (message.match(/^採掘(?:記録|ログ)削除$/)) {
-        deleteCount(username)
-    }
-
-    //Auction
-    if (message.match(/^>\s*(\d+)$/)) {
-        const money = Number(RegExp.$1)
-        if (glob.isAuctioning) {
-            bidAuction(username, money)
-        } else {
-            secretAuction(username, money)
-        }
-    }
-    if (message.match(/^(Auction|オークション)$/i)) {
-        setAuction(60)
-    }
-    if (message.match(/^(Auction|オークション) \s*(-?\w+)\s*$/i)) {
-        setAuction(Number(RegExp.$2))
+        safechat(oreDeleteCount(username))
     }
 
     //Music
     if (message.match(/^Music info/i) && glob.getState() == "music") {
         if (glob.isPlaylistMode) {
-            bot.safechat("今はプレイリスト" + glob.Playlist + ":" + glob.PlaylistIndex + "/" + glob.PlaylistFiles.length + "曲目の" + glob.currentMusic.title
+            safechat("今はプレイリスト" + glob.Playlist + ":" + glob.PlaylistIndex + "/" + glob.PlaylistFiles.length + "曲目の" + glob.currentMusic.title
                 + "(" + glob.currentMusic.duration + "秒)を演奏中です。")
         } else {
-            bot.safechat("今は" + glob.currentMusic.title + "を演奏中です。")
+            safechat("今は" + glob.currentMusic.title + "を演奏中です。")
         }
     }
 
@@ -119,33 +154,23 @@ bot.on('chat', (username, message) => {
 
     //inventoly
     if (message.match(/^equip$/i)) {
-        glob.equipArmor()
+        glob.checkArmor()
     }
 
     if (message.match(/^equip head$/i)) {
         glob.equipHead()
     }
 
-    //hi
-    if (username === last_joined_player) {
-        if (message.match(/^(?:hi|hai|ひ|日|はい|へ|hi \(日\))$/))
-            bot.safechat('hi', 2000)
-        last_joined_player = null
+    function safechat(output, delay) {
+        cb(username, output, delay)
     }
-})
-
-//whisper
-bot.on('whisper', (username, message) => {
-    if (bot.username === username) {
-        bot.log('[botselfcommand]')
-    }
-    if (message.match(/(.*)=$/)) {
-        bot.safechat("/tell " + username + " " + message + "  " + glob.Calc(message))
-    }
-    if (message.match(/^autoAuction \s*(-?\w+)\s*/i)) {
-        autoAuction(username, Number(RegExp.$1))
-    }
-})
+}
+function chat(username, message, delay) {
+    bot.safechat(message, delay)
+}
+function whisper(username, message, delay) {
+    bot.safechat("/msg " + username + " " + message, delay)
+}
 
 //omikuji
 bot.on('omikuji', (username, message) => {
@@ -161,11 +186,7 @@ bot.on('omikuji', (username, message) => {
             "オレンジ様だ", "レモン様だ", "今日の運勢「柑橘類」", "(笑)", "柑橘類（笑）"])
     }
 })
-function newDayOmikuji(clock) {
-    if (clock.getHours() == 0 && clock.getHours() != prevclock.getHours()) {
-        bot.safechat('/omikuji', 9000)
-    }
-}
+
 
 //death
 var is_dead = false
@@ -180,7 +201,6 @@ bot.on('spawn', () => {
     if (glob.isAnnounceDeathMode) bot.safechat("よろしければ遺品回収してください。" + dead_point)
     is_dead = false
 })
-
 
 //orefound
 glob.miningCount = {}
@@ -205,10 +225,9 @@ bot.on('orefound', (username, ore, countStr) => {
     if (glob.logMining) bot.log("[orefound] " + username + " " + ore + " " + (data[ore] - countNum) + " -> " + data[ore] + "  (+" + countNum + ")")
 })
 
-function checkCount(username) {
+function oreCheckCount(username) {
     if (!glob.miningCount[username]) {
-        bot.safechat(username + "さんの採掘記録はありません")
-        return
+        return (username + "さんの採掘記録はありません")
     }
     const user = glob.miningCount[username]
     const data = user.data
@@ -216,14 +235,16 @@ function checkCount(username) {
     Object.keys(data).forEach(function (key) {
         output += key.replace(" ", "_") + ":" + data[key] + "個, "
     })
-    bot.safechat(output)
+    return (output)
 }
 
-function deleteCount(username) {
+function oreDeleteCount(username) {
     glob.miningCount[username] = false
-    bot.safechat(username + "さんの採掘記録を消しました")
+    return (username + "さんの採掘記録を消しました")
 }
 
+
+//Auctions
 glob.auctionCall = 15
 var aucTimeCalled = false
 var aucDeadline

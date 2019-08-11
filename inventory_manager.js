@@ -13,6 +13,7 @@ glob.startEat = startEat;
 glob.findItem = findItem;
 glob.checkItemCount = checkItemCount
 glob.clearInventory = clearInventory;
+glob.checkArmor = checkArmor;
 glob.equipArmor = equipArmor;
 glob.equipHead = equipHead;
 
