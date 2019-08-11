@@ -1,7 +1,7 @@
 console.log("CHAT PROXY send:" + glob.CHATPROXY_SEND + " read:" + glob.CHATPROXY_READ)
 
 const FileName = "chat_cache.json"
-jsonfile.writeFile(FileName, {
+if (glob.CHATPROXY_SEND) jsonfile.writeFile(FileName, {
     elements: [
         { pid: process.pid, time: getTime(), chat: "I joined the game" }
     ]

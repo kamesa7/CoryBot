@@ -31,9 +31,9 @@ for (var i = 0; i < process.argv.length; i++) {
   else if (arg == "-host") { process.env.MC_LOCAL_HOST = process.argv[i + 1]; process.env.MC_HOST = process.argv[i + 1]; }
   else if (arg == "-port") { process.env.MC_LOCAL_PORT = process.argv[i + 1]; process.env.MC_PORT = process.argv[i + 1]; }
   else if (arg == "-rport") { glob.RADAR_PORT = process.argv[i + 1]; glob.RADAR = true; }
-  else if (arg == "-vchat") { glob.VANILLA_CHAT = true; }
-  else if (arg == "-frader") { glob.RADAR = false; }
-  else if (arg == "-fproxy") { glob.CHATPROXY_SEND = false; glob.CHATPROXY_READ = false; }
+  else if (arg == "-vchat") { glob.VANILLA_CHAT = process.argv[i + 1] === "true" ? true : false; }
+  else if (arg == "-rader") { glob.RADAR = process.argv[i + 1] === "true" ? true : false; }
+  else if (arg == "-proxy") { glob.CHATPROXY_SEND = process.argv[i + 1] === "true" ? true : false; glob.CHATPROXY_READ = process.argv[i + 1] === "true" ? true : false;; }
 }
 console.log("starting");
 
