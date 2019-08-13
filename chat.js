@@ -85,7 +85,7 @@ function onMessage(username, message, cb) {
     }
 
     //Name Call
-    if (message.match(glob.NAMECALL_REGEXP)) {
+    if (message.match(glob.NAMECALL_REGEXP) || cb === whisper) {
         if (message.match(/omikuji$/)) {
             safechat("/omikuji")
         }
