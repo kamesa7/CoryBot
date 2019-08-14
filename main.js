@@ -28,7 +28,7 @@ for (var i = 0; i < process.argv.length; i++) {
   var arg = process.argv[i];
   if (arg == "-debug") { glob.LOCAL = true; }
   else if (arg == "-name") { steveNum = process.argv[i + 1]; }
-  else if (arg == "-host") { process.env.MC_LOCAL_HOST = process.argv[i + 1]; process.env.MC_HOST = process.argv[i + 1]; }
+  else if (arg == "-host") { glob.LOCAL = false; process.env.MC_HOST = process.argv[i + 1]; }
   else if (arg == "-port") { process.env.MC_LOCAL_PORT = process.argv[i + 1]; process.env.MC_PORT = process.argv[i + 1]; }
   else if (arg == "-rport") { glob.RADAR_PORT = process.argv[i + 1]; glob.RADAR = true; }
   else if (arg == "-vchat") { glob.VANILLA_CHAT = process.argv[i + 1] === "true" ? true : false; }
@@ -53,6 +53,7 @@ require("./combat")
 require("./builder")
 require("./digger")
 require("./elytra")
+require("./farmer")
 require("./calculator")
 require("./music_player")
 require("./pearl_golf")
@@ -101,6 +102,9 @@ function initialize() {
     console.log('User [' + process.env.MC_USERNAME + ']');
   }
 
+  process.env.MC_USERNAME = undefined
+  process.env.MC_PASSWORD = undefined
+
   bot.on('login', () => {
     console.log('Name [' + bot.username + ']');
     if (bot._client.session) {
@@ -145,6 +149,7 @@ function moduleReplace() {
         fs.copyFile(src, dest, function (err) {
           if (err) throw err;
           console.log("Replaced module " + source)
+          console.log("--RESTART IS NEEDED-- to complete replace")
         })
       })
     })
@@ -211,5 +216,8 @@ function addVectorPrototype() {
     var ry = Math.round(this.y);
     var rz = Math.round(this.z);
     return new Vec3(rx, ry, rz);
+  };
+  Vec3Plus.prototype.rectDistanceTo = function (other) {
+    return Math.max(Math.abs(other.x - this.x), Math.abs(other.y - this.y), Math.abs(other.z - this.z))
   };
 }
