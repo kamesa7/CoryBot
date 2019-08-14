@@ -203,14 +203,11 @@ function inject (bot) {
   function collisionInRange (boundingBoxMin, boundingBoxMax) {
     const cursor = new Vec3(0, 0, 0)
     let block
-    let water
     for (cursor.x = boundingBoxMin.x; cursor.x <= boundingBoxMax.x; cursor.x++) {
       for (cursor.y = boundingBoxMin.y; cursor.y <= boundingBoxMax.y; cursor.y++) {
         for (cursor.z = boundingBoxMin.z; cursor.z <= boundingBoxMax.z; cursor.z++) {
           block = bot.blockAt(cursor)
-          water = bot.blockAt(cursor.plus(new Vec3(0, 1, 0)))
           if (block && block.boundingBox === 'block') return true
-          else if(water && water.boundingBox === 'water') return true
         }
       }
     }

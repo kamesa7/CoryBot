@@ -1,5 +1,4 @@
 nbt = require("binary-nbt")
-fs = require("fs")
 zlib = require('zlib')
 
 glob.stopBuild = stopBuild

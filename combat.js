@@ -53,11 +53,12 @@ setInterval(() => {
 function combatCheck(entity) {
     if (!bot.entity || !bot.entity.position || !entity.isValid) return
     const distance = bot.entity.position.distanceTo(entity.position);
-    if (glob.isArrowDefenceMode && isAliveArrow(entity)) {// arrows
-        arrowDefence(entity)
-    }
-    if (entity.username) {//player
-        if (entity.metadata[6] == 1) {//bowing
+    if (glob.isArrowDefenceMode) {
+        if (isAliveArrow(entity)) {// arrows
+            arrowDefence(entity)
+        }
+        if (entity.username &&//player
+            entity.metadata[6] == 1) {//bowing
             targetedDefence(entity)
         }
     }
@@ -102,6 +103,10 @@ function targetedDefence(player) {
 }
 
 function guard(look) {
+    if (glob.findItem(442) == null) {
+        bot.log("[combat] No Shield")
+        return;
+    }
     glob.changeState("guarding")
 
     bot.lookAt(look, true);

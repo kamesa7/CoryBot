@@ -78,7 +78,7 @@ bot.randomchat = (messages, delay = 800) => {
 }
 
 var prevLog = ""
-var logStroke = 1
+var logStroke = 0
 var prevTimestamp
 var loggingWaiter = null
 bot.log = (str) => {
@@ -87,13 +87,10 @@ bot.log = (str) => {
         logStroke++
         prevTimestamp = timestamp()
         loggingWaiter = setTimeout(clearPrevLog, glob.loggingInterval)
-        return
-    } else if (logStroke > 1) {
-        const cache = prevTimestamp + prevLog + " x" + logStroke
+        return;
+    } else if (logStroke > 0) {
+        clearPrevLog();
         prevLog = str
-        logStroke = 1
-        console.log('\u001b[0m' + cache);
-        glob.event.emit("log", cache)
     } else {
         prevLog = str
     }
@@ -103,9 +100,9 @@ bot.log = (str) => {
 }
 
 function clearPrevLog() {
-    const str = prevTimestamp + prevLog + " x" + logStroke
+    const str = (logStroke >= 2) ? (prevTimestamp + prevLog + " x" + logStroke) : (prevTimestamp + prevLog);
     prevLog = ""
-    logStroke = 1
+    logStroke = 0
     console.log('\u001b[0m' + str);
     glob.event.emit("log", str)
 }
