@@ -1,7 +1,8 @@
-glob.logFarm = true;
+glob.logFarm = false;
 glob.farmInterval = 750
 glob.farmReCheckInterval = 5000
 
+glob.stopFarm = stopFarm
 glob.farm = farm
 var farmer;
 
@@ -32,10 +33,10 @@ function farm(argOrigin, argSize) {
         switch (farmState) {
             case "check":
                 let res = nearestFarm(origin, size, placing)
-                if (res) farmState = "goto"
-                else farmState = "wait"
-                return;
-            case "goto":
+                if (!res) {
+                    farmState = "wait"
+                    return;
+                }
                 glob.goToPos(origin.plus(placing), {
                     ignore: !glob.logFarm,
                     allowGoal: 0,
@@ -73,6 +74,7 @@ function farm(argOrigin, argSize) {
                 }
                 glob.queueOnceState("sowing", () => {
                     if (glob.logFarm) bot.log("[farm] sowing " + seeds)
+                    item = glob.findItem(mcData.itemsByName[seeds].id)
                     glob.placeBlockAt(item, origin.plus(placing), (err) => {
                         if (err) {
                             bot.log(err)

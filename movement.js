@@ -888,7 +888,7 @@ function chase(entity) {
 }
 
 function isNotAvoidance(block) {
-    if (block.name.match(/wall|fence|lava|magma/))
+    if (block.name.match(/wall|fence|lava|magma|carpet/))
         return false;
     else
         return true;
@@ -904,7 +904,8 @@ function isStandable(pos) {
         B3.boundingBox != 'block' &&
         B3.boundingBox != 'water' &&
         isNotAvoidance(B1) &&
-        isNotAvoidance(B2)
+        isNotAvoidance(B2) &&
+        isNotAvoidance(B3)
     ) {
         return true;
     } else {
@@ -917,6 +918,7 @@ function isThroughable(pos) {
     const B2 = bot.blockAt(pos.offset(0, 1, 0))
     if (B1.boundingBox != 'block' &&
         B2.boundingBox != 'block' &&
+        isNotAvoidance(B1) &&
         isNotAvoidance(B2)
     ) {
         return true;
