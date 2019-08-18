@@ -1,8 +1,9 @@
-flag.logFarm = false;
+flag.SowSeeds = true
+flag.LongReeds = true
+flag.logFarm = false
+
 glob.farmInterval = 750
 glob.farmReCheckInterval = 5000
-
-flag.LongReeds = true
 
 glob.stopFarm = stopFarm
 glob.farm = farm
@@ -61,7 +62,7 @@ function farm(argOrigin, argSize) {
                         glob.finishState("harvest")
                     })
                 })
-                if (typeof seeds == "string") {
+                if (typeof seeds == "string" && flag.SowSeeds) {
                     farmState = "sowing"
                 } else {
                     farmState = "check"

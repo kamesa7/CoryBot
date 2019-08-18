@@ -193,7 +193,8 @@ $(function () {
                     $('#target_entity').val("");
                 $('#target_entity_name').text(player.username)
             })
-        });
+        });        
+        drawEntity(players[me.username].entity)
     });
 
     io.on('entityapper', function (entity) {
@@ -308,7 +309,6 @@ $(function () {
         for (var i = 0; i < entities.length; i++) {
             drawEntity(entities[i]);
         }
-        drawEntity(me)
     }
 
     function drawEntity(entity) {

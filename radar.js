@@ -311,7 +311,6 @@ function emitServer() {
         username: bot.username,
     })
     io.json.emit('players', bot.players)
-    io.json.emit('entityapper', bot.entity)
 }
 
 function emitVital() {

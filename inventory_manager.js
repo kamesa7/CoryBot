@@ -1,4 +1,5 @@
 const QUICK_BAR_START = 36
+const eatTimeout = 3500
 /*
 const armorSlots = {
   head: 5,
@@ -56,7 +57,7 @@ function startEat() {
                     return;
                 }
                 bot.log("[eat] eat: " + item.name);
-                var stat = setTimeout(glob.finishState, 4500, "eating")
+                var stat = setTimeout(glob.finishState, eatTimeout, "eating")
                 bot.consume(function () {
                     glob.finishState("eating");
                     clearTimeout(stat)
