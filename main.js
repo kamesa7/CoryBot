@@ -1,3 +1,4 @@
+console.log("starting");
 require('dotenv').config();
 const mineflayer = require('mineflayer');
 const events = require('events');
@@ -15,7 +16,7 @@ var steveNum = "";
 glob = {
   LOCAL: process.env.MC_LOCAL === "true" ? true : false,
   USE_CACHE: process.env.MC_USE_CACHE === "true" ? true : false,
-  RADAR: process.env.MC_RADAR === "true" ? true : false,
+  USE_RADAR: process.env.MC_RADAR === "true" ? true : false,
   RADAR_PORT: process.env.MC_RADAR_PORT,
   VANILLA_CHAT: process.env.MC_VANILLA_CHAT === "true" ? true : false,
   NAMECALL_REGEXP: new RegExp(process.env.MC_NAMECALL_REGEXP, "i"),
@@ -24,18 +25,21 @@ glob = {
   event: new events.EventEmitter()
 };
 
+flag = {
+
+}
+
 for (var i = 0; i < process.argv.length; i++) {
   var arg = process.argv[i];
   if (arg == "-debug") { glob.LOCAL = true; }
   else if (arg == "-name") { steveNum = process.argv[i + 1]; }
   else if (arg == "-host") { glob.LOCAL = false; process.env.MC_HOST = process.argv[i + 1]; }
   else if (arg == "-port") { process.env.MC_LOCAL_PORT = process.argv[i + 1]; process.env.MC_PORT = process.argv[i + 1]; }
-  else if (arg == "-rport") { glob.RADAR_PORT = process.argv[i + 1]; glob.RADAR = true; }
+  else if (arg == "-rport") { glob.USE_RADAR = true; glob.RADAR_PORT = process.argv[i + 1]; }
   else if (arg == "-vchat") { glob.VANILLA_CHAT = process.argv[i + 1] === "true" ? true : false; }
-  else if (arg == "-rader") { glob.RADAR = process.argv[i + 1] === "true" ? true : false; }
+  else if (arg == "-rader") { glob.USE_RADAR = process.argv[i + 1] === "true" ? true : false; }
   else if (arg == "-proxy") { glob.CHATPROXY_SEND = process.argv[i + 1] === "true" ? true : false; glob.CHATPROXY_READ = process.argv[i + 1] === "true" ? true : false;; }
 }
-console.log("starting");
 
 initialize()
 dirCheck()
@@ -57,7 +61,7 @@ require("./farmer")
 require("./calculator")
 require("./music_player")
 require("./pearl_golf")
-if (glob.RADAR) require("./radar")
+if (glob.USE_RADAR) require("./radar")
 if (!glob.LOCAL && (glob.CHATPROXY_SEND || glob.CHATPROXY_READ)) require("./chat_proxy")
 
 function initialize() {

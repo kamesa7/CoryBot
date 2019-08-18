@@ -1,5 +1,5 @@
-glob.logBlockUpdate = false;
-glob.logEffect = false;
+flag.logBlockUpdate = false;
+flag.logEffect = false;
 
 const defaultPhysics = {
     maxGroundSpeed: 4.27, // according to the internet
@@ -16,7 +16,7 @@ const defaultPhysics = {
 
 bot.on("entityEffect", function (entity, effect) {
     if (entity == bot.entity) {
-        if (glob.logEffect) bot.log("[myEffect] " + effect.id + " : " + effect.amplifier + " : " + effect.duration);
+        if (flag.logEffect) bot.log("[myEffect] " + effect.id + " : " + effect.amplifier + " : " + effect.duration);
         switch (effect.id) {
             case 1:
                 bot.physics.maxGroundSpeed = defaultPhysics.maxGroundSpeed * ((effect.amplifier + 1) * 0.2 + 1);
@@ -29,7 +29,7 @@ bot.on("entityEffect", function (entity, effect) {
 
 bot.on("entityEffectEnd", function (entity, effect) {
     if (entity == bot.entity) {
-        if (glob.logEffect) bot.log("[myEffectEnd] " + effect.id + " : " + effect.amplifier + " : " + effect.duration);
+        if (flag.logEffect) bot.log("[myEffectEnd] " + effect.id + " : " + effect.amplifier + " : " + effect.duration);
         switch (effect.id) {
             case 1:
                 bot.physics.maxGroundSpeed = defaultPhysics.maxGroundSpeed;
@@ -41,12 +41,12 @@ bot.on("entityEffectEnd", function (entity, effect) {
 });
 
 bot.on("blockUpdate", function (oldBlock, newBlock) {
-    if (glob.logBlockUpdate) bot.log("[new block] " + newBlock.name);
+    if (flag.logBlockUpdate) bot.log("[new block] " + newBlock.name);
     if (newBlock.light < mcData.blocks[newBlock.type].emitLight) {
-        if (glob.logBlockUpdate) bot.log("[light] new " + newBlock.name);
+        if (flag.logBlockUpdate) bot.log("[light] new " + newBlock.name);
         newLightCnt = 0;
         expand(newBlock.position.clone(), mcData.blocks[newBlock.type].emitLight, newBlock.position.clone());
-        if (glob.logBlockUpdate) bot.log("[light] updated: " + newLightCnt);
+        if (flag.logBlockUpdate) bot.log("[light] updated: " + newLightCnt);
     }
 });
 

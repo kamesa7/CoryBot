@@ -1,8 +1,8 @@
 
-glob.isIgnoreMode = false
-glob.isAuctioning = false
-glob.isAnnounceDeathMode = true
-glob.isOmikujiReactionMode = false
+flag.Ignore = false
+flag.Auctioning = false
+flag.AnnounceDeath = true
+flag.OmikujiReaction = false
 
 glob.setAuction = setAuction
 glob.autoAuction = autoAuction
@@ -44,7 +44,7 @@ bot.on('chat', (username, message) => {
     //Auction
     if (message.match(/^>\s*(\d+)$/)) {
         const money = Number(RegExp.$1)
-        if (glob.isAuctioning) {
+        if (flag.Auctioning) {
             bidAuction(username, money)
         } else {
             secretAuction(username, money)
@@ -134,7 +134,7 @@ function onMessage(username, message, cb) {
 
     //Music
     if (message.match(/^Music info/i) && glob.getState() == "music") {
-        if (glob.isPlaylistMode) {
+        if (flag.Playlist) {
             safechat("今はプレイリスト" + glob.Playlist + ":" + glob.PlaylistIndex + "/" + glob.PlaylistFiles.length + "曲目の" + glob.currentMusic.title
                 + "(" + glob.currentMusic.duration + "秒)を演奏中です。")
         } else {
@@ -144,12 +144,12 @@ function onMessage(username, message, cb) {
 
     if (message.match(/^fire$/i)) {
         bot.log("[combat] sniper mode")
-        glob.isSniperMode = true
+        flag.Sniper = true
     }
 
     if (message.match(/^fire stop$/i) || message.match(/^stop fire$/i)) {
         bot.log("[combat] stop sniper mode")
-        glob.isSniperMode = false
+        flag.Sniper = false
     }
 
     //inventoly
@@ -175,7 +175,7 @@ function whisper(username, message, delay) {
 //omikuji
 bot.on('omikuji', (username, message) => {
     if (bot.username === username) return
-    if (!glob.isOmikujiReactionMode) return
+    if (!flag.OmikujiReaction) return
 
     if (message.match(/柑橘類/)) {
         bot.randomchat(['wwwww', 'ｗｗｗｗｗ', 'かわいそう', 'w', 'かw',
@@ -198,13 +198,13 @@ bot.on('death', () => {
 })
 bot.on('spawn', () => {
     if (!is_dead) return
-    if (glob.isAnnounceDeathMode) bot.safechat("よろしければ遺品回収してください。" + dead_point)
+    if (flag.AnnounceDeath) bot.safechat("よろしければ遺品回収してください。" + dead_point)
     is_dead = false
 })
 
 //orefound
 glob.miningCount = {}
-glob.logMining = false
+flag.logMining = false
 bot.on('orefound', (username, ore, countStr) => {
     if (!glob.miningCount[username])
         glob.miningCount[username] = {
@@ -222,7 +222,7 @@ bot.on('orefound', (username, ore, countStr) => {
         data[ore] = 0
     user.sum += countNum
     data[ore] += countNum
-    if (glob.logMining) bot.log("[orefound] " + username + " " + ore + " " + (data[ore] - countNum) + " -> " + data[ore] + "  (+" + countNum + ")")
+    if (flag.logMining) bot.log("[orefound] " + username + " " + ore + " " + (data[ore] - countNum) + " -> " + data[ore] + "  (+" + countNum + ")")
 })
 
 function oreCheckCount(username) {
@@ -254,7 +254,7 @@ var maxBidPlayer = ""
 
 function auctionSignal(clock) {
     try {
-        if (glob.isAuctioning) {
+        if (flag.Auctioning) {
             for (let i = 0; i < glob.autoBiddings.length; i++) {
                 const item = glob.autoBiddings[i]
                 if (item.username != maxBidPlayer && item.limit > maxBid) {
@@ -270,7 +270,7 @@ function auctionSignal(clock) {
             }
             if (clock.getTime() >= aucDeadline.getTime()) {//auction
                 bot.chat(">時間です！ Max: " + maxBidPlayer + " " + maxBid)
-                glob.isAuctioning = false
+                flag.Auctioning = false
                 aucTimeSetting = 0
             }
         }
@@ -295,8 +295,8 @@ function setAuction(seconds) {
         if (seconds < 1) return
         aucDeadline = new Date()
         aucDeadline.setSeconds(aucDeadline.getSeconds() + seconds)
-        if (!glob.isAuctioning) { // init
-            glob.isAuctioning = true
+        if (!flag.Auctioning) { // init
+            flag.Auctioning = true
             bot.chat(">オークションを開始しました: 最終入札(>[数値])から" + seconds + "秒まで")
             aucTimeSetting = seconds
             maxBid = 0

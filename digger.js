@@ -4,7 +4,7 @@ glob.stopDigging = stopDigging
 glob.mining = mining
 glob.quarry = quarry
 
-glob.logDig = false
+flag.logDig = false
 
 glob.diggingInterval = 150
 glob.diggingWorkProgress = 50
@@ -95,7 +95,7 @@ function digBlockAt(pos, cb = noop) {
 
     function doDig() {
         let time = bot.digTime(block)
-        if (glob.logDig) bot.log("[dig] dig " + block.name + " at " + pos + " by " + ((tool) ? tool.name : "hand") + " digtime " + time + "ms")
+        if (flag.logDig) bot.log("[dig] dig " + block.name + " at " + pos + " by " + ((tool) ? tool.name : "hand") + " digtime " + time + "ms")
         bot.dig(block, (err) => {
             if (err) bot.log(err)
         })
@@ -112,10 +112,10 @@ function digBlockAt(pos, cb = noop) {
 
 /* not my digging */
 // bot.on("blockBreakProgressObserved", (block, destroyStage) => {
-//     if (glob.logDig) bot.log("[dig] blockBreaking " + destroyStage)
+//     if (flag.logDig) bot.log("[dig] blockBreaking " + destroyStage)
 // })
 // bot.on("blockBreakProgressEnd", (block) => {
-//     if (glob.logDig) bot.log("[dig] blockBroken")
+//     if (flag.logDig) bot.log("[dig] blockBroken")
 // })
 
 bot.on('death', () => {
@@ -166,7 +166,7 @@ function mining(d, length = 100) {
             case "move":
                 if (!glob.doNothing()) return;
                 glob.goToPos(origin.plus(digging), {
-                    ignore: !glob.logDig,
+                    ignore: !flag.logDig,
                     allowGoal: 3,
                     standadjust: 0,
                     strictfin: true,
@@ -230,7 +230,7 @@ function mining(d, length = 100) {
                         if (bot.blockAt(stand).boundingBox != "block") {
                             bot.log("[mining] place overpass")
                             glob.goToPos(stand, {
-                                ignore: !glob.logDig,
+                                ignore: !flag.logDig,
                                 allowGoal: 4,
                                 standadjust: 0,
                                 strictfin: true,
@@ -291,7 +291,7 @@ function quarry(argOrigin, size) {
             case "move":
                 if (!glob.doNothing()) return
                 glob.goToPos(origin.plus(digging), {
-                    ignore: !glob.logDig,
+                    ignore: !flag.logDig,
                     allowGoal: 3,
                     standadjust: 0,
                     bridgeable: true,

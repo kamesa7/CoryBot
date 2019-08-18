@@ -1,11 +1,9 @@
 
-glob.isFollowing = false;
-glob.isRandomWalking = false;
+var Following = false;
+var RandomWalking = false;
 
-glob.isWaiting = false;
-
-glob.isCollisionalMode = true;
-glob.isInterestMode = true;
+flag.Collision = true;
+flag.Interest = true;
 
 const onGround = 0.001;
 const eyeHeight = 1.42;
@@ -31,8 +29,8 @@ glob.moveConfig = {
 
 const CONFIG = glob.moveConfig;
 
-glob.logMove = false;
-glob.logInterest = false;
+flag.logMove = false;
+flag.logInterest = false;
 
 var finalDestination;
 var randomOrigin = null
@@ -59,23 +57,27 @@ setInterval(interest_signal, 500);
 
 function stopMoving() {
     glob.finishState("move")
-    glob.isFollowing = false;
-    glob.isRandomWalking = false;
-    glob.isWaiting = false;
+    Following = false;
+    RandomWalking = false;
     targetEntity = null;
+
+    if (chaser && !chaser._destroyed) {
+        if (flag.logMove) bot.log("[move] Chase Stop ");
+    }
     clearInterval(chaser)
+
+    if (mover && !mover._destroyed) {
+        if (flag.logMove) bot.log("[move] Move Stop ");
+    }
     clearInterval(mover);
     bot.clearControlStates();
-    if (glob.logMove)
-        bot.log("[move] Full Stop ");
 }
 
 function stopPath() {
     glob.finishState("move")
-    glob.isWaiting = false;
     clearInterval(mover);
     bot.clearControlStates();
-    if (glob.logMove)
+    if (flag.logMove)
         bot.log("[move] stop ");
 }
 
@@ -133,8 +135,8 @@ function goToPos(point, reqOptions) {
     var start = myPosition().floor()
     var goal = point.floored();
 
-    const msgable = glob.logMove || !options.ignore
-    const logable = glob.logMove
+    const msgable = flag.logMove || !options.ignore
+    const logable = flag.logMove
     if (logable) bot.log("[move] before adjust: goto " + goal + " from " + start);
     if (logable) var pathfindtime = new Date().getTime();
     const path = bestFirstSearch(start, goal, options);
@@ -251,7 +253,7 @@ function bestFirstSearch(start, goal, reqOptions) {
     }
 
     path.options = options;
-    if (glob.logMove) bot.log("[move] options " + JSON.stringify(options))
+    if (flag.logMove) bot.log("[move] options " + JSON.stringify(options))
     var closed = [];
     var open = new bucketsJs.PriorityQueue(compare);
     var count = 0;
@@ -262,7 +264,7 @@ function bestFirstSearch(start, goal, reqOptions) {
         if (isGoal(node.p, goal, options.allowGoal, options.rejectGoal)) { // find path
             let cost = convertNode(path, node);
             optimize(path);
-            if (glob.logMove) bot.log("[move] cost: " + cost);
+            if (flag.logMove) bot.log("[move] cost: " + cost);
             return path;
         } else if (count++ > options.searchLimit) { // limit over
             let nearDistances = [];
@@ -522,6 +524,7 @@ function followPath(path) {
     if (!path || !path.options) throw new Error("Invalid path or options")
     var index = 0;
     var exception = false;
+    var waiting = false
     var preRad;
     var prePos = myPosition();
     var preIndex = -1;
@@ -529,8 +532,8 @@ function followPath(path) {
     var waitCount = 0;
     var stopCount = 0;
     var options = path.options
-    var msgable = glob.logMove || !options.ignore
-    var logable = glob.logMove
+    var msgable = flag.logMove || !options.ignore
+    var logable = flag.logMove
     mover = setInterval(step, CONFIG.stepTime);
     function step() {
         if (index < path.length) {
@@ -544,13 +547,13 @@ function followPath(path) {
                 stopCount = 0;
             }
             prePos = myPosition().floor()
-            if (exception || (!glob.isWaiting && stopCount > CONFIG.stepError)) { // exception = true or stopping long time
+            if (exception || (!waiting && stopCount > CONFIG.stepError)) { // exception = true or stopping long time
                 bot.clearControlStates();
                 bot.log("[move] path error end : " + path[index] + path[index].action + " stops: " + stopCount);
-                if (glob.isFollowing) {
+                if (Following) {
                     stopPath();
                     reFollow(targetEntity);
-                } else if (glob.isRandomWalking) {
+                } else if (RandomWalking) {
                     stopPath();
                     reRandom();
                 } else {
@@ -702,13 +705,13 @@ function followPath(path) {
                     case "wait":
                         if (indexCount == 0) {
                             bot.clearControlStates();
-                            glob.isWaiting = true;
+                            waiting = true;
                             glob.finishState("move")
                             waitCount = node.metadata;
                         } else if (indexCount >= waitCount) {
                             glob.queueOnceState("move", function () {
                                 index++;
-                                glob.isWaiting = false;
+                                waiting = false;
                             });
                             break;
                         }
@@ -773,12 +776,12 @@ function follow(entity) {
     if (entity.name != undefined) bot.log("[move] follow: " + entity.name + " " + entity.position.floored());
     else bot.log("[move] follow: " + entity.username + " " + entity.position.floored());
     targetEntity = entity;
-    glob.isFollowing = true;
+    Following = true;
     reFollow(entity);
 }
 
 function reFollow(entity) {
-    if (!glob.isFollowing) return
+    if (!Following) return
     if (!entity || !entity.isValid) {
         bot.log("[move] cannot find entity")
         stopMoving();
@@ -790,7 +793,7 @@ function reFollow(entity) {
 
     bot.lookAt(entity.position.offset(0, eyeHeight, 0), false)
 
-    if (glob.logMove) bot.log("[move] follow revice " + goal);
+    if (flag.logMove) bot.log("[move] follow revice " + goal);
     if (entity.position.distanceTo(bot.entity.position) < CONFIG.allowFollow) {
         setTimeout(
             reFollow,
@@ -813,24 +816,24 @@ function reFollow(entity) {
 function randomWalk(range = Infinity) {
     stopMoving();
     bot.log("[move] random walk ");
-    glob.isRandomWalking = true;
+    RandomWalking = true;
     CONFIG.randomCollar = range
     randomOrigin = myPosition().floor()
     reRandom();
 }
 
 function reRandom() {
-    if (!glob.isRandomWalking) return;
+    if (!RandomWalking) return;
     var start = myPosition().floor()
     setStandable(start);
     var goal = getRandomPos(start, Math.min(CONFIG.randomDistance, CONFIG.randomCollar), CONFIG.randomHeight);
     if (goal.distanceTo(randomOrigin) > CONFIG.randomCollar) {
-        if (glob.logMove) bot.log("[move] too far: reRandom " + goal.distanceTo(randomOrigin))
+        if (flag.logMove) bot.log("[move] too far: reRandom " + goal.distanceTo(randomOrigin))
         reRandom()
         return
     }
 
-    if (glob.logMove) bot.log("[move] random revice " + goal);
+    if (flag.logMove) bot.log("[move] random revice " + goal);
     var path = bestFirstSearch(start, goal, { landable: false, continue: false });
     if (!path || CONFIG.randomLengthLimit < path.length) {
         reRandom();
@@ -1069,7 +1072,7 @@ function setInterestEntity(entity = null) {
         var name = interest_entity.name !== undefined ? interest_entity.name : interest_entity.username;
         var type = interest_entity.type;
         var kind = interest_entity.kind;
-        if (glob.logInterest)
+        if (flag.logInterest)
             bot.log('[interest] interested in ' + name + ' (' + type + (kind !== undefined ? ':' + kind : '') + ')');
     } else {
         interest_entity = null;
@@ -1083,7 +1086,7 @@ bot.on('entityMoved', (entity) => {
     var collideHeight = Math.abs(myPosition().y - entity.position.y)
 
     // 至近距離にプレイヤーがいる場合少し動く
-    if (entity.type === 'player' && collideDistance < 0.8 && collideHeight < 1.5 && glob.doNothing() && glob.isCollisionalMode) {
+    if (entity.type === 'player' && collideDistance < 0.8 && collideHeight < 1.5 && glob.doNothing() && flag.Collision) {
         var botpos = bot.entity.position.clone();
         var entpos = entity.position.clone();
         botpos.y = entpos.y = 0;
@@ -1109,7 +1112,7 @@ bot.on('entityMoved', (entity) => {
 
 function interest_signal() {
     if (interest_entity && bot.entity.position.distanceTo(interest_entity.position) < 5) {
-        if (glob.isInterestMode && glob.doNothing())
+        if (flag.Interest && glob.doNothing())
             bot.lookAt(interest_entity.position.offset(0, eyeHeight, 0));
     } else {
         setInterestEntity();

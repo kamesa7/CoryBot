@@ -21,8 +21,8 @@ const buildTimeout = 3000
 glob.rawBuildData;
 glob.buildData;
 
-glob.isLightingMode = false;
-glob.logBuild = false
+flag.Lighting = false;
+flag.logBuild = false
 
 var builder;
 
@@ -115,7 +115,7 @@ function buildPoster(origin) {
 
 function posterGoTo(origin, placing) {
     glob.goToPos(origin.plus(placing.offset(0, 0, 1)), { // from flat position
-        ignore: !glob.logBuild,
+        ignore: !flag.logBuild,
         allowGoal: 0,
         standadjust: 1,
         continue: false
@@ -165,7 +165,7 @@ function buildBuilding(origin) {
 
 function buildingGoTo(origin, placing) {
     glob.goToPos(origin.plus(placing.offset(0, 1, 0)), {
-        ignore: !glob.logBuild,
+        ignore: !flag.logBuild,
         allowGoal: 2,
         rejectGoal: 0,
         standadjust: 1,
@@ -384,11 +384,11 @@ function placeBlockAt(item, pos, cb = noop) {
             face = new Vec3(0, 1, 0)
             isNoRef = true
         }
-        if (glob.logBuild) bot.log("[place] place: ref " + refBlock.position + " new " + newBlockPos + " face " + face)
+        if (flag.logBuild) bot.log("[place] place: ref " + refBlock.position + " new " + newBlockPos + " face " + face)
         bot.lookAt(refBlock.position.offset(0.5, 0.5, 0.5), true, () => {
             bot.placeBlock(refBlock, face, (error) => {
                 bot.clearControlStates();
-                if (glob.logBuild) {
+                if (flag.logBuild) {
                     const newBlock = bot.blockAt(newBlockPos);
                     bot.log("[place] placed: " + blockdata(newBlock.type, newBlock.metadata))
                 }
@@ -428,7 +428,7 @@ function placeDirectedBlockAt(item, pos, detail, cb = noop) {
             cb(error)
             return
         }
-        if (glob.logBuild) bot.log("[place] place directed: pos " + newBlockPos + " direct " + detail.direction + " look " + detail.look)
+        if (flag.logBuild) bot.log("[place] place directed: pos " + newBlockPos + " direct " + detail.direction + " look " + detail.look)
         bot.lookAt(detail.look, true, () => {
             if (!bot.heldItem) cbb(new Error('must be holding an item to place a block'))
             bot._client.write('arm_animation', { hand: 0 })
@@ -453,7 +453,7 @@ function placeDirectedBlockAt(item, pos, detail, cb = noop) {
     })
     function cbb(error) {
         bot.clearControlStates();
-        if (glob.logBuild) {
+        if (flag.logBuild) {
             const newBlock = bot.blockAt(newBlockPos);
             bot.log("[place] placed: " + blockdata(newBlock.type, newBlock.metadata))
         }
@@ -496,7 +496,7 @@ function nearestPlacing(origin) {
 }
 
 function lighting() {
-    glob.isLightingMode = true
+    flag.Lighting = true
     var rad = Math.random() * 2 * Math.PI;
     var brightPos = bot.entity.position.offset(Math.random() * glob.buildRange * Math.sin(rad), 0, Math.random() * glob.buildRange * Math.cos(rad)).floored();
     var cont = true
@@ -508,7 +508,7 @@ function lighting() {
                 bot.log("[brighten] " + brightPos + ": " + bot.blockAt(brightPos).light);
                 placeBlockAt(torch, brightPos, false)
             } else {
-                glob.isLightingMode = false;
+                flag.Lighting = false;
                 bot.log("[brighten] no torch end");
             }
             cont = false

@@ -1,5 +1,5 @@
 glob.loggingInterval = 10000
-glob.logChat = false;
+flag.logChat = false;
 
 bot.once('login', () => {
     bot.log('[bot.connect]');
@@ -34,7 +34,7 @@ function safechat(text) {
     if (!text)
         return;
 
-    if (glob.isIgnoreMode)
+    if (flag.Ignore)
         return;
 
     if (elapsed_ms > 1000) {
@@ -86,7 +86,7 @@ bot.log = (str) => {
     if (String(prevLog) == String(str)) {
         logStroke++
         prevTimestamp = timestamp()
-        loggingWaiter = setTimeout(clearPrevLog, glob.loggingInterval)
+        loggingWaiter = setTimeout(clearPrevLog, flag.loggingInterval)
         return;
     } else if (logStroke > 0) {
         clearPrevLog();
@@ -117,7 +117,7 @@ bot.on("message", (jmes) => {
 });
 
 bot.on("chat", (username, message) => {
-    if (glob.logChat) bot.log("[chat] " + username + "  " + message)
+    if (flag.logChat) bot.log("[chat] " + username + "  " + message)
 });
 
 bot.on("actionBar", (jmes) => {

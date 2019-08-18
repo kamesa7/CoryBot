@@ -1,4 +1,4 @@
-glob.isPearlGolfMode = false;
+flag.PearlGolf = false;
 
 glob.golfPlayers = {}
 glob.golfCource = 0
@@ -20,7 +20,7 @@ function initGolfGame() {
     ANNOUNCE("パールゴルフ初期化 : パール投げで参加受付中")
     glob.golfPlayers = {}
     glob.golfCource = 0;
-    glob.isPearlGolfMode = true;
+    flag.PearlGolf = true;
 }
 
 function addPlayer(username) {
@@ -88,10 +88,10 @@ function verifyGolf(cnt) {
 
 function startCourse(goal) {
     if (!goal) return
-    if (glob.isPearlGolfMode) return
+    if (flag.PearlGolf) return
     glob.golfGoal = goal.floored()
     glob.golfGoal.add(new Vec3(0.5, 0, 0.5))
-    glob.isPearlGolfMode = true;
+    flag.PearlGolf = true;
     glob.golfCource++;
     Object.keys(glob.golfPlayers).forEach(function (key) {
         const gp = glob.golfPlayers[key]
@@ -111,8 +111,8 @@ function startCourse(goal) {
 }
 
 function endCourse() {
-    if (!glob.isPearlGolfMode) return
-    glob.isPearlGolfMode = false;
+    if (!flag.PearlGolf) return
+    flag.PearlGolf = false;
 
     var resultarr = []
     if (glob.golfCource == 0) {
@@ -145,7 +145,7 @@ function endCourse() {
 }
 
 function endGolf() {
-    if (glob.isPearlGolfMode) return
+    if (flag.PearlGolf) return
     var resultarr = []
     Object.keys(glob.golfPlayers).forEach(function (key) {
         const gp = glob.golfPlayers[key]
@@ -163,7 +163,7 @@ function endGolf() {
 }
 
 bot.on("entitySpawn", function (entity) {
-    if (!glob.isPearlGolfMode) return;
+    if (!flag.PearlGolf) return;
     if (entity.name == "ender_pearl") {
         var found = 0;
         Object.keys(bot.players).forEach(function (key) {
@@ -197,7 +197,7 @@ bot.on("entitySpawn", function (entity) {
 })
 
 bot.on("entityGone", function (entity) {
-    if (!glob.isPearlGolfMode) return;
+    if (!flag.PearlGolf) return;
     if (entity.name == "ender_pearl") {
         Object.keys(glob.golfPlayers).forEach(function (key) {
             const gp = glob.golfPlayers[key]
@@ -209,14 +209,14 @@ bot.on("entityGone", function (entity) {
 })
 
 bot.on("entityHurt", function (entity) {
-    if (!glob.isPearlGolfMode) return;
+    if (!flag.PearlGolf) return;
     if (entity.username && glob.golfPlayers[entity.username] && glob.golfPlayers[entity.username].throwing) {
         glob.golfPlayers[entity.username].warping = true
     }
 })
 
 bot.on("entityMoved", function (entity) {
-    if (!glob.isPearlGolfMode) return;
+    if (!flag.PearlGolf) return;
     if (!entity.username) return
     const key = entity.username
     const gp = glob.golfPlayers[key]
@@ -261,7 +261,7 @@ function saveGolf() {
     jsonfile.writeFile("golf_cache.json", {
         players: glob.golfPlayers,
         cource: glob.golfCource,
-        playing: glob.isPearlGolfMode,
+        playing: flag.PearlGolf,
         goal: glob.golfGoal
     })
     bot.log("[golf] Game Saved")
@@ -276,20 +276,20 @@ function loadGolf() {
         gp.prevtick = new Vec3(gp.prevtick.x, gp.prevtick.y, gp.prevtick.z)
     })
     glob.golfCource = data.cource
-    glob.isPearlGolfMode = data.playing
+    flag.PearlGolf = data.playing
     glob.golfGoal = new Vec3(data.goal.x, data.goal.y, data.goal.z)
     bot.log("[golf] Game Loaded")
 }
 
 function announce(msg) {
-    if (glob.isIgnoreMode)
+    if (flag.Ignore)
         bot.log("[ignored] " + msg)
     else
         bot.chat("[Golf] " + msg)
 }
 
 function ANNOUNCE(msg) {
-    if (glob.isIgnoreMode)
+    if (flag.Ignore)
         bot.log(">[ignored] " + msg)
     else
         bot.chat(">[Golf] " + msg)

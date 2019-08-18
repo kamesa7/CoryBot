@@ -214,27 +214,16 @@ io.on('connection', function (client) {
         sentMap[x][z] = true;
     }
 
-    client.on('flags', function (flags) {
-        glob.isCloseDefenceMode = flags.isCloseDefenceMode
-        glob.isSniperMode = flags.isSniperMode
-        glob.isArrowDefenceMode = flags.isArrowDefenceMode
-        glob.isCollisionalMode = flags.isCollisionalMode
-        glob.isInterestMode = flags.isInterestMode
-        glob.isIgnoreMode = flags.isIgnoreMode
-        glob.isBerserkerMode = flags.isBerserkerMode
+    client.on('flags', function (packet) {
+        Object.keys(packet).forEach((key) => {
+            if (typeof packet[key] === "boolean" && typeof flag[key] === "boolean")
+                flag[key] = packet[key]
+        })
         bot.log("[radar] received new flags")
     })
 
     function emitFlags() {
-        io.json.emit('flags', {
-            isCloseDefenceMode: glob.isCloseDefenceMode,
-            isSniperMode: glob.isSniperMode,
-            isArrowDefenceMode: glob.isArrowDefenceMode,
-            isCollisionalMode: glob.isCollisionalMode,
-            isInterestMode: glob.isInterestMode,
-            isIgnoreMode: glob.isIgnoreMode,
-            isBerserkerMode: glob.isBerserkerMode
-        })
+        io.json.emit('flags', flag)
     }
 });
 

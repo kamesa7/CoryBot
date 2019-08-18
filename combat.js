@@ -1,15 +1,15 @@
 
-glob.isBerserkerMode = false
-glob.isEggBomberMode = false
-glob.isCloseDefenceMode = true;
-glob.isSniperMode = false;
-glob.isHighAngleMode = true;
-glob.isArrowDefenceMode = true;
-glob.antiZombiePigmanMode = false
+flag.Berserker = false
+flag.EggBomber = false
+flag.CloseDefence = true;
+flag.Sniper = false;
+flag.HighAngle = true;
+flag.ArrowDefence = true;
+flag.AntiZombiePigman = false
 
 glob.snipeDistance = 96;
 
-glob.logCombat = false;
+flag.logCombat = false;
 
 glob.punch = punch;
 glob.shoot = shoot;
@@ -53,7 +53,7 @@ setInterval(() => {
 function combatCheck(entity) {
     if (!bot.entity || !bot.entity.position || !entity.isValid) return
     const distance = bot.entity.position.distanceTo(entity.position);
-    if (glob.isArrowDefenceMode) {
+    if (flag.ArrowDefence) {
         if (isAliveArrow(entity)) {// arrows
             arrowDefence(entity)
         }
@@ -63,15 +63,15 @@ function combatCheck(entity) {
         }
     }
     if (isEnemy(entity)) {//hostile
-        if (glob.isCloseDefenceMode && distance < 4.5 && new Date().getTime() - preAttackTime > swordInterval) {//punch
+        if (flag.CloseDefence && distance < 4.5 && new Date().getTime() - preAttackTime > swordInterval) {//punch
             punch(entity)
-        } else if (glob.isSniperMode && distance < glob.snipeDistance && !(entity.name && entity.name == "enderman")) {//shoot
+        } else if (flag.Sniper && distance < glob.snipeDistance && !(entity.name && entity.name == "enderman")) {//shoot
             if (canSeeDirectly(entity.position.offset(0, eyeHeight, 0))) {//direct
                 shoot(entity, false);
-            } else if (glob.isHighAngleMode && bot.blockAt(bot.entity.position).skyLight == 15 && bot.blockAt(entity.position).skyLight == 15) {//undirect
+            } else if (flag.HighAngle && bot.blockAt(bot.entity.position).skyLight == 15 && bot.blockAt(entity.position).skyLight == 15) {//undirect
                 shoot(entity, true);
             }
-        } else if (glob.isEggBomberMode && distance < glob.snipeDistance) {//egg
+        } else if (flag.EggBomber && distance < glob.snipeDistance) {//egg
             if (canSeeDirectly(entity.position.offset(0, eyeHeight, 0))) {//direct
                 throwEgg(entity.position.offset(0, eyeHeight, 0));
             }
@@ -232,7 +232,7 @@ function timeToShoot(from, target, isHigh) {
         t = Math.min(t1, t2)
     }
     t = Math.sqrt(t);
-    if (glob.logCombat) bot.log("[combat] details " + " L2:" + target.distanceTo(from) + " dist:" + dist + " y:" + y + " angle:" + angle / (Math.PI / 180) + " D:" + discriminant + " time:" + t + " target:" + target)
+    if (flag.logCombat) bot.log("[combat] details " + " L2:" + target.distanceTo(from) + " dist:" + dist + " y:" + y + " angle:" + angle / (Math.PI / 180) + " D:" + discriminant + " time:" + t + " target:" + target)
     return t;
 }
 
@@ -319,7 +319,7 @@ function timeToThrow(target, isHigh) {
         t = Math.max(t1, t2)
     }
     t = Math.sqrt(t);
-    if (glob.logCombat) bot.log("[combat] details " + " L2:" + target.distanceTo(bot.entity.position) + " dist:" + dist + " y:" + y + " angle:" + angle / (Math.PI / 180) + " D:" + discriminant + " time:" + t + " target:" + target)
+    if (flag.logCombat) bot.log("[combat] details " + " L2:" + target.distanceTo(bot.entity.position) + " dist:" + dist + " y:" + y + " angle:" + angle / (Math.PI / 180) + " D:" + discriminant + " time:" + t + " target:" + target)
     return t;
 }
 
@@ -361,10 +361,10 @@ function isEnemy(entity) {
     //Hostile && NotNamed && NotZombiePig
     if (entity.name && entity.kind && entity.kind == "Hostile mobs") {
         if (entity.metadata[2] && entity.metadata[2] != "");// is named
-        else if (entity.name == "zombie_pigman" && !(glob.antiZombiePigmanMode || entity.metadata[14]));// not attackable
+        else if (entity.name == "zombie_pigman" && !(flag.AntiZombiePigman || entity.metadata[14]));// not attackable
         else return true
     }
-    if (glob.isBerserkerMode && entity.username) return true
+    if (flag.Berserker && entity.username) return true
     return false
 }
 

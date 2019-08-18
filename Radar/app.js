@@ -5,6 +5,7 @@ me = null;
 prop = null;
 map = [];
 logmode = false;
+flag = {}
 $(function () {
     const pointVW = 0.5;//%
     const radarRange = 48;//blocks
@@ -104,27 +105,25 @@ $(function () {
 
     function emitFlags() {
         console.log("emit flags")
-        var flags = {
-            isCloseDefenceMode: $('#is-close-defence-mode').prop("checked"),
-            isSniperMode: $('#is-sniper-mode').prop("checked"),
-            isArrowDefenceMode: $('#is-arrow-defence-mode').prop("checked"),
-            isCollisionalMode: $('#is-collisional-mode').prop("checked"),
-            isInterestMode: $('#is-interest-mode').prop("checked"),
-            isIgnoreMode: $('#is-ignore-mode').prop("checked"),
-            isBerserkerMode: $('#is-berserker-mode').prop("checked"),
-        }
-        io.json.emit('flags', flags)
+        var packet = {}
+        Object.keys(flag).forEach((key) => {
+            let id = "#" + key;
+            if ($(id)) {
+                packet[key] = $(id).prop("checked")
+            }
+        })
+        io.json.emit('flags', packet)
     }
 
-    io.on('flags', function (flags) {
+    io.on('flags', function (packet) {
         console.log("on flags")
-        $('#is-close-defence-mode').prop("checked", flags.isCloseDefenceMode)
-        $('#is-sniper-mode').prop("checked", flags.isSniperMode)
-        $('#is-arrow-defence-mode').prop("checked", flags.isArrowDefenceMode)
-        $('#is-collisional-mode').prop("checked", flags.isCollisionalMode)
-        $('#is-interest-mode').prop("checked", flags.isInterestMode)
-        $('#is-ignore-mode').prop("checked", flags.isIgnoreMode)
-        $('#is-berserker-mode').prop("checked", flags.isBerserkerMode)
+        Object.keys(packet).forEach((key) => {
+            let id = "#" + key;
+            if ($(id)) {
+                $(id).prop("checked", packet[key])
+            }
+        })
+        flag = packet
     });
 
     io.on('server', function (msg) {

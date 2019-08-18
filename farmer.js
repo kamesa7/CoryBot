@@ -1,8 +1,8 @@
-glob.logFarm = false;
+flag.logFarm = false;
 glob.farmInterval = 750
 glob.farmReCheckInterval = 5000
 
-glob.isLongReedsMode = true
+flag.LongReeds = true
 
 glob.stopFarm = stopFarm
 glob.farm = farm
@@ -40,7 +40,7 @@ function farm(argOrigin, argSize) {
                     return;
                 }
                 glob.goToPos(origin.plus(placing), {
-                    ignore: !glob.logFarm,
+                    ignore: !flag.logFarm,
                     allowGoal: 0,
                     standadjust: 3,
                     jumpoverable: false,
@@ -52,7 +52,7 @@ function farm(argOrigin, argSize) {
             case "harvest":
                 seeds = checkHarvestable(origin.plus(placing))
                 glob.queueOnceState("harvest", () => {
-                    if (glob.logFarm) bot.log("[farm] harvest " + blockdata(bot.blockAt(origin.plus(placing))))
+                    if (flag.logFarm) bot.log("[farm] harvest " + blockdata(bot.blockAt(origin.plus(placing))))
                     glob.digBlockAt(origin.plus(placing), (err) => {
                         if (err) {
                             bot.log(err)
@@ -75,7 +75,7 @@ function farm(argOrigin, argSize) {
                     return
                 }
                 glob.queueOnceState("sowing", () => {
-                    if (glob.logFarm) bot.log("[farm] sowing " + seeds)
+                    if (flag.logFarm) bot.log("[farm] sowing " + seeds)
                     item = glob.findItem(mcData.itemsByName[seeds].id)
                     glob.placeBlockAt(item, origin.plus(placing), (err) => {
                         if (err) {
@@ -126,7 +126,7 @@ function checkHarvestable(pos) {
             return true
         case "reeds":
             var B0 = bot.blockAt(pos.offset(0, -1, 0))
-            if (glob.isLongReedsMode) {
+            if (flag.LongReeds) {
                 var B2 = bot.blockAt(pos.offset(0, 1, 0))
                 if (B0 && B0.name == "reeds" && B2 && B2.name == "reeds") return true
             } else {
