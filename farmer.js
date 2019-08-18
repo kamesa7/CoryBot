@@ -2,6 +2,8 @@ glob.logFarm = false;
 glob.farmInterval = 750
 glob.farmReCheckInterval = 5000
 
+glob.isLongReedsMode = true
+
 glob.stopFarm = stopFarm
 glob.farm = farm
 var farmer;
@@ -124,8 +126,13 @@ function checkHarvestable(pos) {
             return true
         case "reeds":
             var B0 = bot.blockAt(pos.offset(0, -1, 0))
-            if (B0 && B0.name == "reeds") return true
-            else return false
+            if (glob.isLongReedsMode) {
+                var B2 = bot.blockAt(pos.offset(0, 1, 0))
+                if (B0 && B0.name == "reeds" && B2 && B2.name == "reeds") return true
+            } else {
+                if (B0 && B0.name == "reeds") return true
+            }
+            return false
         default:
             return false
     }
