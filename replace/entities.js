@@ -235,10 +235,11 @@ function inject(bot, { version }) {
     // entity velocity
     const entity = fetchEntity(packet.entityId)
     const notchVel = new Vec3(packet.velocityX, packet.velocityY, packet.velocityZ)
-    entity.velocity.update(conv.fromNotchVelocity(notchVel))
+    const vel = conv.fromNotchVelocity(notchVel)
 
-    if (entity === bot.entity) {
-      const vel = conv.fromNotchVelocity(notchVel)
+    if (entity.id === bot.entity.id) {
+      entity.velocity.update(notchVel.scaled(1 / 480))
+    } else {
       entity.velocity.update(vel)
     }
   })
@@ -501,11 +502,11 @@ function inject(bot, { version }) {
   }
 
   function dismount() {
-      bot._client.write('steer_vehicle', {
-        'sideways': 0.0,
-        'forward': 0.0,
-        'jump': 0x02
-      })
+    bot._client.write('steer_vehicle', {
+      'sideways': 0.0,
+      'forward': 0.0,
+      'jump': 0x02
+    })
   }
 
   function useEntity(target, leftClick, x, y, z) {
