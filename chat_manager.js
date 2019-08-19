@@ -86,7 +86,7 @@ bot.log = (str) => {
     if (String(prevLog) == String(str)) {
         logStroke++
         prevTimestamp = timestamp()
-        loggingWaiter = setTimeout(clearPrevLog, flag.loggingInterval)
+        loggingWaiter = setTimeout(clearPrevLog, glob.loggingInterval)
         return;
     } else if (logStroke > 0) {
         clearPrevLog();

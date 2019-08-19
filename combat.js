@@ -18,6 +18,7 @@ glob.throwPearl = throwPearl;
 glob.throwIt = throwIt;
 glob.lookAt = lookAt
 
+const diamondDamageLimit = 1500
 const bowDamageLimit = 350;
 const airResistance = 0;
 const highAngleAdjust = 0.58;
@@ -57,8 +58,12 @@ function combatCheck(entity) {
         if (isAliveArrow(entity)) {// arrows
             arrowDefence(entity)
         }
-        if (entity.username &&//player
-            entity.metadata[6] == 1) {//bowing
+        if (entity.username &&//player            
+            (
+                (entity.metadata[6] == 1 && entity.equipment[0] && entity.equipment[0].name == "bow") ||
+                (entity.metadata[6] == 3 && entity.equipment[1] && entity.equipment[1].name == "bow")
+            )
+        ) {//bowing
             targetedDefence(entity)
         }
     }
@@ -98,7 +103,7 @@ function targetedDefence(player) {
     var inpro = forme.innerProduct(forto)
     if (Math.acos(inpro) > Math.PI / 27) return;
 
-    bot.log("[combat] detecting a player targeting me")
+    bot.log("[combat] detecting " + player.username + " targeting me")
     guard(player.position.offset(0, 1, 0))
 }
 
@@ -141,7 +146,7 @@ function punch(entity) {
     glob.queueOnceState("punching", function (entity) {
         if (entity.name) bot.log("[combat] punch: " + entity.name);
         else bot.log("[combat] punch: " + entity.username);
-        var item = glob.findItem(swords);
+        var item = glob.findItem(swords, undefined, (item) => { return item.metadata < diamondDamageLimit ? true : false });
         if (item != null) {
             bot.equip(item, "hand", function (err) {
                 if (err) {
