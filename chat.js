@@ -53,8 +53,12 @@ bot.on('chat', (username, message) => {
     if (message.match(/^(Auction|オークション)$/i)) {
         setAuction(60)
     }
-    if (message.match(/^(Auction|オークション) \s*(-?\w+)\s*$/i)) {
-        setAuction(Number(RegExp.$2))
+    else if (message.match(/^(Auction|オークション) \s*(-?\w+)\s*$/i)) {
+        const seconds = Number(RegExp.$2)
+        if (isNaN(seconds))
+            setAuction(60)
+        else
+            setAuction(seconds * 60);
     }
 })
 

@@ -291,7 +291,8 @@ function createMusic(MusicObj) {
 }
 
 function playMusic(MusicObj) {
-  glob.queueState("music", function (MusicObj) {
+  skip();
+  glob.tryState("music", function () {
     var musician;
     var musicCode;
     var startTime = new Date().getTime();
@@ -303,15 +304,17 @@ function playMusic(MusicObj) {
         MusicObj = jsonfile.readFileSync("MineMusic/" + baseTitle);
       } catch (e) {
         console.log(e)
+        glob.finishState("music");
+        return;
       }
       if (!MusicObj) {
-        finishState("music");
+        glob.finishState("music");
         return;
       }
       if (MusicObj && !MusicObj.baseTitle)
         MusicObj.baseTitle = baseTitle;
     }
-    if (MusicObj.seqData == undefined) {
+    if (!MusicObj.seqData) {
       if (flag.logNote) bot.log("[note] New Music");
       createMusic(MusicObj);
     }
@@ -330,7 +333,7 @@ function playMusic(MusicObj) {
         glob.finishState("music")
       }
     }, MusicObj.tempo);
-  }, MusicObj);
+  });
 };
 
 
