@@ -18,14 +18,6 @@ glob.checkArmor = checkArmor;
 glob.equipArmor = equipArmor;
 glob.equipHead = equipHead;
 
-bot.on('spawn', function () {
-    setTimeout(function () {
-        bot.unequip("hand", function (err) {
-            bot.log(err)
-        })
-    }, 5000);
-})
-
 bot.on('health', function () {
     bodyManage(true);
 });
