@@ -35,6 +35,7 @@ for (var i = 0; i < process.argv.length; i++) {
   else if (arg == "-name") { steveNum = process.argv[i + 1]; }
   else if (arg == "-host") { glob.LOCAL = false; process.env.MC_HOST = process.argv[i + 1]; }
   else if (arg == "-port") { process.env.MC_LOCAL_PORT = process.argv[i + 1]; process.env.MC_PORT = process.argv[i + 1]; }
+  else if (arg == "-version") { process.env.MC_VERSION = process.argv[i + 1]; }
   else if (arg == "-rport") { glob.USE_RADAR = true; glob.RADAR_PORT = process.argv[i + 1]; }
   else if (arg == "-vchat") { glob.VANILLA_CHAT = process.argv[i + 1] === "true" ? true : false; }
   else if (arg == "-rader") { glob.USE_RADAR = process.argv[i + 1] === "true" ? true : false; }
@@ -43,9 +44,8 @@ for (var i = 0; i < process.argv.length; i++) {
 
 initialize()
 dirCheck()
-moduleReplace()
+//moduleReplace()
 addVectorPrototype()
-
 bot.loadPlugin(require('mineflayer-blockfinder')(mineflayer));
 require("./state_controler")
 require("./inventory_manager")
@@ -60,9 +60,9 @@ require("./elytra")
 require("./farmer")
 require("./calculator")
 require("./music_player")
-require("./pearl_golf")
+// require("./pearl_golf")
 if (glob.USE_RADAR) require("./radar")
-if (!glob.LOCAL && (glob.CHATPROXY_SEND || glob.CHATPROXY_READ)) require("./chat_proxy")
+// if (!glob.LOCAL && (glob.CHATPROXY_SEND || glob.CHATPROXY_READ)) require("./chat_proxy")
 
 function initialize() {
   if (glob.LOCAL) {
@@ -73,7 +73,7 @@ function initialize() {
       version: process.env.MC_VERSION,
       verbose: true,
     });
-    console.log('Connecting to [localhost]');
+    console.log('Connecting to [localhost' + ':' + process.env.MC_LOCAL_PORT + ']');
   } else if (glob.USE_CACHE) {
     var sessionCache
     try {
@@ -126,7 +126,7 @@ function initialize() {
 
   bot.on('end', () => {
     console.log('bot.end :: process exit');
-    glob.event.emit("log", "---[[bot.end]]---")
+    glob.event.emit("log", "---[[bot.end]]--- " + dateformat(new Date(), "isoTime"))
     if (!glob.LOCAL) jsonfile.writeFileSync("session_cache.json", bot._client.session)
     setTimeout(process.exit, 500);
   });
