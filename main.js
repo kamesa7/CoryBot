@@ -31,7 +31,7 @@ flag = {
 
 for (var i = 0; i < process.argv.length; i++) {
   var arg = process.argv[i];
-  if (arg == "-debug") { glob.LOCAL = true; }
+  if (arg == "-debug" || arg == "-local") { glob.LOCAL = true; }
   else if (arg == "-name") { steveNum = process.argv[i + 1]; }
   else if (arg == "-host") { glob.LOCAL = false; process.env.MC_HOST = process.argv[i + 1]; }
   else if (arg == "-port") { process.env.MC_LOCAL_PORT = process.argv[i + 1]; process.env.MC_PORT = process.argv[i + 1]; }
@@ -39,7 +39,6 @@ for (var i = 0; i < process.argv.length; i++) {
   else if (arg == "-rport") { glob.USE_RADAR = true; glob.RADAR_PORT = process.argv[i + 1]; }
   else if (arg == "-vchat") { glob.VANILLA_CHAT = process.argv[i + 1] === "true" ? true : false; }
   else if (arg == "-rader") { glob.USE_RADAR = process.argv[i + 1] === "true" ? true : false; }
-  else if (arg == "-proxy") { glob.CHATPROXY_SEND = process.argv[i + 1] === "true" ? true : false; glob.CHATPROXY_READ = process.argv[i + 1] === "true" ? true : false;; }
 }
 
 initialize()
@@ -62,7 +61,6 @@ require("./calculator")
 require("./music_player")
 // require("./pearl_golf")
 if (glob.USE_RADAR) require("./radar")
-// if (!glob.LOCAL && (glob.CHATPROXY_SEND || glob.CHATPROXY_READ)) require("./chat_proxy")
 
 function initialize() {
   if (glob.LOCAL) {
