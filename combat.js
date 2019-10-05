@@ -36,20 +36,20 @@ var arrows = [262, 439, 440];
 glob.hostiles = [];
 glob.neutrals = [];
 
-bot.on('entityMoved', (entity) => {
-    combatCheck(entity)
-});
+// bot.on('entityMoved', (entity) => {
+//     combatCheck(entity)
+// });
 
-bot.on("entitySpawn", (entity) => {
-    combatCheck(entity)
-});
+// bot.on("entitySpawn", (entity) => {
+//     combatCheck(entity)
+// });
 
-setInterval(() => {
-    Object.keys(bot.players).forEach((key) => {
-        if (bot.players[key].entity)
-            combatCheck(bot.players[key].entity)
-    })
-}, 200)
+// setInterval(() => {
+//     Object.keys(bot.players).forEach((key) => {
+//         if (bot.players[key].entity)
+//             combatCheck(bot.players[key].entity)
+//     })
+// }, 200)
 
 function combatCheck(entity) {
     if (!bot.entity || !bot.entity.position || !entity.isValid) return

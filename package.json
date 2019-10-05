@@ -10,7 +10,7 @@
     "dotenv": "^8.0.0",
     "express": "^4.17.1",
     "jsonfile": "^5.0.0",
-    "mineflayer": "^2.9.0",
+    "mineflayer": "git://github.com/kamesa7/mineflayer.git",
     "mineflayer-blockfinder": "^0.0.7",
     "socket.io": "^2.2.0"
   },
