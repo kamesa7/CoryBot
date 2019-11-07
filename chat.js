@@ -77,7 +77,7 @@ function onMessage(username, message, cb) {
 
     //hi
     if (username === last_joined_player) {
-        if (message.match(/^(?:hi|hai|ひ|日|はい|へ|hi \(日\))$/))
+        if (message.match(/^(?:hi|hai|ひ|日|はい|へ|hi \(日\)|日 \(hi\))$/))
             safechat('hi', 2000)
         last_joined_player = null
     }
