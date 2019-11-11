@@ -22,6 +22,7 @@ glob = {
   NAMECALL_REGEXP: new RegExp(process.env.MC_NAMECALL_REGEXP, "i"),
   CHATPROXY_SEND: process.env.MC_CHATPROXY_SEND === "true" ? true : false,
   CHATPROXY_READ: process.env.MC_CHATPROXY_READ === "true" ? true : false,
+  BOUYOMICHAN: true,
   event: new events.EventEmitter()
 };
 
@@ -61,6 +62,7 @@ require("./calculator")
 require("./music_player")
 // require("./pearl_golf")
 if (glob.USE_RADAR) require("./radar")
+if (glob.BOUYOMICHAN) require("./chat_bouyomi")
 
 function initialize() {
   if (glob.LOCAL) {
