@@ -20,8 +20,6 @@ glob = {
   RADAR_PORT: process.env.MC_RADAR_PORT,
   VANILLA_CHAT: process.env.MC_VANILLA_CHAT === "true" ? true : false,
   NAMECALL_REGEXP: new RegExp(process.env.MC_NAMECALL_REGEXP, "i"),
-  CHATPROXY_SEND: process.env.MC_CHATPROXY_SEND === "true" ? true : false,
-  CHATPROXY_READ: process.env.MC_CHATPROXY_READ === "true" ? true : false,
   BOUYOMICHAN: true,
   event: new events.EventEmitter()
 };
