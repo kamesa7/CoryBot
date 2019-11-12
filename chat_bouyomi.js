@@ -3,8 +3,21 @@ const server = {
   port: "50001"
 }
 
+
 bot.on('chat', (username, message) => {
-  sendBouyomi(server, username + " " + message)
+  sendBouyomi(server, username + " " + message.replace(/\(.*\).$/, ""))
+})
+
+bot.on("playerJoined", (player) => {
+  sendBouyomi(server, player.username + "が入りました");
+})
+
+bot.on("playerLeft", (player) => {
+  sendBouyomi(server, player.username + "が出ました");
+})
+
+bot.on('end', () => {
+  sendBouyomi(server, "bot 終了");
 })
 
 function sendBouyomi(options, message) {
@@ -21,4 +34,5 @@ function sendBouyomi(options, message) {
   messageBuffer.copy(buffer, 15, 0, messageBuffer.length);
 
   require('net').connect(options).end(buffer);
+
 }

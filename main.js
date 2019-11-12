@@ -20,7 +20,7 @@ glob = {
   RADAR_PORT: process.env.MC_RADAR_PORT,
   VANILLA_CHAT: process.env.MC_VANILLA_CHAT === "true" ? true : false,
   NAMECALL_REGEXP: new RegExp(process.env.MC_NAMECALL_REGEXP, "i"),
-  BOUYOMICHAN: true,
+  BOUYOMICHAN: process.env.MC_BOUYOMI === "true" ? true : false,
   event: new events.EventEmitter()
 };
 
@@ -130,6 +130,7 @@ function initialize() {
   });
 }
 
+// UNUSED
 function moduleReplace() {
   check("blocks.json", "minecraft-data/minecraft-data/data/pc/1.12")
   check("instruments.json", "minecraft-data/minecraft-data/data/pc/1.12")
