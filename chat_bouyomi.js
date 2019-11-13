@@ -5,16 +5,18 @@ const server = {
 
 
 bot.on('chat', (username, message) => {
-  sendBouyomi(server, username + " " + message.replace(/\(.*\).$/, ""))
+  sendBouyomi(server, username + " " + message.trim().replace(/ \(.*\)$/, ""))
 })
 
-bot.on("playerJoined", (player) => {
-  sendBouyomi(server, player.username + "が入りました");
-})
+setTimeout(() => {
+  bot.on("playerJoined", (player) => {
+    sendBouyomi(server, player.username + "が入りました");
+  })
 
-bot.on("playerLeft", (player) => {
-  sendBouyomi(server, player.username + "が出ました");
-})
+  bot.on("playerLeft", (player) => {
+    sendBouyomi(server, player.username + "が出ました");
+  })
+}, 10000)
 
 bot.on('end', () => {
   sendBouyomi(server, "bot 終了");
