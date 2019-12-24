@@ -1,3 +1,5 @@
+const http = require("http")
+
 const socketserver = {
   host: "localhost",
   port: "50001"
@@ -27,7 +29,11 @@ setTimeout(() => {
   })
 }, 5000)
 
-
+/**
+ * UnUsedMethod
+ * @param {*} options 
+ * @param {*} message 
+ */
 function sendBouyomiSocket(options, message) {
   var messageBuffer = new Buffer(message);
 
@@ -46,5 +52,8 @@ function sendBouyomiSocket(options, message) {
 }
 
 function sendBouyomiHttp(url, message) {
-  require("http").get(encodeURI(url + "/talk?text=" + message))
+  var req = http.get(encodeURI(url + "/talk?text=" + message))
+  req.on("error", (err) => {
+    // console.log(err);
+  })
 }
