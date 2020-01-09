@@ -193,7 +193,7 @@ $(function () {
                     $('#target_entity').val("");
                 $('#target_entity_name').text(player.username)
             })
-        });        
+        });
         drawEntity(players[me.username].entity)
     });
 
@@ -327,18 +327,18 @@ $(function () {
                 $('.radar').append('<div class="entity player" id="entity' + entity.id + '" ' + style + '>')
                 if (players[entity.username])
                     $(target).html('<img class="playerimg" ' + getPlayerImageSrc(players[entity.username].uuid) + '></div>')
-            } else if ((entity.type == "mob" && entity.kind != "Projectiles" && entity.kind != "Immobile") || (entity.type == "object" && entity.kind == "Vehicles")) {
+            } else if (entity.type == "mob") {
                 $('.radar').append('<div class="entity mob" id="entity' + entity.id + '" ' + style + '></div>')
-
-                if (entity.type == "mob")
-                    $(target).html('<img class="entityimg" src="mobs/16x16_' + entity.name + '.png"></div>')
-                else if (entity.name.match(/minecart/))
-                    $(target).html('<img class="entityimg" src="mobs/minecart.png"></div>')
-                else if (entity.name.match(/boat/))
-                    $(target).html('<img class="entityimg" src="mobs/boat.png"></div>')
-
+                $(target).html('<img class="entityimg" src="mobs/16x16_' + entity.name + '.png"></div>')
+            } else if (entity.name.match(/minecart/)) {
+                $('.radar').append('<div class="entity mob" id="entity' + entity.id + '" ' + style + '></div>')
+                $(target).html('<img class="entityimg" src="mobs/minecart.png"></div>')
+            } else if (entity.name.match(/boat/)) {
+                $('.radar').append('<div class="entity mob" id="entity' + entity.id + '" ' + style + '></div>')
+                $(target).html('<img class="entityimg" src="mobs/boat.png"></div>')
             } else {
                 $('.radar').append('<div class="entity other" id="entity' + entity.id + '" ' + style + '></div>')
+
             }
 
             $(target).click(function () {
