@@ -13,15 +13,16 @@ setTimeout(() => {
   sendBouyomi(server, "棒読みちゃんスタンバイ")
 
   bot.on('chat', (username, message) => {
+    if (username == "Super_AI") return
     sendBouyomi(server, username + " " + message.trim().replace(/ \(.*\)$/, ""))
   })
 
   bot.on("playerJoined", (player) => {
-    sendBouyomi(server, player.username + "が入室");
+    sendBouyomi(server, player.username + " ジョインドザゲーム");
   })
 
   bot.on("playerLeft", (player) => {
-    sendBouyomi(server, player.username + "が退出");
+    sendBouyomi(server, player.username + " レフトザゲーム");
   })
 
   bot.on('end', () => {
