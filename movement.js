@@ -419,14 +419,14 @@ function optimize(path) {
     if (path.length == 0) return;
     const options = path.options;
     var start = myPosition().floor();
-    if (bot.blockAt(start).boundingBox == "door") {
+    if (bot.blockAt(start).name.match(/door/)) {
         let strict = start.clone(); strict.action = "strict";
         let door = start.clone(); door.action = "door";
         path.splice(0, 0, strict);
         path.splice(1, 0, door);
     }
     var s = 0;
-    if (bot.blockAt(path[0]).boundingBox == "door") {
+    if (bot.blockAt(path[0]).name.match(/door/)) {
         let strict = myPosition().floor(); strict.action = "strict";
         let pathDoor = path[0].clone(); pathDoor.action = "door";
         path.splice(0, 0, strict);
@@ -434,7 +434,7 @@ function optimize(path) {
         s += 2;
     }
     for (let i = s; i < path.length; i++) {
-        if (bot.blockAt(path[i]).boundingBox == "door") {
+        if (bot.blockAt(path[i]).name.match(/door/)) {
             const doorFront = path[i - 1].clone(); doorFront.action = "strict";
             const pathDoor = path[i].clone(); pathDoor.action = "door";
             path.splice(i, 0, doorFront);

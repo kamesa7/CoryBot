@@ -42,7 +42,7 @@ for (var i = 0; i < process.argv.length; i++) {
 
 initialize()
 dirCheck()
-//moduleReplace()
+moduleReplace()
 addVectorPrototype()
 bot.loadPlugin(require('mineflayer-blockfinder')(mineflayer));
 require("./state_controler")
@@ -58,7 +58,7 @@ require("./elytra")
 require("./farmer")
 require("./calculator")
 require("./music_player")
-// require("./pearl_golf")
+require("./pearl_golf")
 if (glob.USE_RADAR) require("./radar")
 if (glob.BOUYOMICHAN) require("./chat_bouyomi")
 
@@ -132,13 +132,7 @@ function initialize() {
 
 // UNUSED
 function moduleReplace() {
-  check("blocks.json", "minecraft-data/minecraft-data/data/pc/1.12")
-  check("instruments.json", "minecraft-data/minecraft-data/data/pc/1.12")
-  check("entities.js", "mineflayer/lib/plugins")
-  check("digging.js", "mineflayer/lib/plugins")
-  check("inventory.js", "mineflayer/lib/plugins")
-  check("physics.js", "mineflayer/lib/plugins")
-
+  //   check("blocks.json", "minecraft-data/minecraft-data/data/pc/1.13.2")
   function check(source, targetdir) {
     const src = __dirname + "/replace/" + source;
     const dest = __dirname + "/node_modules/" + targetdir + "/" + source;
