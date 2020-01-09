@@ -7,12 +7,12 @@
     "binary-nbt": "^0.5.7",
     "buckets-js": "^1.98.2",
     "dateformat": "^3.0.2",
-    "dotenv": "^8.0.0",
+    "dotenv": "^8.2.0",
     "express": "^4.17.1",
     "jsonfile": "^5.0.0",
     "mineflayer": "git://github.com/kamesa7/mineflayer.git",
     "mineflayer-blockfinder": "^0.0.7",
-    "socket.io": "^2.2.0"
+    "socket.io": "^2.3.0"
   },
   "devDependencies": {},
   "scripts": {
