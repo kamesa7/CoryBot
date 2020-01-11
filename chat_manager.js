@@ -1,4 +1,4 @@
-glob.loggingInterval = 10000
+glob.loggingInterval = 200
 flag.logChat = false;
 
 bot.once('login', () => {
@@ -77,34 +77,27 @@ bot.randomchat = (messages, delay = 800) => {
     setTimeout(safechat, delay, message);
 }
 
-var prevLog = ""
-var logStroke = 0
-var prevTimestamp
-var loggingWaiter = null
+var loggingFlower = null
+var logQue = new bucketsJs.Queue();
 bot.log = (str) => {
-    clearTimeout(loggingWaiter)
-    if (String(prevLog) == String(str)) {
-        logStroke++
-        prevTimestamp = timestamp()
-        loggingWaiter = setTimeout(clearPrevLog, glob.loggingInterval)
-        return;
-    } else if (logStroke > 0) {
-        clearPrevLog();
-        prevLog = str
-    } else {
-        prevLog = str
+    logQue.add(timestamp(str))
+    if (logQue.size() == 1) {
+        loggingFlower = setInterval(flowLogger, glob.loggingInterval)
     }
-    str = timestamp(str)
-    console.log('\u001b[0m' + str);
-    glob.event.emit("log", str)
 }
 
-function clearPrevLog() {
-    const str = (logStroke >= 2) ? (prevTimestamp + prevLog + " x" + logStroke) : (prevTimestamp + prevLog);
-    prevLog = ""
-    logStroke = 0
+function flowLogger() {
+    var str = logQue.dequeue()
+    var stroke = 1
+    while (str == logQue.peek()) {
+        stroke++
+        logQue.dequeue()
+    }
+    if (stroke > 1) str += "  x " + stroke
     console.log('\u001b[0m' + str);
     glob.event.emit("log", str)
+    if (logQue.size() == 0)
+        clearInterval(loggingFlower)
 }
 
 bot.on("message", (jmes) => {
