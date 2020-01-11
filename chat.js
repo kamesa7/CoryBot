@@ -78,20 +78,20 @@ function onMessage(username, message, cb) {
     //hi
     if (username === last_joined_player) {
         if (message.match(/^(?:hi|hai|ひ|日|はい|へ|hi \(日\)|日 \(hi\))$/))
-            safechat('hi', 2000)
+            chat('hi', 2000)
         last_joined_player = null
     }
 
     //Calculator
     if (message.match(/(.*)=$/)) {
         var calcMessage = glob.Calc(message)
-        if (!calcMessage.match(/¬/)) safechat(calcMessage)
+        if (!calcMessage.match(/¬/)) chat(calcMessage)
     }
 
     //Name Call
     if (message.match(glob.NAMECALL_REGEXP) || cb === whisper) {
         if (message.match(/omikuji$/)) {
-            safechat("/omikuji")
+            chat("/omikuji")
         }
 
         //Follow
@@ -119,30 +119,30 @@ function onMessage(username, message, cb) {
         }
 
         if (message.match(/返事/)) {
-            safechat("はい")
+            chat("はい")
         }
 
         if (message.match(/かわいい/)) {
-            safechat("^_^")
+            chat("^_^")
         }
     }
 
     //OreFound
     if (message.match(/^採掘(?:記録|ログ)$/)) {
-        safechat(oreCheckCount(username))
+        chat(oreCheckCount(username))
     } else if (message.match(/^採掘(?:記録|ログ) (.+)$/)) {
-        safechat(oreCheckCount(RegExp.$1))
+        chat(oreCheckCount(RegExp.$1))
     } else if (message.match(/^採掘(?:記録|ログ)削除$/)) {
-        safechat(oreDeleteCount(username))
+        chat(oreDeleteCount(username))
     }
 
     //Music
     if (message.match(/^Music info/i) && glob.getState() == "music") {
         if (flag.Playlist) {
-            safechat("今はプレイリスト" + glob.Playlist + ":" + glob.PlaylistIndex + "/" + glob.PlaylistFiles.length + "曲目の" + glob.currentMusic.title
+            chat("今はプレイリスト" + glob.Playlist + ":" + glob.PlaylistIndex + "/" + glob.PlaylistFiles.length + "曲目の" + glob.currentMusic.title
                 + "(" + glob.currentMusic.duration + "秒)を演奏中です。")
         } else {
-            safechat("今は" + glob.currentMusic.title + "を演奏中です。")
+            chat("今は" + glob.currentMusic.title + "を演奏中です。")
         }
     }
 
@@ -156,7 +156,7 @@ function onMessage(username, message, cb) {
         flag.Sniper = false
     }
 
-    //inventoly
+    //inventory
     if (message.match(/^equip$/i)) {
         glob.checkArmor()
     }
@@ -165,15 +165,63 @@ function onMessage(username, message, cb) {
         glob.equipHead()
     }
 
-    function safechat(output, delay) {
+    //Util
+    if (message.match(/^(count|カウント)\s*(\d+)/i)) {
+        var count = Number(RegExp.$2)
+        countDown(count)
+    }
+
+    if (message.match(/^(タイマー|timer)\s*(\d+)/i)) {
+        var minutes = Number(RegExp.$2)
+        var mill = minutes * 60 * 1000
+        var date = new Date(Date.now() + mill)
+        chat(date.toLocaleTimeString() + " にタイマーをセットしました")
+        setTimeout(chat, mill - 1000 * 10, "10秒前です")
+        setTimeout(countDown, mill - 5000, 3)
+    }
+
+    if (message.match(/^(JST|alarm|アラーム)\s*(\d+)/i)) {
+        var tmin = Number(RegExp.$2)
+        var nmin = new Date().getMinutes()
+        var date = new Date()
+        if (nmin < tmin) {
+            date.setMinutes(tmin, 0)
+        } else {
+            date.setHours(date.getHours() + 1, tmin, 0)
+        }
+        chat(date.toLocaleString() + " にアラームをセットしました (現在 " + new Date().toLocaleTimeString() + ")")
+        var mill = date.getTime() - Date.now()
+        if (mill > 1000 * 70)
+            setTimeout(chat, mill - 1000 * 60, "60秒前です")
+        if (mill > 1000 * 35)
+            setTimeout(chat, mill - 1000 * 30, "30秒前です")
+        setTimeout(chat, mill - 1000 * 10, "10秒前です")
+        setTimeout(countDown, mill - 5000, 5)
+    }
+
+    function countDown(count) {
+        chat(count--, 0)
+        var interval = setInterval(() => {
+            chat(count--, 0)
+            if (count < 0) clearInterval(interval)
+        }, 1000)
+    }
+
+    function chat(output, delay) {
         cb(username, output, delay)
     }
 }
 function chat(username, message, delay) {
-    bot.safechat(message, delay)
+    if (delay == 0)
+        bot.chat(message)
+    else
+        bot.safechat(message, delay)
 }
 function whisper(username, message, delay) {
-    bot.safechat("/msg " + username + " " + message, delay)
+    if (delay == 0)
+        bot.chat("/msg " + username + " " + message)
+    else
+        bot.safechat("/msg " + username + " " + message, delay)
 }
 
 //omikuji
