@@ -168,6 +168,9 @@ function onMessage(username, message, cb) {
     //Util
     if (message.match(/^(count|カウント)\s*(\d+)/i)) {
         var count = Number(RegExp.$2)
+        if (count <= 1 || count > 30) {
+            chat(count + "はカウントできません")
+        }
         countDown(count)
     }
 
@@ -177,7 +180,7 @@ function onMessage(username, message, cb) {
         var date = new Date(Date.now() + mill)
         chat(date.toLocaleTimeString() + " にタイマーをセットしました")
         setTimeout(chat, mill - 1000 * 10, "10秒前です")
-        setTimeout(countDown, mill - 5000, 3)
+        setTimeout(countDown, mill - 5000, 5)
     }
 
     if (message.match(/^(JST|alarm|アラーム)\s*(\d+)/i)) {
