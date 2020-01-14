@@ -1,6 +1,9 @@
 glob.loggingInterval = 200
 flag.logChat = false;
 
+bot.safechat = safechat
+bot.justchat = justchat
+
 bot.once('login', () => {
     bot.log('[bot.connect]');
     if (glob.LOCAL) {
@@ -27,15 +30,17 @@ var safechat_send_text_cache = [];
 var safechat_last_send_time = new Date().getTime();
 var safechat_continuous_count = 0;
 
-function safechat(text) {
+function safechat(text, delay = 100) {
     var current_time = new Date().getTime();
     var elapsed_ms = current_time - safechat_last_send_time;
 
     if (!text)
         return;
 
-    if (flag.Ignore)
+    if (flag.Ignore) {
+        bot.log("[Ignored] " + text)
         return;
+    }
 
     if (elapsed_ms > 1000) {
         safechat_continuous_count = 0;
@@ -59,11 +64,23 @@ function safechat(text) {
     safechat_send_text_cache.push(text);
 
     safechat_last_send_time = current_time;
-    bot.chat(text);
+
+    setTimeout(() => {
+        bot.chat(text);
+    }, delay)
 }
 
-bot.safechat = (message, delay = 100) => {
-    setTimeout(safechat, delay, message);
+function justchat(text) {
+
+    if (!text)
+        return;
+
+    if (flag.Ignore) {
+        bot.log("[Ignored] " + text)
+        return;
+    }
+
+    bot.chat(text);
 }
 
 // 配列で定義された複数の文言のうちの一つをランダム選択してチャット送信する
@@ -74,7 +91,7 @@ bot.randomchat = (messages, delay = 800) => {
     } else {
         message = messages;
     }
-    setTimeout(safechat, delay, message);
+    safechat(message, delay)
 }
 
 var loggingFlower = null

@@ -88,7 +88,7 @@ function onMessage(username, message, cb) {
         var equation = RegExp.$1
         if (equation.match(/[\d]+[^\d]+[\d]+/)) {
             var ans = glob.Calc(equation)
-            if (ans != NaN) chat(equation + " = " + ans)
+            if (!Number.isNaN(ans)) chat(equation + " = " + ans)
         }
     }
 
@@ -128,6 +128,11 @@ function onMessage(username, message, cb) {
 
         if (message.match(/かわいい/)) {
             chat("^_^")
+        }
+
+        if (message.match(/うるさい/)) {
+            chat("(>_<)")
+            flag.Ignore = true
         }
     }
 
@@ -174,8 +179,9 @@ function onMessage(username, message, cb) {
         var count = Number(RegExp.$2)
         if (count <= 1 || count > 30) {
             chat(count + "はカウントできません")
+        } else {
+            countdown(count)
         }
-        countdown(count)
     }
 
     if (message.match(/^(タイマー|timer)\s*(\d+)/i)) {
@@ -203,16 +209,16 @@ function onMessage(username, message, cb) {
         if (mill > 1000 * 35)
             setTimeout(chat, mill - 1000 * 30, "30秒前です")
         setTimeout(chat, mill - 1000 * 10, "10秒前です")
-        setTimeout(countdown, mill - 5000, 5, date.toLocaleString() + "です")
+        setTimeout(countdown, mill - 5000, 5, date.toLocaleTimeString() + "です")
     }
 
     function countdown(count, msg) {
-        chat(count--, 0)
+        chat(String(count--), 0)
         var interval = setInterval(() => {
             if (msg && count == 0) {
                 chat(msg, 0)
             } else {
-                chat(count, 0)
+                chat(String(count), 0)
             }
             count--;
             if (count < 0) clearInterval(interval)
@@ -225,13 +231,13 @@ function onMessage(username, message, cb) {
 }
 function chat(username, message, delay) {
     if (delay == 0)
-        bot.chat(message)
+        bot.justchat(message)
     else
         bot.safechat(message, delay)
 }
 function whisper(username, message, delay) {
     if (delay == 0)
-        bot.chat("/msg " + username + " " + message)
+        bot.justchat("/msg " + username + " " + message)
     else
         bot.safechat("/msg " + username + " " + message, delay)
 }
