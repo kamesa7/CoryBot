@@ -74,6 +74,7 @@ bot.on('whisper', (username, message) => {
 
 function onMessage(username, message, cb) {
     if (username == "Super_AI") return
+    const nospaceMsg = message.replace(/ /g, "")
 
     //hi
     if (username === last_joined_player) {
@@ -83,9 +84,12 @@ function onMessage(username, message, cb) {
     }
 
     //Calculator
-    if (message.match(/(.*)=$/)) {
-        var calcMessage = glob.Calc(message)
-        if (!calcMessage.match(/¬/)) chat(calcMessage)
+    if (nospaceMsg.match(/([\d\+\-\*\/\(\)\.]+)/) && !nospaceMsg.match(/http/)) {
+        var equation = RegExp.$1
+        if (equation.match(/[\d]+[^\d]+[\d]+/)) {
+            var ans = glob.Calc(equation)
+            if (ans != NaN) chat(equation + " = " + ans)
+        }
     }
 
     //Name Call
