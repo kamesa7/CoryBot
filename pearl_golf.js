@@ -1,6 +1,7 @@
-flag.PearlGolf = false;
 
-golf = {}
+golf = {
+    playing:false
+}
 
 golf.allowWalk = 5
 golf.allowDist = 2
@@ -24,7 +25,7 @@ function initGolfGame() {
     golf.cource = 0;
     golf.goal = new Vec3(0, 0, 0)
     golf.results = {}
-    flag.PearlGolf = true;
+    golf.playing = true;
 }
 
 function addPlayer(username) {
@@ -67,6 +68,17 @@ function addPlayer(username) {
     }
 }
 
+function leavePlayer(username){
+    const gp = golf.players[username]
+    if(!gp){
+        bot.log("[golf] invalid username")
+        return
+    }
+    gp.rated = false
+    gp.alive = false
+    gp.comment += (golf.playing?golf.cource-1:golf.cource) + "まで|"
+}
+
 function verifyGolf(cnt) {
     bot.log("[golf_verify] VERIFY " + cnt)
     var playingPlayer = "未ゴール "
@@ -103,17 +115,20 @@ function startCourse(goal) {
         bot.log("need goal position")
         return
     }
-    if (flag.PearlGolf) return
+    if (golf.playing) return
     golf.goal = goal.floored()
     golf.goal.add(new Vec3(0.5, 0, 0.5))
-    flag.PearlGolf = true;
+    golf.playing = true;
     golf.cource++;
     Object.keys(golf.players).forEach(function (key) {
         const gp = golf.players[key]
+        if(!gp.alive){
+            return
+        }
         gp.courceThrowCnt = 0        
         gp.courceWaterCnt = 0
         gp.goaling = false;
-        if (gp.alive && bot.players[gp.username] && bot.players[gp.username].entity) {
+        if (bot.players[gp.username] && bot.players[gp.username].entity) {
             const pos = bot.players[key].entity.position.clone()
             gp.prevpos = pos.clone()
             gp.prevtick = pos.clone()
@@ -128,8 +143,8 @@ function startCourse(goal) {
 }
 
 function endCourse() {
-    if (!flag.PearlGolf) return
-    flag.PearlGolf = false;
+    if (!golf.playing) return
+    golf.playing = false;
     var resultarr = []
     golf.results[golf.cource] = {
         cource: golf.cource,
@@ -141,6 +156,9 @@ function endCourse() {
         ANNOUNCE("プラクティスホール終了")
         Object.keys(golf.players).forEach(function (key) {
             const gp = golf.players[key]
+            if(!gp.alive){
+                return
+            }
             counts[key] = gp.courceThrowCnt
             resultarr.push(gp)
         })
@@ -148,6 +166,9 @@ function endCourse() {
         ANNOUNCE("ホール " + golf.cource + " 終了")
         Object.keys(golf.players).forEach(function (key) {
             const gp = golf.players[key]
+            if(!gp.alive){
+                return
+            }
             counts[key] = gp.courceThrowCnt
             gp.sumThrowCnt += gp.courceThrowCnt
             gp.sumWaterCnt += gp.courceWaterCnt
@@ -157,6 +178,9 @@ function endCourse() {
     }
     Object.keys(golf.players).forEach(function (key) {
         const gp = golf.players[key]
+        if(!gp.alive){
+            return
+        }
         gp.results[golf.cource] = {
             throwCnt: gp.courceThrowCnt,
             posArray: gp.posArray,
@@ -177,14 +201,16 @@ function endCourse() {
 }
 
 function endGolf() {
-    if (flag.PearlGolf) {
+    if (golf.playing) {
         bot.log("unable to end : playing golf now")
         return
     }
     var resultarr = []
     Object.keys(golf.players).forEach(function (key) {
         const gp = golf.players[key]
-        resultarr.push(gp)
+        if(gp.rated){
+            resultarr.push(gp)
+        }
     })
     resultarr.sort((a, b) => {
         return a.sumThrowCnt - b.sumThrowCnt
@@ -198,7 +224,7 @@ function endGolf() {
 }
 
 bot.on("entitySpawn", function (entity) {
-    if (!flag.PearlGolf) return;
+    if (!golf.playing) return;
     if (entity.name == "ender_pearl") {
         var found = 0;
         var throwers = ""
@@ -218,7 +244,7 @@ bot.on("entitySpawn", function (entity) {
                     throwers += " " + key
                     addPlayer(key)
                     const gp = golf.players[key]
-                    if (gp.goaling) return
+                    if (gp.goaling || !gp.alive) return
                     if (gp.throwing || gp.warping || gp.falling || gp.sticking)
                         bot.log("[golf] Transaction Exception " + key + " " + gp.throwing + "||" + gp.warping + "||" + gp.falling + "||" + gp.sticking)
                     gp.throwing = true;
@@ -230,7 +256,7 @@ bot.on("entitySpawn", function (entity) {
                         bot.log("[golf] " + key + " was far from prevpos (" + Math.floor(gp.prevpos.xzDistanceTo(ppos)) + "m)  from " + gp.prevpos.floored() + " to " + ppos.floored())
                     }
                     gp.posArray.push(ppos.clone())
-                    gp.prevpos = pos
+                    gp.prevpos = ppos
                 }
             }
         })
@@ -243,7 +269,7 @@ bot.on("entitySpawn", function (entity) {
 })
 
 bot.on("entityGone", function (entity) {
-    if (!flag.PearlGolf) return;
+    if (!golf.playing) return;
     if (entity.name == "ender_pearl") {
         Object.keys(golf.players).forEach(function (key) {
             const gp = golf.players[key]
@@ -256,18 +282,18 @@ bot.on("entityGone", function (entity) {
 })
 
 bot.on("entityHurt", function (entity) {
-    if (!flag.PearlGolf) return;
+    if (!golf.playing) return;
     if (entity.username && golf.players[entity.username] && golf.players[entity.username].throwing) {
         golf.players[entity.username].warping = true
     }
 })
 
 bot.on("entityMoved", function (entity) {
-    if (!flag.PearlGolf) return;
+    if (!golf.playing) return;
     if (!entity.username) return
     const key = entity.username
     const gp = golf.players[key]
-    if (!gp) return
+    if (!gp || !gp.alive) return
     if (gp.goaling) return
     const pos = entity.position.clone()
     if (gp.throwing && !gp.falling && !gp.sticking && (gp.warping || gp.prevtick.xzDistanceTo(pos) > golf.allowDist)) {
@@ -306,22 +332,18 @@ bot.on("entityMoved", function (entity) {
 })
 
 function saveGolf() {
-    jsonfile.writeFile("golf_cache.json", {
-        golf: golf,
-        flag: flag.PearlGolf
-    })
+    jsonfile.writeFile("golf_cache.json", golf)
     bot.log("[golf] Game Saved")
 }
 
 function loadGolf() {
     const data = jsonfile.readFileSync("golf_cache.json")
 
-    flag.PearlGolf = data.flag
-
-    golf.players = data.golf.players
-    golf.cource = data.golf.cource
-    golf.goal = new Vec3(data.golf.goal)
-    golf.results = data.golf.results
+    golf.playing = data.playing
+    golf.players = data.players
+    golf.cource = data.cource
+    golf.goal = new Vec3(data.goal)
+    golf.results = data.results
 
     Object.keys(golf.players).forEach(function (key) {
         const gp = golf.players[key]
