@@ -171,7 +171,7 @@ function onMessage(username, message, cb) {
         if (count <= 1 || count > 30) {
             chat(count + "はカウントできません")
         }
-        countDown(count)
+        countdown(count)
     }
 
     if (message.match(/^(タイマー|timer)\s*(\d+)/i)) {
@@ -180,7 +180,7 @@ function onMessage(username, message, cb) {
         var date = new Date(Date.now() + mill)
         chat(date.toLocaleTimeString() + " にタイマーをセットしました")
         setTimeout(chat, mill - 1000 * 10, "10秒前です")
-        setTimeout(countDown, mill - 5000, 5)
+        setTimeout(countdown, mill - 5000, 5)
     }
 
     if (message.match(/^(JST|alarm|アラーム)\s*(\d+)/i)) {
@@ -199,13 +199,18 @@ function onMessage(username, message, cb) {
         if (mill > 1000 * 35)
             setTimeout(chat, mill - 1000 * 30, "30秒前です")
         setTimeout(chat, mill - 1000 * 10, "10秒前です")
-        setTimeout(countDown, mill - 5000, 5)
+        setTimeout(countdown, mill - 5000, 5, date.toLocaleString() + "です")
     }
 
-    function countDown(count) {
+    function countdown(count, msg) {
         chat(count--, 0)
         var interval = setInterval(() => {
-            chat(count--, 0)
+            if (msg && count == 0) {
+                chat(msg, 0)
+            } else {
+                chat(count, 0)
+            }
+            count--;
             if (count < 0) clearInterval(interval)
         }, 1000)
     }
