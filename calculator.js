@@ -1,14 +1,17 @@
 glob.Calc = Calculator
 
 function Calculator(equation = "") {
-  try {
-    WriteDetail(equation)
-    equation = equation.replace(/(\d)\(/g, RegExp.$1 + "*(")
-    WriteDetail(equation)
-    var ans = eval(equation)
-    WriteDetail(ans)
-    return ans;
-  } catch (e) {
+  if (equation.match(/([\d\+\-\*\/\(\)\.^]+)/) && equation.match(/[\d\.]+[^\d\.]+[\d\.]+/)) {
+    try {
+      WriteDetail(equation)
+      equation = equation.replace(/\^/g, "**")
+      WriteDetail(equation)
+      var ans = eval(equation)
+      WriteDetail(ans)
+      return ans;
+    } catch (e) {
+    }
+  } else {
     return NaN
   }
 }

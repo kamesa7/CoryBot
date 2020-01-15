@@ -84,11 +84,11 @@ function onMessage(username, message, cb) {
     }
 
     //Calculator
-    if (nospaceMsg.match(/([\d\+\-\*\/\(\)\.]+)/) && !nospaceMsg.match(/http/)) {
+    if (nospaceMsg.match(/([\d\+\-\*\/\(\)\.^]+)/) && !nospaceMsg.match(/http/)) {
         var equation = RegExp.$1
-        if (equation.match(/[\d]+[^\d]+[\d]+/)) {
+        if (equation.match(/[\d\.]+[^\d\.]+[\d\.]+/)) {
             var ans = glob.Calc(equation)
-            if (!Number.isNaN(ans)) chat(equation + " = " + ans)
+            if (!Number.isNaN(ans) && ans != undefined) chat(equation + " = " + ans)
         }
     }
 
