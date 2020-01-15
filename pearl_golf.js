@@ -1,6 +1,6 @@
 
 golf = {
-    playing:false
+    playing: false
 }
 
 golf.allowWalk = 5
@@ -13,8 +13,13 @@ golf.initGolfGame = initGolfGame
 golf.startCourse = startCourse
 golf.endCourse = endCourse
 golf.endGolf = endGolf
+
 golf.addPlayer = addPlayer
+golf.leavePlayer = leavePlayer
+
 golf.verifyGolf = verifyGolf
+golf.checkTurn = checkTurn
+golf.nextTurn = nextTurn
 
 golf.saveGolf = saveGolf
 golf.loadGolf = loadGolf
@@ -24,6 +29,7 @@ function initGolfGame() {
     golf.players = {}
     golf.cource = 0;
     golf.goal = new Vec3(0, 0, 0)
+    golf.turn = 0;
     golf.results = {}
     golf.playing = true;
 }
@@ -47,7 +53,7 @@ function addPlayer(username) {
             joined: golf.cource,
             goaling: false,
             rated: golf.cource <= 1 ? true : false,//結果発表用
-            comment: (golf.cource <= 1) ? "" : "|" + (golf.cource + "から|"),//結果発表用
+            comment: (golf.cource <= 1) ? "　" : (golf.cource + "から|"),//結果発表用
             alive: true,//監視するかどうか
             courceThrowCnt: 0,
             sumThrowCnt: 0,
@@ -68,15 +74,15 @@ function addPlayer(username) {
     }
 }
 
-function leavePlayer(username){
+function leavePlayer(username) {
     const gp = golf.players[username]
-    if(!gp){
+    if (!gp) {
         bot.log("[golf] invalid username")
         return
     }
     gp.rated = false
     gp.alive = false
-    gp.comment += (golf.playing?golf.cource-1:golf.cource) + "まで|"
+    gp.comment += (golf.playing ? golf.cource - 1 : golf.cource) + "まで|"
 }
 
 function verifyGolf(cnt) {
@@ -85,10 +91,14 @@ function verifyGolf(cnt) {
     var playedPlayer = "ゴール済 "
     Object.keys(golf.players).forEach(function (key) {
         const gp = golf.players[key]
-        if (gp.goaling)
+        if (!gp.alive)
+            return
+        if (gp.goaling) {
             playedPlayer += key + " "
-        else
+            return
+        } else {
             playingPlayer += key + " "
+        }
 
         if (!bot.players[key] || !bot.players[key].entity) {
             bot.log("[golf_verify] not found player " + key)
@@ -101,13 +111,57 @@ function verifyGolf(cnt) {
             bot.log("[golf_verify] " + key + " throw count difference " + gp.courceThrowCnt)
         if (!gp.goaling && pos.xzDistanceTo(gp.prevpos) > golf.allowWalk)
             bot.log("[golf_verify] " + key + " moved " + Math.floor(pos.xzDistanceTo(gp.prevpos)) + "m from " + gp.prevpos.floored() + " to " + pos.floored())
-        if (pos.distanceTo(bot.entity.position) > golf.pearlViewDistance)
-            bot.log("[golf_verify] " + key + " is far from me " + entity.position + " dist " + Math.floor(pos.distanceTo(bot.entity.position)))
+        if (pos.xzDistanceTo(bot.entity.position) > golf.pearlViewDistance)
+            bot.log("[golf_verify] " + key + " is far from me " + pos.floored() + " dist " + Math.floor(pos.xzDistanceTo(bot.entity.position)))
     })
     bot.log("[golf_verify] " + playingPlayer)
     bot.log("[golf_verify] " + playedPlayer)
 
     saveGolf();
+}
+
+function checkTurn() {
+    if (golf.cource == 0)
+        return
+    var min = Infinity
+    Object.keys(golf.players).forEach(function (key) {
+        const gp = golf.players[key]
+        if (!gp.alive || gp.goaling)
+            return
+        if (gp.courceThrowCnt < min) {
+            min = gp.courceThrowCnt
+        }
+    })
+    if (min === Infinity) {
+        bot.log("[golf_turn] All Player Goaled")
+    } else if (golf.turn < min) {
+        bot.log("[golf_turn] " + golf.turn + " -> " + min)
+        golf.turn = min
+        announce(golf.turn + " 投目が終了")
+    }
+}
+
+function nextTurn() {
+    var farPlayers = ""
+    Object.keys(golf.players).forEach(function (key) {
+        const gp = golf.players[key]
+        if (!gp.alive || gp.goaling)
+            return
+
+        if (!bot.players[key] || !bot.players[key].entity) {
+            bot.log("[golf_next] not found player " + key)
+            farPlayers += gp.username + " "
+            return
+        }
+        const pos = bot.players[key].entity.position.clone()
+        if (pos.xzDistanceTo(bot.entity.position) > golf.pearlViewDistance) {
+            bot.log("[golf_next] " + key + " is far from me " + pos.floored() + " dist " + Math.floor(pos.xzDistanceTo(bot.entity.position)))
+            farPlayers += gp.username + " "
+        }
+    })
+    announce("次は" + (golf.turn + 1) + "投目です")
+    if (farPlayers != "")
+        ANNOUNCE(farPlayers + "さんは投げずに待っていてください")
 }
 
 function startCourse(goal) {
@@ -120,12 +174,13 @@ function startCourse(goal) {
     golf.goal.add(new Vec3(0.5, 0, 0.5))
     golf.playing = true;
     golf.cource++;
+    golf.turn = 0
     Object.keys(golf.players).forEach(function (key) {
         const gp = golf.players[key]
-        if(!gp.alive){
+        if (!gp.alive) {
             return
         }
-        gp.courceThrowCnt = 0        
+        gp.courceThrowCnt = 0
         gp.courceWaterCnt = 0
         gp.goaling = false;
         if (bot.players[gp.username] && bot.players[gp.username].entity) {
@@ -149,6 +204,7 @@ function endCourse() {
     golf.results[golf.cource] = {
         cource: golf.cource,
         goal: golf.goal,
+        turn: golf.turn,
         counts: {}
     }
     var counts = golf.results[golf.cource].counts
@@ -156,7 +212,7 @@ function endCourse() {
         ANNOUNCE("プラクティスホール終了")
         Object.keys(golf.players).forEach(function (key) {
             const gp = golf.players[key]
-            if(!gp.alive){
+            if (!gp.alive) {
                 return
             }
             counts[key] = gp.courceThrowCnt
@@ -166,19 +222,19 @@ function endCourse() {
         ANNOUNCE("ホール " + golf.cource + " 終了")
         Object.keys(golf.players).forEach(function (key) {
             const gp = golf.players[key]
-            if(!gp.alive){
+            if (!gp.alive) {
                 return
             }
             counts[key] = gp.courceThrowCnt
             gp.sumThrowCnt += gp.courceThrowCnt
             gp.sumWaterCnt += gp.courceWaterCnt
-            if (!gp.goaling) gp.comment += "|" + golf.cource + "棄権|"
+            if (!gp.goaling) gp.comment += golf.cource + "棄権|"
             resultarr.push(gp)
         })
     }
     Object.keys(golf.players).forEach(function (key) {
         const gp = golf.players[key]
-        if(!gp.alive){
+        if (!gp.alive) {
             return
         }
         gp.results[golf.cource] = {
@@ -186,15 +242,14 @@ function endCourse() {
             posArray: gp.posArray,
             waterCnt: gp.courceWaterCnt
         }
-        gp.posArray=[]
+        gp.posArray = []
     })
 
     resultarr.sort((a, b) => {
         return a.courceThrowCnt - b.courceThrowCnt
     })
     for (var i = 0; i < resultarr.length; i++) {
-        var det = (resultarr[i].goaling || golf.cource == 0) ? "" : "|リタイア|"
-        bot.log((i + 1) + ": " + resultarr[i].username + " " + resultarr[i].courceThrowCnt + "  " + det)
+        bot.log((i + 1) + ": " + resultarr[i].username + " " + resultarr[i].courceThrowCnt + "  " + resultarr[i].comment)
     }
 
     saveGolf()
@@ -208,7 +263,7 @@ function endGolf() {
     var resultarr = []
     Object.keys(golf.players).forEach(function (key) {
         const gp = golf.players[key]
-        if(gp.rated){
+        if (gp.rated) {
             resultarr.push(gp)
         }
     })
@@ -325,6 +380,7 @@ bot.on("entityMoved", function (entity) {
                 gp.goaling = true
             }
         }
+        checkTurn()
     } else if (gp.prevtick.xzDistanceTo(pos) > golf.allowWalk) {
         bot.log("[golf] " + key + " warped by not throwing " + Math.floor(gp.prevtick.xzDistanceTo(pos)) + "m from " + gp.prevpos.floored() + " to " + pos.floored())
     }
@@ -343,6 +399,7 @@ function loadGolf() {
     golf.players = data.players
     golf.cource = data.cource
     golf.goal = new Vec3(data.goal)
+    golf.turn = data.turn
     golf.results = data.results
 
     Object.keys(golf.players).forEach(function (key) {
