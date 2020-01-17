@@ -80,6 +80,7 @@ function leavePlayer(username) {
         bot.log("[golf] invalid username")
         return
     }
+    bot.log("[golf] leave player " + username)
     gp.rated = false
     gp.alive = false
     gp.comment += (golf.playing ? golf.cource - 1 : golf.cource) + "まで|"
@@ -124,20 +125,27 @@ function checkTurn() {
     if (golf.cource == 0)
         return
     var min = Infinity
+    var playing = false
     Object.keys(golf.players).forEach(function (key) {
         const gp = golf.players[key]
-        if (!gp.alive || gp.goaling)
+        if (!gp.alive)
             return
+        if (!gp.goaling)
+            playing = true
         if (gp.courceThrowCnt < min) {
             min = gp.courceThrowCnt
         }
     })
-    if (min === Infinity) {
-        bot.log("[golf_turn] All Player Goaled")
-    } else if (golf.turn < min) {
-        bot.log("[golf_turn] " + golf.turn + " -> " + min)
+    if (golf.turn < min) {
         golf.turn = min
-        announce(golf.turn + " 投目が終了")
+        bot.log("[golf_turn] " + golf.turn + " -> " + min)
+        if (playing) {
+            announce(golf.turn + " 投目が終了")
+        } else {
+            bot.log("[golf_turn] All Player Goaled")
+            announce(golf.turn + " 投目が終了 全プレイヤーがゴール")
+        }
+        setTimeout(verifyGolf, golf.stickTime, golf.turn)
     }
 }
 
@@ -274,6 +282,12 @@ function endGolf() {
     for (var i = 0; i < resultarr.length; i++) {
         bot.log((i + 1) + ": " + resultarr[i].username + " " + resultarr[i].sumThrowCnt + "  " + resultarr[i].comment)
     }
+    Object.keys(golf.players).forEach(function (key) {
+        const gp = golf.players[key]
+        if (!gp.rated) {
+            bot.log(gp.username + " " + gp.sumThrowCnt + "  " + gp.comment)
+        }
+    })
 
     saveGolf()
 }
@@ -306,7 +320,7 @@ bot.on("entitySpawn", function (entity) {
                     gp.myPearlID = entity.id;
                     gp.throwDate = new Date();
                     gp.courceThrowCnt++
-                    bot.log("[golf] " + key + " threw at " + ppos)
+                    bot.log("[golf] " + key + " threw at " + ppos.floored())
                     if (gp.prevpos.xzDistanceTo(ppos) > golf.allowWalk) {
                         bot.log("[golf] " + key + " was far from prevpos (" + Math.floor(gp.prevpos.xzDistanceTo(ppos)) + "m)  from " + gp.prevpos.floored() + " to " + ppos.floored())
                     }
@@ -316,7 +330,7 @@ bot.on("entitySpawn", function (entity) {
             }
         })
         if (found == 0) {
-            bot.log("[golf] Thrower Not Found Exception " + epos + " maybe " + nearestKey + " " + nearestDist + "m")
+            bot.log("[golf] Thrower Not Found Exception at " + epos.floored() + " maybe " + nearestKey + " " + nearestDist + "m")
         } else if (found > 1) {
             bot.log("[golf] Cannot Detect One Exception " + found + " at " + epos.floored() + " " + throwers)
         }
@@ -353,7 +367,7 @@ bot.on("entityMoved", function (entity) {
     const pos = entity.position.clone()
     if (gp.throwing && !gp.falling && !gp.sticking && (gp.warping || gp.prevtick.xzDistanceTo(pos) > golf.allowDist)) {
         gp.warping = true
-        bot.log("[golf]  " + key + " warped to " + pos)
+        bot.log("[golf]  " + key + " warped to " + pos.floored())
         gp.falling = true
         setTimeout(() => {
             gp.sticking = true
@@ -370,10 +384,10 @@ bot.on("entityMoved", function (entity) {
         }
         if (waters >= 2) {
             gp.courceWaterCnt++
-            bot.log("[golf]    " + key + " falled in water : back to " + gp.prevpos + "  took " + (gp.stickDate - gp.throwDate) + "ms")
+            bot.log("[golf]    " + key + " falled in water : back to " + gp.prevpos.floored() + "  took " + (gp.stickDate - gp.throwDate) + "ms")
             announce(key + " さん：池ポチャ判定です。　投げた場所:" + gp.prevpos.floored())
         } else {
-            bot.log("[golf]   " + key + " falled to " + pos + "  took " + (gp.stickDate - gp.throwDate) + "ms")
+            bot.log("[golf]   " + key + " falled to " + pos.floored() + "  took " + (gp.stickDate - gp.throwDate) + "ms")
             if (pos.xzDistanceTo(golf.goal) < golf.allowDist && pos.y > golf.goal.y - 1) {
                 bot.log("[golf] " + key + " GOAL " + pos)
                 announce(key + " ゴール！ " + gp.courceThrowCnt)
