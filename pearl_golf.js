@@ -86,34 +86,67 @@ function leavePlayer(username) {
     gp.comment += (golf.playing ? golf.cource - 1 : golf.cource) + "まで|"
 }
 
+function canSee(gp) {
+    const key = gp.username
+    if (!bot.players[key] || !bot.players[key].entity) {
+        bot.log("[golf_see] Not Found Player " + key)
+        return false
+    } else {
+        return true
+    }
+}
+
+function validTransaction(gp) {
+    const key = gp.username
+    if (gp.throwing || gp.warping || gp.falling || gp.sticking) {
+        bot.log("[golf_transaction] Exception " + key + " " + gp.throwing + "||" + gp.warping + "||" + gp.falling + "||" + gp.sticking)
+        return false
+    } else {
+        return true
+    }
+}
+
+function onPrevPos(gp) {
+    const key = gp.username
+    const pos = bot.players[key].entity.position.clone()
+    if (pos.xzDistanceTo(gp.prevpos) > golf.allowWalk) {
+        bot.log("[golf_onPrevPos] " + key + " moved " + Math.floor(pos.xzDistanceTo(gp.prevpos)) + "m from " + gp.prevpos.floored() + " to " + pos.floored())
+        return false
+    } else {
+        return true
+    }
+}
+
+function inRange(gp) {
+    const key = gp.username
+    const pos = bot.players[key].entity.position.clone()
+    if (pos.xzDistanceTo(bot.entity.position) > golf.pearlViewDistance) {
+        bot.log("[golf_range] " + key + " is Far " + pos.floored() + " Dist " + Math.floor(pos.xzDistanceTo(bot.entity.position)))
+        return false
+    }
+    return true
+}
+
 function verifyGolf(cnt) {
     bot.log("[golf_verify] VERIFY " + cnt)
     var playingPlayer = "未ゴール "
     var playedPlayer = "ゴール済 "
     Object.keys(golf.players).forEach(function (key) {
         const gp = golf.players[key]
-        if (!gp.alive)
-            return
+        if (!gp.alive) return
         if (gp.goaling) {
             playedPlayer += key + " "
             return
-        } else {
-            playingPlayer += key + " "
         }
+        playingPlayer += key + " "
 
-        if (!bot.players[key] || !bot.players[key].entity) {
-            bot.log("[golf_verify] not found player " + key)
-            return
+        if (canSee(gp)) {
+            onPrevPos(gp)
+            inRange(gp)
         }
-        const pos = bot.players[key].entity.position.clone()
-        if (gp.throwing || gp.warping || gp.falling || gp.sticking)
-            bot.log("[golf_verify] Transaction Exception " + key + " " + gp.throwing + "||" + gp.warping + "||" + gp.falling + "||" + gp.sticking)
+        validTransaction(gp)
         if (!gp.goaling && cnt && gp.courceThrowCnt != cnt)
             bot.log("[golf_verify] " + key + " throw count difference " + gp.courceThrowCnt)
-        if (!gp.goaling && pos.xzDistanceTo(gp.prevpos) > golf.allowWalk)
-            bot.log("[golf_verify] " + key + " moved " + Math.floor(pos.xzDistanceTo(gp.prevpos)) + "m from " + gp.prevpos.floored() + " to " + pos.floored())
-        if (pos.xzDistanceTo(bot.entity.position) > golf.pearlViewDistance)
-            bot.log("[golf_verify] " + key + " is far from me " + pos.floored() + " dist " + Math.floor(pos.xzDistanceTo(bot.entity.position)))
     })
     bot.log("[golf_verify] " + playingPlayer)
     bot.log("[golf_verify] " + playedPlayer)
@@ -125,6 +158,7 @@ function checkTurn() {
     if (golf.cource == 0)
         return
     var min = Infinity
+    var max = 0
     var playing = false
     Object.keys(golf.players).forEach(function (key) {
         const gp = golf.players[key]
@@ -135,12 +169,15 @@ function checkTurn() {
         if (gp.courceThrowCnt < min) {
             min = gp.courceThrowCnt
         }
+        if (gp.courceThrowCnt > max) {
+            max = gp.courceThrowCnt
+        }
     })
     if (golf.turn < min) {
         golf.turn = min
-        bot.log("[golf_turn] " + golf.turn + " -> " + min)
+        bot.log("[golf_turn] min" + golf.turn + " -> " + min + " (max " + max + ")")
         if (playing) {
-            announce(golf.turn + " 投目が終了")
+            announce("全員の " + golf.turn + " 投目が終了")
         } else {
             bot.log("[golf_turn] All Player Goaled")
             announce(golf.turn + " 投目が終了 全プレイヤーがゴール")
@@ -149,26 +186,23 @@ function checkTurn() {
     }
 }
 
-function nextTurn() {
+function nextTurn(say = false) {
+    var throwAbles = ""
     var farPlayers = ""
     Object.keys(golf.players).forEach(function (key) {
         const gp = golf.players[key]
         if (!gp.alive || gp.goaling)
             return
 
-        if (!bot.players[key] || !bot.players[key].entity) {
-            bot.log("[golf_next] not found player " + key)
-            farPlayers += gp.username + " "
-            return
-        }
-        const pos = bot.players[key].entity.position.clone()
-        if (pos.xzDistanceTo(bot.entity.position) > golf.pearlViewDistance) {
-            bot.log("[golf_next] " + key + " is far from me " + pos.floored() + " dist " + Math.floor(pos.xzDistanceTo(bot.entity.position)))
+        if (canSee(gp) && inRange(gp)) {
+            throwAbles += gp.username + " "
+        } else {
             farPlayers += gp.username + " "
         }
     })
-    announce("次は" + (golf.turn + 1) + "投目です")
-    if (farPlayers != "")
+    bot.log("[golf_throwable] " + throwAbles)
+    bot.log("[golf_farplayer] " + farPlayers)
+    if (say && farPlayers != "")
         ANNOUNCE(farPlayers + "さんは投げずに待っていてください")
 }
 
@@ -191,12 +225,10 @@ function startCourse(goal) {
         gp.courceThrowCnt = 0
         gp.courceWaterCnt = 0
         gp.goaling = false;
-        if (bot.players[gp.username] && bot.players[gp.username].entity) {
+        if (canSee(gp)) {
             const pos = bot.players[key].entity.position.clone()
             gp.prevpos = pos.clone()
             gp.prevtick = pos.clone()
-        } else {
-            bot.log("[golf] not found player " + key)
         }
     })
     bot.log("[golf] new cource" + golf.cource + " goal: " + golf.goal)
@@ -313,26 +345,22 @@ bot.on("entitySpawn", function (entity) {
                     throwers += " " + key
                     addPlayer(key)
                     const gp = golf.players[key]
-                    if (gp.goaling || !gp.alive) return
-                    if (gp.throwing || gp.warping || gp.falling || gp.sticking)
-                        bot.log("[golf] Transaction Exception " + key + " " + gp.throwing + "||" + gp.warping + "||" + gp.falling + "||" + gp.sticking)
+                    if (!gp.alive || gp.goaling) return
+                    validTransaction(gp)
                     gp.throwing = true;
                     gp.myPearlID = entity.id;
                     gp.throwDate = new Date();
                     gp.courceThrowCnt++
                     bot.log("[golf] " + key + " threw at " + ppos.floored())
-                    if (gp.prevpos.xzDistanceTo(ppos) > golf.allowWalk) {
-                        bot.log("[golf] " + key + " was far from prevpos (" + Math.floor(gp.prevpos.xzDistanceTo(ppos)) + "m)  from " + gp.prevpos.floored() + " to " + ppos.floored())
-                    }
+                    onPrevPos(gp)
                     gp.posArray.push(ppos.clone())
-                    gp.prevpos = ppos
                 }
             }
         })
         if (found == 0) {
-            bot.log("[golf] Thrower Not Found Exception at " + epos.floored() + " maybe " + nearestKey + " " + nearestDist + "m")
+            bot.log("[golf_error] Thrower Not Found Exception at " + epos.floored() + " maybe " + nearestKey + " " + nearestDist + "m")
         } else if (found > 1) {
-            bot.log("[golf] Cannot Detect One Exception " + found + " at " + epos.floored() + " " + throwers)
+            bot.log("[golf_error] Cannot Detect One Exception " + found + " at " + epos.floored() + " " + throwers)
         }
     }
 })
@@ -359,11 +387,10 @@ bot.on("entityHurt", function (entity) {
 
 bot.on("entityMoved", function (entity) {
     if (!golf.playing) return;
-    if (!entity.username) return
+    if (!entity.username || !golf.players[entity.username]) return
     const key = entity.username
     const gp = golf.players[key]
-    if (!gp || !gp.alive) return
-    if (gp.goaling) return
+    if (!gp.alive || gp.goaling) return
     const pos = entity.position.clone()
     if (gp.throwing && !gp.falling && !gp.sticking && (gp.warping || gp.prevtick.xzDistanceTo(pos) > golf.allowDist)) {
         gp.warping = true
@@ -384,7 +411,7 @@ bot.on("entityMoved", function (entity) {
         }
         if (waters >= 2) {
             gp.courceWaterCnt++
-            bot.log("[golf]    " + key + " falled in water : back to " + gp.prevpos.floored() + "  took " + (gp.stickDate - gp.throwDate) + "ms")
+            bot.log("[golf]    " + key + " falled in water " + pos.floored() + " : back to " + gp.prevpos.floored() + "  took " + (gp.stickDate - gp.throwDate) + "ms")
             announce(key + " さん：池ポチャ判定です。　投げた場所:" + gp.prevpos.floored())
         } else {
             bot.log("[golf]   " + key + " falled to " + pos.floored() + "  took " + (gp.stickDate - gp.throwDate) + "ms")
@@ -392,11 +419,12 @@ bot.on("entityMoved", function (entity) {
                 bot.log("[golf] " + key + " GOAL " + pos)
                 announce(key + " ゴール！ " + gp.courceThrowCnt)
                 gp.goaling = true
-            }
+            }            
+            gp.prevpos = pos
         }
         checkTurn()
     } else if (gp.prevtick.xzDistanceTo(pos) > golf.allowWalk) {
-        bot.log("[golf] " + key + " warped by not throwing " + Math.floor(gp.prevtick.xzDistanceTo(pos)) + "m from " + gp.prevpos.floored() + " to " + pos.floored())
+        bot.log("[golf_transaction] " + key + " warped by not throwing " + Math.floor(gp.prevtick.xzDistanceTo(pos)) + "m from " + gp.prevpos.floored() + " to " + pos.floored())
     }
     gp.prevtick = pos
 })
