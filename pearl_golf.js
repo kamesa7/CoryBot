@@ -174,8 +174,8 @@ function checkTurn() {
         }
     })
     if (golf.turn < min) {
+        bot.log("[golf_turn] min " + golf.turn + " -> " + min + " (max " + max + ")")
         golf.turn = min
-        bot.log("[golf_turn] min" + golf.turn + " -> " + min + " (max " + max + ")")
         if (playing) {
             announce("全員の " + golf.turn + " 投目が終了")
         } else {
@@ -351,16 +351,16 @@ bot.on("entitySpawn", function (entity) {
                     gp.myPearlID = entity.id;
                     gp.throwDate = new Date();
                     gp.courceThrowCnt++
-                    bot.log("[golf] " + key + " threw at " + ppos.floored())
+                    bot.log("[pearl] " + key + " threw at " + ppos.floored())
                     onPrevPos(gp)
                     gp.posArray.push(ppos.clone())
                 }
             }
         })
         if (found == 0) {
-            bot.log("[golf_error] Thrower Not Found Exception at " + epos.floored() + " maybe " + nearestKey + " " + nearestDist + "m")
+            bot.log("[pearl_error] Thrower Not Found Exception at " + epos.floored() + " maybe " + nearestKey + " " + nearestDist + "m")
         } else if (found > 1) {
-            bot.log("[golf_error] Cannot Detect One Exception " + found + " at " + epos.floored() + " " + throwers)
+            bot.log("[pearl_error] Cannot Detect One Exception " + found + " at " + epos.floored() + " " + throwers)
         }
     }
 })
@@ -394,7 +394,7 @@ bot.on("entityMoved", function (entity) {
     const pos = entity.position.clone()
     if (gp.throwing && !gp.falling && !gp.sticking && (gp.warping || gp.prevtick.xzDistanceTo(pos) > golf.allowDist)) {
         gp.warping = true
-        bot.log("[golf]  " + key + " warped to " + pos.floored())
+        bot.log("[pearl]   " + key + " warped to " + pos.floored())
         gp.falling = true
         setTimeout(() => {
             gp.sticking = true
@@ -411,10 +411,10 @@ bot.on("entityMoved", function (entity) {
         }
         if (waters >= 2) {
             gp.courceWaterCnt++
-            bot.log("[golf]    " + key + " falled in water " + pos.floored() + " : back to " + gp.prevpos.floored() + "  took " + (gp.stickDate - gp.throwDate) + "ms")
+            bot.log("[pearl]       " + key + " falled in water " + pos.floored() + " : back to " + gp.prevpos.floored() + "  took " + (gp.stickDate - gp.throwDate) + "ms")
             announce(key + " さん：池ポチャ判定です。　投げた場所:" + gp.prevpos.floored())
         } else {
-            bot.log("[golf]   " + key + " falled to " + pos.floored() + "  took " + (gp.stickDate - gp.throwDate) + "ms")
+            bot.log("[pearl]       " + key + " falled to " + pos.floored() + "  took " + (gp.stickDate - gp.throwDate) + "ms")
             if (pos.xzDistanceTo(golf.goal) < golf.allowDist && pos.y > golf.goal.y - 1) {
                 bot.log("[golf] " + key + " GOAL " + pos)
                 announce(key + " ゴール！ " + gp.courceThrowCnt)
