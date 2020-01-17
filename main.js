@@ -11,7 +11,7 @@ bucketsJs = require('buckets-js');
 isSame = require("./isSameObject");
 dateformat = require('dateformat')
 
-var steveNum = "";
+var steveName = null;
 
 glob = {
   LOCAL: process.env.MC_LOCAL === "true" ? true : false,
@@ -31,13 +31,13 @@ flag = {
 for (var i = 0; i < process.argv.length; i++) {
   var arg = process.argv[i];
   if (arg == "-debug" || arg == "-local") { glob.LOCAL = true; }
-  else if (arg == "-name") { steveNum = process.argv[i + 1]; }
+  else if (arg == "-name") { steveName = process.argv[i + 1]; }
   else if (arg == "-host") { glob.LOCAL = false; process.env.MC_HOST = process.argv[i + 1]; }
   else if (arg == "-port") { process.env.MC_LOCAL_PORT = process.argv[i + 1]; process.env.MC_PORT = process.argv[i + 1]; }
   else if (arg == "-version") { process.env.MC_VERSION = process.argv[i + 1]; }
   else if (arg == "-rport") { glob.USE_RADAR = true; glob.RADAR_PORT = process.argv[i + 1]; }
   else if (arg == "-vchat") { glob.VANILLA_CHAT = process.argv[i + 1] === "true" ? true : false; }
-  else if (arg == "-rader") { glob.USE_RADAR = process.argv[i + 1] === "true" ? true : false; }
+  else if (arg == "-radar") { glob.USE_RADAR = process.argv[i + 1] === "true" ? true : false; }
 }
 
 initialize()
@@ -67,7 +67,7 @@ function initialize() {
     bot = mineflayer.createBot({
       host: process.env.MC_LOCAL_HOST,
       port: process.env.MC_LOCAL_PORT,
-      username: "Steve" + steveNum,
+      username: steveName ? steveName : "Steve",
       version: process.env.MC_VERSION,
       verbose: true,
     });
