@@ -164,8 +164,9 @@ function checkTurn() {
         const gp = golf.players[key]
         if (!gp.alive)
             return
-        if (!gp.goaling)
-            playing = true
+        if (gp.goaling)
+            return
+        playing = true
         if (gp.courceThrowCnt < min) {
             min = gp.courceThrowCnt
         }
@@ -180,7 +181,7 @@ function checkTurn() {
             announce("全員の " + golf.turn + " 投目が終了")
         } else {
             bot.log("[golf_turn] All Player Goaled")
-            announce(golf.turn + " 投目が終了 全プレイヤーがゴール")
+            announce("全プレイヤーがゴール")
         }
         setTimeout(verifyGolf, golf.stickTime, golf.turn)
     }
@@ -419,7 +420,7 @@ bot.on("entityMoved", function (entity) {
                 bot.log("[golf] " + key + " GOAL " + pos)
                 announce(key + " ゴール！ " + gp.courceThrowCnt)
                 gp.goaling = true
-            }            
+            }
             gp.prevpos = pos
         }
         checkTurn()
