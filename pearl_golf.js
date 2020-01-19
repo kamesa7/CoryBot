@@ -37,7 +37,7 @@ function initGolfGame() {
 function addPlayer(username) {
     var pos;
     if (!bot.players[username].entity) {
-        bot.log("[golf] cannot add player " + username)
+        bot.log("[golf_ERROR] cannot add player " + username)
         pos = new Vec3(0, 0, 0)
     } else {
         pos = bot.players[username].entity.position.clone()
@@ -77,7 +77,7 @@ function addPlayer(username) {
 function leavePlayer(username) {
     const gp = golf.players[username]
     if (!gp) {
-        bot.log("[golf] invalid username")
+        bot.log("[golf_ERROR] invalid username")
         return
     }
     bot.log("[golf] leave player " + username)
@@ -89,7 +89,7 @@ function leavePlayer(username) {
 function canSee(gp) {
     const key = gp.username
     if (!bot.players[key] || !bot.players[key].entity) {
-        bot.log("[golf_see] Not Found Player " + key)
+        bot.log("[golf_SEE] Not Found Player " + key)
         return false
     } else {
         return true
@@ -99,7 +99,7 @@ function canSee(gp) {
 function validTransaction(gp) {
     const key = gp.username
     if (gp.throwing || gp.warping || gp.falling || gp.sticking) {
-        bot.log("[golf_transaction] Exception " + key + " " + gp.throwing + "||" + gp.warping + "||" + gp.falling + "||" + gp.sticking)
+        bot.log("[golf_TRANSACTION] Exception " + key + " " + gp.throwing + "||" + gp.warping + "||" + gp.falling + "||" + gp.sticking)
         return false
     } else {
         return true
@@ -110,7 +110,7 @@ function onPrevPos(gp) {
     const key = gp.username
     const pos = bot.players[key].entity.position.clone()
     if (pos.xzDistanceTo(gp.prevpos) > golf.allowWalk) {
-        bot.log("[golf_onPrevPos] " + key + " moved " + Math.floor(pos.xzDistanceTo(gp.prevpos)) + "m from " + gp.prevpos.floored() + " to " + pos.floored())
+        bot.log("[golf_ONPREVPOS] " + key + " moved " + Math.floor(pos.xzDistanceTo(gp.prevpos)) + "m from " + gp.prevpos.floored() + " to " + pos.floored())
         return false
     } else {
         return true
@@ -121,7 +121,7 @@ function inRange(gp) {
     const key = gp.username
     const pos = bot.players[key].entity.position.clone()
     if (pos.xzDistanceTo(bot.entity.position) > golf.pearlViewDistance) {
-        bot.log("[golf_range] " + key + " is Far " + pos.floored() + " Dist " + Math.floor(pos.xzDistanceTo(bot.entity.position)))
+        bot.log("[golf_INRANGE] " + key + " is Far " + pos.floored() + " Dist " + Math.floor(pos.xzDistanceTo(bot.entity.position)))
         return false
     }
     return true
@@ -146,7 +146,7 @@ function verifyGolf(cnt) {
         }
         validTransaction(gp)
         if (!gp.goaling && cnt && gp.courceThrowCnt != cnt)
-            bot.log("[golf_verify] " + key + " throw count difference " + gp.courceThrowCnt)
+            bot.log("[golf_THROWCNT] " + key + " throw count difference " + gp.courceThrowCnt)
     })
     bot.log("[golf_verify] " + playingPlayer)
     bot.log("[golf_verify] " + playedPlayer)
@@ -232,6 +232,12 @@ function startCourse(goal) {
             gp.prevtick = pos.clone()
         }
     })
+    bot.log("[golf] new cource" + golf.cource + " goal: " + golf.goal)
+    if (bot.blockAt(golf.goal.offset(0, -1, 0))) {
+        bot.log("[golf] Goal is on " + bot.blockAt(golf.goal.offset(0, -1, 0)).name)
+    } else {
+        bot.log("[golf_ERROR] Goal is InVisible")
+    }
     bot.log("[golf] new cource" + golf.cource + " goal: " + golf.goal)
     ANNOUNCE("ホール " + golf.cource + " スタート！  ゴール地点: " + golf.goal)
 
@@ -359,9 +365,9 @@ bot.on("entitySpawn", function (entity) {
             }
         })
         if (found == 0) {
-            bot.log("[pearl_error] Thrower Not Found Exception at " + epos.floored() + " maybe " + nearestKey + " " + nearestDist + "m")
+            bot.log("[pearl_ERROR] Thrower Not Found Exception at " + epos.floored() + " maybe " + nearestKey + " " + nearestDist + "m")
         } else if (found > 1) {
-            bot.log("[pearl_error] Cannot Detect One Exception " + found + " at " + epos.floored() + " " + throwers)
+            bot.log("[pearl_ERROR] Cannot Detect One Exception " + found + " at " + epos.floored() + " " + throwers)
         }
     }
 })
@@ -425,7 +431,7 @@ bot.on("entityMoved", function (entity) {
         }
         checkTurn()
     } else if (gp.prevtick.xzDistanceTo(pos) > golf.allowWalk) {
-        bot.log("[golf_transaction] " + key + " warped by not throwing " + Math.floor(gp.prevtick.xzDistanceTo(pos)) + "m from " + gp.prevpos.floored() + " to " + pos.floored())
+        bot.log("[golf_TRANSACTION] " + key + " warped by not throwing " + Math.floor(gp.prevtick.xzDistanceTo(pos)) + "m from " + gp.prevpos.floored() + " to " + pos.floored())
     }
     gp.prevtick = pos
 })
