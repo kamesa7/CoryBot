@@ -12,9 +12,17 @@ const server = httpserver;
 setTimeout(() => {
   sendBouyomi(server, "棒読みちゃんスタンバイ")
 
+  var prevBouyomiPlayer = ""
+  var prevDate = Date.now();
   bot.on('chat', (username, message) => {
     if (username == "Super_AI") return
-    sendBouyomi(server, username + " " + message.trim().replace(/ \(.*\)$/, ""))
+    if (prevBouyomiPlayer == username && Date.now() - prevDate < 5000) {
+      sendBouyomi(server, message.trim().replace(/ \(.*\)$/, ""))
+    } else {
+      sendBouyomi(server, username + " " + message.trim().replace(/ \(.*\)$/, ""))
+    }
+    prevBouyomiPlayer = username
+    prevDate = Date.now();
   })
 
   bot.on("playerJoined", (player) => {
@@ -56,5 +64,8 @@ function sendBouyomiHttp(url, message) {
   var req = http.get(encodeURI(url + "/talk?text=" + message))
   req.on("error", (err) => {
     // console.log(err);
+    req.abort()
+    req.destroy()
+    req.end()
   })
 }
