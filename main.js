@@ -28,16 +28,20 @@ flag = {
 
 }
 
-for (var i = 0; i < process.argv.length; i++) {
+for (var i = 2; i < process.argv.length; i++) {
   var arg = process.argv[i];
   if (arg == "-debug" || arg == "-local") { glob.LOCAL = true; }
-  else if (arg == "-name") { steveName = process.argv[i + 1]; }
-  else if (arg == "-host") { glob.LOCAL = false; process.env.MC_HOST = process.argv[i + 1]; }
-  else if (arg == "-port") { process.env.MC_LOCAL_PORT = process.argv[i + 1]; process.env.MC_PORT = process.argv[i + 1]; }
-  else if (arg == "-version") { process.env.MC_VERSION = process.argv[i + 1]; }
-  else if (arg == "-rport") { glob.USE_RADAR = true; glob.RADAR_PORT = process.argv[i + 1]; }
-  else if (arg == "-vchat") { glob.VANILLA_CHAT = process.argv[i + 1] === "true" ? true : false; }
-  else if (arg == "-radar") { glob.USE_RADAR = process.argv[i + 1] === "true" ? true : false; }
+  else if (arg == "-name") { steveName = process.argv[++i]; }
+  else if (arg == "-host") { glob.LOCAL = false; process.env.MC_HOST = process.argv[++i]; }
+  else if (arg == "-port") { process.env.MC_LOCAL_PORT = process.argv[++i]; process.env.MC_PORT = process.argv[i]; }
+  else if (arg == "-version") { process.env.MC_VERSION = process.argv[++i]; }
+  else if (arg == "-rport") { glob.USE_RADAR = true; glob.RADAR_PORT = process.argv[++i]; }
+  else if (arg == "-vchat") { glob.VANILLA_CHAT = process.argv[++i] === "true" ? true : false; }
+  else if (arg == "-radar") { glob.USE_RADAR = process.argv[++i] === "true" ? true : false; }
+  else {
+    console.log("Invalid Argument : " + arg);
+    process.exit();
+  }
 }
 
 initialize()
