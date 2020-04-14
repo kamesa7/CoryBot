@@ -44,10 +44,10 @@ for (var i = 2; i < process.argv.length; i++) {
   }
 }
 
-initialize()
 dirCheck()
 moduleReplace()
 addVectorPrototype()
+initialize()
 bot.loadPlugin(require('mineflayer-blockfinder')(mineflayer));
 require("./state_controler")
 require("./inventory_manager")
@@ -167,7 +167,12 @@ function dirCheck() {
     fs.access(path, fs.constants.R_OK | fs.constants.W_OK, (err) => {
       if (err) {
         console.log(err)
-        fs.mkdir(path)
+        fs.mkdir(path, (err2) => {
+          if (err2) {
+            console.log("Please Create " + path + " Folder")
+            console.log(err2)
+          }
+        })
       }
     })
   }
