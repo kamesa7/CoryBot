@@ -2,7 +2,7 @@ CoryBot
 =========
 
 nodejs上で動くmineflayerを利用した適当bot
-minecraft 1.13.2 で動作
+minecraft 1.14.4 で動作
 
 ## Environment
 インストール
@@ -17,7 +17,7 @@ MC_HOST = "localhost"
 MC_PORT = "25565"
 MC_USERNAME = "myname@foo.bar"
 MC_PASSWORD = "passwd"
-MC_VERSION = "1.13.2"
+MC_VERSION = "1.14.4"
 MC_USE_CACHE = true
 
 MC_RADAR = true
