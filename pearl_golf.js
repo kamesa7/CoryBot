@@ -18,6 +18,8 @@ golf.addPlayer = addPlayer
 golf.leavePlayer = leavePlayer
 
 golf.sumThrowCnt = sumThrowCnt
+golf.incrementCnt = incrementCnt
+golf.decrementCnt = decrementCnt
 
 golf.verifyGolf = verifyGolf
 golf.checkTurn = checkTurn
@@ -194,6 +196,8 @@ function verifyGolf(cnt) {
     bot.log("[golf_verify] " + playedPlayer)
 
     saveGolf();
+    
+    setTimeout(nextTurn, 1000)
 }
 
 function checkTurn() {
@@ -225,7 +229,7 @@ function checkTurn() {
             bot.log("[golf_turn] All Player Goaled")
             announce("全プレイヤーがゴール")
         }
-        setTimeout(verifyGolf, golf.stickTime, golf.turn)
+        setTimeout(verifyGolf, 1000, golf.turn)
     }
 }
 
@@ -241,6 +245,7 @@ function nextTurn(say = false) {
             throwAbles += gp.username + " "
         } else {
             farPlayers += gp.username + " "
+            if (say) whispering(gp.username, "投げずに待っていてください")
         }
     })
     bot.log("[golf_throwable] " + throwAbles)
