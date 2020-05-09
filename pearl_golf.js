@@ -69,7 +69,6 @@ function addPlayer(username) {
             myPearlID: null,
             throwing: false,
             warping: false,
-            falling: false,
             sticking: false,
         }
     }
@@ -141,8 +140,8 @@ function canSee(gp) {
 
 function validTransaction(gp) {
     const key = gp.username
-    if (gp.throwing || gp.warping || gp.falling || gp.sticking) {
-        bot.log("[golf_TRANSACTION] Exception " + key + " " + gp.throwing + "||" + gp.warping + "||" + gp.falling + "||" + gp.sticking)
+    if (gp.throwing || gp.warping || gp.sticking) {
+        bot.log("[golf_TRANSACTION] Exception " + key + " " + gp.throwing + "||" + gp.warping + "||" + gp.sticking)
         return false
     } else {
         return true
@@ -401,7 +400,7 @@ bot.on("entityMoved", function (entity) {
     const gp = golf.players[key]
     if (!gp.alive || gp.goaling) return
     const pos = entity.position.clone()
-    if (gp.throwing && !gp.falling && !gp.sticking && (gp.warping || gp.prevtick.xzDistanceTo(pos) > golf.allowDist)) {
+    if (gp.throwing && !gp.sticking && (gp.warping || gp.prevtick.xzDistanceTo(pos) > golf.allowDist)) {
         playerWarp(key, pos)
     } else if (gp.prevtick.xzDistanceTo(pos) > golf.allowWalk) {
         bot.log("[golf_TRANSACTION] " + key + " warped by not throwing " + Math.floor(gp.prevtick.xzDistanceTo(pos)) + "m from " + gp.prevpos.floored() + " to " + pos.floored())
@@ -463,11 +462,10 @@ function playerThrow(username, pearl, pos) {
 
 function playerWarp(username, pos) {
     const gp = golf.players[username]
-    gp.warping = true
+    gp.warping = true // despawnが呼ばれなかったとき
+    gp.sticking = true
     bot.log("[pearl_2]   " + username + " warped to " + pos.floored())
-    gp.falling = true
     setTimeout(() => {
-        gp.sticking = true
         playerStick(username)
     }, golf.stickTime)
 }
@@ -482,7 +480,6 @@ function playerStick(username) {
     const pos = gp.prevtick
     gp.throwing = false
     gp.warping = false
-    gp.falling = false
     gp.sticking = false
     gp.stickDate = new Date()
     var waters = 0
@@ -491,10 +488,10 @@ function playerStick(username) {
     }
     if (waters >= 2) {
         gp.courceWaterCnt++
-        bot.log("[pearl_3]       " + username + " falled in water " + pos.floored() + " : back to " + gp.prevpos.floored() + "  took " + (gp.stickDate - gp.throwDate) + "ms")
+        bot.log("[pearl_3]       " + username + " sticked in water " + pos.floored() + " : back to " + gp.prevpos.floored() + "  took " + (gp.stickDate - gp.throwDate) + "ms")
         announce(username + " さん：池ポチャ判定です。　投げた場所:" + gp.prevpos.floored())
     } else {
-        bot.log("[pearl_3]       " + username + " falled to " + pos.floored() + "  took " + (gp.stickDate - gp.throwDate) + "ms")
+        bot.log("[pearl_3]       " + username + " sticked to " + pos.floored() + "  took " + (gp.stickDate - gp.throwDate) + "ms")
         if (pos.xzDistanceTo(golf.goal) < golf.allowDist && pos.y > golf.goal.y - 1) {
             bot.log("[golf] " + username + " GOAL " + pos)
             announce(username + " ゴール！ " + gp.courceThrowCnt)
