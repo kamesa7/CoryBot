@@ -4,7 +4,7 @@ golf = {
 }
 
 golf.allowWalk = 5
-golf.allowDist = 2
+golf.allowDist = 1.5
 golf.allowEPS = 0.1
 golf.pearlViewDistance = 60
 golf.stickTime = 2000
@@ -276,7 +276,7 @@ function startCourse(goal) {
     })
     bot.log("[golf] new cource" + golf.cource + " goal: " + golf.goal)
     if (bot.blockAt(golf.goal.offset(0, -1, 0))) {
-        bot.log("[golf] Goal is on " + bot.blockAt(golf.goal.offset(0, -1, 0)).name)
+        bot.log("[golf] Goal is on " + bot.blockAt(golf.goal.offset(0, -1, 0)).name + "  " + Math.floor(bot.entity.position().xzDistanceTo(golf.goal)) + "m from me")
     } else {
         bot.log("[golf_ERROR] Goal is InVisible")
     }
@@ -493,7 +493,7 @@ function playerStick(username) {
         announce(username + " さん：池ポチャ判定です。　投げた場所:" + gp.prevpos.floored())
     } else {
         bot.log("[pearl_3]       " + username + " sticked to " + pos.floored() + "  took " + (gp.stickDate - gp.throwDate) + "ms")
-        if (pos.xzDistanceTo(golf.goal) < golf.allowDist && pos.y > golf.goal.y - 1) {
+        if (pos.manhattanDistanceTo(golf.goal) < golf.allowDist && pos.y > golf.goal.y - 1) {
             bot.log("[golf] " + username + " GOAL " + pos)
             announce(username + " ゴール！ " + gp.courceThrowCnt)
             gp.goaling = true
