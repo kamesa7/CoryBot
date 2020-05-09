@@ -7,7 +7,7 @@ golf.allowWalk = 5
 golf.allowDist = 2
 golf.allowEPS = 0.1
 golf.pearlViewDistance = 60
-golf.stickTime = 1500
+golf.stickTime = 2000
 
 golf.initGolfGame = initGolfGame
 golf.startCourse = startCourse
@@ -97,6 +97,36 @@ function sumThrowCnt(username) {
     for (var i = 1; i < gp.results.length; i++)
         sum += gp.results.throwCnt;
     return sum;
+}
+
+function incrementCnt(username, cource = golf.cource) {
+    const gp = golf.players[username]
+    if (!gp) {
+        bot.log("[golf_ERROR] invalid username")
+        return
+    }
+    if (golf.playing) {
+        gp.courceThrowCnt++
+        bot.log("[golf_INCREMENT] " + username + " is now " + gp.courceThrowCnt)
+    } else {
+        gp.results[cource].throwCnt++;
+        bot.log("[golf_INCREMENT] " + username + " is now " + gp.results[cource].throwCnt)
+    }
+}
+
+function decrementCnt(username, cource = golf.cource) {
+    const gp = golf.players[username]
+    if (!gp) {
+        bot.log("[golf_ERROR] invalid username")
+        return
+    }
+    if (golf.playing) {
+        gp.courceThrowCnt--
+        bot.log("[golf_DECREMENT] " + username + " is now " + gp.courceThrowCnt)
+    } else {
+        gp.results[cource].throwCnt--;
+        bot.log("[golf_DECREMENT] " + username + " is now " + gp.results[cource].throwCnt)
+    }
 }
 
 function canSee(gp) {
@@ -346,61 +376,21 @@ function endGolf() {
 bot.on("entitySpawn", function (entity) {
     if (!golf.playing) return;
     if (entity.name == "ender_pearl") {
-        var found = 0;
-        var throwers = ""
-        var nearestKey = ""
-        var nearestDist = 100
-        const epos = entity.position.clone();
-        Object.keys(bot.players).forEach(function (key) {
-            if (bot.players[key].entity) {
-                const ppos = bot.players[key].entity.position.clone()
-                const distance = ppos.xzDistanceTo(epos)
-                if (distance < nearestDist) {
-                    nearestKey = key
-                    nearestDist = distance
-                }
-                if (distance < golf.allowEPS) {
-                    found++
-                    throwers += " " + key
-                    addPlayer(key)
-                    const gp = golf.players[key]
-                    if (!gp.alive || gp.goaling) return
-                    validTransaction(gp)
-                    gp.throwing = true;
-                    gp.myPearlID = entity.id;
-                    gp.throwDate = new Date();
-                    gp.courceThrowCnt++
-                    bot.log("[pearl_1] " + key + " threw at " + ppos.floored())
-                    onPrevPos(gp)
-                    gp.posArray.push(ppos.clone())
-                }
-            }
-        })
-        if (found == 0) {
-            bot.log("[pearl_ERROR] Thrower Not Found Exception at " + epos.floored() + " maybe " + nearestKey + " " + nearestDist + "m")
-        } else if (found > 1) {
-            bot.log("[pearl_ERROR] Cannot Detect One Exception " + found + " at " + epos.floored() + " " + throwers)
-        }
+        pearlSpawn(entity)
     }
 })
 
 bot.on("entityGone", function (entity) {
     if (!golf.playing) return;
     if (entity.name == "ender_pearl") {
-        Object.keys(golf.players).forEach(function (key) {
-            const gp = golf.players[key]
-            if (gp.myPearlID == entity.id) {
-                gp.myPearlID = null;
-                gp.warping = true;
-            }
-        })
+        pearlDespawn(entity)
     }
 })
 
 bot.on("entityHurt", function (entity) {
     if (!golf.playing) return;
     if (entity.username && golf.players[entity.username] && golf.players[entity.username].throwing) {
-        golf.players[entity.username].warping = true
+        playerHurt(entity.username)
     }
 })
 
@@ -412,41 +402,108 @@ bot.on("entityMoved", function (entity) {
     if (!gp.alive || gp.goaling) return
     const pos = entity.position.clone()
     if (gp.throwing && !gp.falling && !gp.sticking && (gp.warping || gp.prevtick.xzDistanceTo(pos) > golf.allowDist)) {
-        gp.warping = true
-        bot.log("[pearl_2]   " + key + " warped to " + pos.floored())
-        gp.falling = true
-        setTimeout(() => {
-            gp.sticking = true
-        }, golf.stickTime)
-    } else if (gp.sticking && gp.prevtick.distanceTo(pos) == 0) {
-        gp.throwing = false
-        gp.warping = false
-        gp.falling = false
-        gp.sticking = false
-        gp.stickDate = new Date()
-        var waters = 0
-        for (var i = -2; i <= 2; i++) {
-            if (bot.blockAt(pos.offset(0, i, 0)).name.match(/water/)) waters++;
-        }
-        if (waters >= 2) {
-            gp.courceWaterCnt++
-            bot.log("[pearl_3]       " + key + " falled in water " + pos.floored() + " : back to " + gp.prevpos.floored() + "  took " + (gp.stickDate - gp.throwDate) + "ms")
-            announce(key + " さん：池ポチャ判定です。　投げた場所:" + gp.prevpos.floored())
-        } else {
-            bot.log("[pearl_3]       " + key + " falled to " + pos.floored() + "  took " + (gp.stickDate - gp.throwDate) + "ms")
-            if (pos.xzDistanceTo(golf.goal) < golf.allowDist && pos.y > golf.goal.y - 1) {
-                bot.log("[golf] " + key + " GOAL " + pos)
-                announce(key + " ゴール！ " + gp.courceThrowCnt)
-                gp.goaling = true
-            }
-            gp.prevpos = pos
-        }
-        checkTurn()
+        playerWarp(key, pos)
     } else if (gp.prevtick.xzDistanceTo(pos) > golf.allowWalk) {
         bot.log("[golf_TRANSACTION] " + key + " warped by not throwing " + Math.floor(gp.prevtick.xzDistanceTo(pos)) + "m from " + gp.prevpos.floored() + " to " + pos.floored())
     }
     gp.prevtick = pos
 })
+
+function pearlSpawn(pearl) {
+    var found = 0;
+    var throwers = ""
+    var nearestKey = ""
+    var nearestDist = 100
+    const epos = pearl.position.clone();
+    Object.keys(bot.players).forEach(function (key) {
+        if (bot.players[key].entity) {
+            const ppos = bot.players[key].entity.position.clone()
+            const distance = ppos.xzDistanceTo(epos)
+            if (distance < nearestDist) {
+                nearestKey = key
+                nearestDist = distance
+            }
+            if (distance < golf.allowEPS) {
+                found++
+                throwers += " " + key
+                playerThrow(key, pearl, ppos)
+            }
+        }
+    })
+    if (found == 0) {
+        bot.log("[pearl_ERROR] Thrower Not Found Exception at " + epos.floored() + " maybe " + nearestKey + " " + nearestDist + "m")
+    } else if (found > 1) {
+        bot.log("[pearl_ERROR] Cannot Detect One Exception " + found + " at " + epos.floored() + " " + throwers)
+    }
+}
+
+function pearlDespawn(pearl) {
+    Object.keys(golf.players).forEach(function (key) {
+        const gp = golf.players[key]
+        if (gp.myPearlID == pearl.id) {
+            gp.myPearlID = null;
+            gp.warping = true;
+        }
+    })
+}
+
+function playerThrow(username, pearl, pos) {
+    addPlayer(username)
+    const gp = golf.players[username]
+    if (!gp.alive || gp.goaling) return
+    validTransaction(gp)
+    gp.throwing = true;
+    gp.myPearlID = pearl.id;
+    gp.throwDate = new Date();
+    gp.courceThrowCnt++
+    bot.log("[pearl_1] " + username + " threw at " + pos.floored())
+    onPrevPos(gp)
+    gp.posArray.push(pos.clone())
+}
+
+function playerWarp(username, pos) {
+    const gp = golf.players[username]
+    gp.warping = true
+    bot.log("[pearl_2]   " + username + " warped to " + pos.floored())
+    gp.falling = true
+    setTimeout(() => {
+        gp.sticking = true
+        playerStick(username)
+    }, golf.stickTime)
+}
+
+function playerHurt(username) {
+    const gp = golf.players[username]
+    gp.warping = true
+}
+
+function playerStick(username) {
+    const gp = golf.players[username]
+    const pos = gp.prevtick
+    gp.throwing = false
+    gp.warping = false
+    gp.falling = false
+    gp.sticking = false
+    gp.stickDate = new Date()
+    var waters = 0
+    for (var i = -2; i <= 2; i++) {
+        if (bot.blockAt(pos.offset(0, i, 0)).name.match(/water/)) waters++;
+    }
+    if (waters >= 2) {
+        gp.courceWaterCnt++
+        bot.log("[pearl_3]       " + username + " falled in water " + pos.floored() + " : back to " + gp.prevpos.floored() + "  took " + (gp.stickDate - gp.throwDate) + "ms")
+        announce(username + " さん：池ポチャ判定です。　投げた場所:" + gp.prevpos.floored())
+    } else {
+        bot.log("[pearl_3]       " + username + " falled to " + pos.floored() + "  took " + (gp.stickDate - gp.throwDate) + "ms")
+        if (pos.xzDistanceTo(golf.goal) < golf.allowDist && pos.y > golf.goal.y - 1) {
+            bot.log("[golf] " + username + " GOAL " + pos)
+            announce(username + " ゴール！ " + gp.courceThrowCnt)
+            gp.goaling = true
+        }
+        gp.prevpos = pos
+    }
+    checkTurn()
+}
 
 function saveGolf() {
     jsonfile.writeFile("golf_cache.json", golf)
