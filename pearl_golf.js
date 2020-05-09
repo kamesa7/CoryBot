@@ -196,7 +196,7 @@ function verifyGolf(cnt) {
     bot.log("[golf_verify] " + playedPlayer)
 
     saveGolf();
-    
+
     setTimeout(nextTurn, 1000)
 }
 
@@ -496,11 +496,13 @@ function playerStick(username) {
         gp.courceWaterCnt++
         bot.log("[pearl_3]       " + username + " sticked in water " + pos.floored() + " : back to " + gp.prevpos.floored() + "  took " + (gp.stickDate - gp.throwDate) + "ms")
         announce(username + " さん：池ポチャ判定です。　投げた場所:" + gp.prevpos.floored())
+        whispering(username, "池ポチャ判定です。　投げた場所:" + gp.prevpos.floored())
     } else {
         bot.log("[pearl_3]       " + username + " sticked to " + pos.floored() + "  took " + (gp.stickDate - gp.throwDate) + "ms")
         if (pos.manhattanDistanceTo(golf.goal) < golf.allowDist && pos.y > golf.goal.y - 1) {
             bot.log("[golf] " + username + " GOAL " + pos)
-            announce(username + " ゴール！ " + gp.courceThrowCnt)
+            announce(username + " ゴール！ " + gp.courceThrowCnt + "投")
+            whispering(username, " ゴール！ " + gp.courceThrowCnt + "投")
             gp.goaling = true
         }
         gp.prevpos = pos
