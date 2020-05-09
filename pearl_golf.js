@@ -95,8 +95,8 @@ function sumThrowCnt(username) {
         return
     }
     var sum = 0;
-    for (var i = 1; i < gp.results.length; i++)
-        sum += gp.results.throwCnt;
+    for (var i = 1; i <= golf.cource; i++)
+        if (gp.results[i]) sum += gp.results[i].throwCnt;
     return sum;
 }
 
@@ -281,7 +281,7 @@ function startCourse(goal) {
     })
     bot.log("[golf] new cource" + golf.cource + " goal: " + golf.goal)
     if (bot.blockAt(golf.goal.offset(0, -1, 0))) {
-        bot.log("[golf] Goal is on " + bot.blockAt(golf.goal.offset(0, -1, 0)).name + "  " + Math.floor(bot.entity.position().xzDistanceTo(golf.goal)) + "m from me")
+        bot.log("[golf] Goal is on " + bot.blockAt(golf.goal.offset(0, -1, 0)).name + "  " + Math.floor(bot.entity.position.xzDistanceTo(golf.goal)) + "m from me")
     } else {
         bot.log("[golf_ERROR] Goal is InVisible")
     }
@@ -499,7 +499,7 @@ function playerStick(username) {
         whispering(username, "池ポチャ判定です。　投げた場所:" + gp.prevpos.floored())
     } else {
         bot.log("[pearl_3]       " + username + " sticked to " + pos.floored() + "  took " + (gp.stickDate - gp.throwDate) + "ms")
-        if (pos.manhattanDistanceTo(golf.goal) < golf.allowDist && pos.y > golf.goal.y - 1) {
+        if (pos.rectDistanceTo(golf.goal) < golf.allowDist && Math.abs(pos.y - golf.goal.y) < 0.9) {
             bot.log("[golf] " + username + " GOAL " + pos)
             announce(username + " ゴール！ " + gp.courceThrowCnt + "投")
             whispering(username, " ゴール！ " + gp.courceThrowCnt + "投")
