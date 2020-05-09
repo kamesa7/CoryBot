@@ -458,6 +458,7 @@ function playerThrow(username, pearl, pos) {
     bot.log("[pearl_1] " + username + " threw at " + pos.floored())
     onPrevPos(gp)
     gp.posArray.push(pos.clone())
+    whispering(username, gp.courceThrowCnt + " 投目を投げた! ")
 }
 
 function playerWarp(username, pos) {
@@ -537,4 +538,24 @@ function ANNOUNCE(msg) {
         bot.log(">[ignored] " + msg)
     else
         bot.chat(">[Golf] " + msg)
+}
+
+
+var whiperingFlower = null
+var whispQue = new bucketsJs.Queue();
+function whispering(username, str) {
+    whispQue.add("/tell " + username + " " + str)
+    if (whispQue.size() == 1) {
+        whiperingFlower = setInterval(flowWhisper, glob.loggingInterval)
+    }
+}
+
+function flowWhisper() {
+    var str = whispQue.dequeue()
+    if (flag.Ignore)
+        bot.log("[ignored] " + str)
+    else
+        bot.chat(str)
+    if (whispQue.size() == 0)
+        clearInterval(whiperingFlower)
 }
