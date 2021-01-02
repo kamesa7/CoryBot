@@ -1,10 +1,6 @@
 const http = require("http")
 
-const socketserver = {
-  host: "localhost",
-  port: "50001"
-}
-const httpserver = "http://localhost:50080"
+const httpserver = "http://localhost:" + process.env.MC_BOUYOMI_HTTP_PORT
 
 const sendBouyomi = sendBouyomiHttp;
 const server = httpserver;
