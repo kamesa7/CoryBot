@@ -118,7 +118,7 @@ function initNote() {
   bot.log("[note] Init");
   glob.notes = [[], [], [], [], [], [], [], [], [], []];
   bot.findBlock(
-    { point: bot.entity.position.floored(), matching: 25, maxDistance: glob.validNoteDistance, count: 500 }
+    { point: bot.entity.position.floored(), matching: 74, maxDistance: glob.validNoteDistance, count: 500 }
     , function (err, blocks) {
       if (err) {
         return console.log('Error trying to find : ' + err);
