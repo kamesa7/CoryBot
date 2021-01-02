@@ -5,6 +5,8 @@ const httpserver = "http://localhost:" + process.env.MC_BOUYOMI_HTTP_PORT
 const sendBouyomi = sendBouyomiHttp;
 const server = httpserver;
 
+flag.Bouyomi = true;
+
 setTimeout(() => {
   sendBouyomi(server, "棒読みちゃんスタンバイ")
 
@@ -57,6 +59,7 @@ function sendBouyomiSocket(options, message) {
 }
 
 function sendBouyomiHttp(url, message) {
+  if (!flag.Bouyomi) return;
   var req = http.get(encodeURI(url + "/talk?text=" + message))
   req.on("error", (err) => {
     // console.log(err);
