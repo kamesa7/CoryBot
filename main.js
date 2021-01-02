@@ -51,7 +51,7 @@ initialize()
 bot.loadPlugin(require('mineflayer-blockfinder')(mineflayer));
 require("./state_controler")
 require("./inventory_manager")
-require("./event_manager")
+//require("./event_manager")
 require("./chat_manager")
 require("./chat")
 require("./movement")
