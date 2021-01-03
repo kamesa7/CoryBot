@@ -354,9 +354,7 @@ function punchNote(block) {
 function commandMusic(MusicObj) {
   skip();
   glob.tryState("music", function () {
-    var musician;
     var musicCode;
-    var waiting = 0;
     var startTime = new Date().getTime();
     if (typeof (MusicObj) == "string") {
       var baseTitle = MusicObj;
@@ -369,43 +367,43 @@ function commandMusic(MusicObj) {
         glob.finishState("music");
         return;
       }
-      if (!MusicObj) {
-        glob.finishState("music");
-        return;
-      }
-      if (MusicObj && !MusicObj.baseTitle)
-        MusicObj.baseTitle = baseTitle;
     }
-    playedNote = 0;
     glob.currentMusic = MusicObj;
-    bot.log("[note] commandMusic " + MusicObj.title + " length: " + MusicObj.pits.length + " tempo: " + MusicObj.tempo + " seconds: " + MusicObj.duration + "/" + MusicObj.baseduration + " score: " + MusicObj.score);
     musicCode = 0;
-    musician = setInterval(function () {
-      if (waiting > 0) {
-        waiting--;
-        return;
-      }
-      if (musicCode >= MusicObj.pits.length || glob.getState() != "music") {
-        clearInterval(musician);
-        bot.log("[note] MusicEnd " + ((playedNote / MusicObj.soundCount) * 100) + "% missing: " + (MusicObj.soundCount - playedNote) + " seconds: " + (new Date().getTime() - startTime) / 1000 + "s");
+    const pits = MusicObj.pits
+    bot.log("[note] commandMusic " + MusicObj.title + " tempo: " + MusicObj.tempo + " seconds: " + MusicObj.seconds + " pitslength: " + pits.length);
+    var inst = pits[musicCode++]
+    var wait = pits[musicCode++]
+    var pitch = pits[musicCode++]
+    setTimeout(player, wait)
+    function player() {
+      commandNote(inst, pitch)
+      if (musicCode >= pits.length || glob.getState() != "music") {
+        bot.log("[note] MusicEnd " + " seconds: " + (new Date().getTime() - startTime) / 1000 + "s");
         glob.currentMusic = null;
         glob.finishState("music")
+        return
       }
-      const inst = MusicObj.pits[musicCode++];
-      if (inst == null) return;
-      if (inst == "wait") {
-        waiting = MusicObj.pits[musicCode++];
-        return;
+      const next = pits[musicCode++]
+      if (typeof (next) == "string") {
+        inst = next;
+        wait = pits[musicCode++]
+      } else {
+        wait = next;
       }
-      const pitch = MusicObj.pits[musicCode++];
-      commandNote(inst, pitch);
-    }, MusicObj.tempo);
+      pitch = pits[musicCode++]
+      if (wait == 0) {
+        player();
+      } else {
+        setTimeout(player, wait)
+      }
+    }
   })
 }
 
 function commandNote(inst, pitch) {
   const commandpitch = Math.pow(2, (pitch) / 12) * 0.5;
-  bot.justchat("/playsound minecraft:block.note_block." + inst + " record @a ~ ~ ~ 1 " + commandpitch)
+  bot.justchat("/playsound minecraft:block.note_block." + inst + " record @a ~ ~ ~ 100 " + commandpitch)
 }
 
 function getJTune(pitch) {
