@@ -243,6 +243,7 @@ function player(MusicObj, playsound) {
         }
       }
       glob.currentMusic = MusicObj;
+      playedNote = 0;
       musicCode = 0;
       const pits = MusicObj.pits
       bot.log("[note] Music " + MusicObj.title + " tempo: " + MusicObj.tempo + " seconds: " + MusicObj.seconds + " sounds: " + MusicObj.sounds + " pitslength: " + pits.length);
