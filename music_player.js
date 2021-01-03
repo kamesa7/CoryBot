@@ -20,6 +20,7 @@ glob.initNote = initNote;
 glob.tuneNote = tuneNote;
 glob.commandMusic = commandMusic;
 glob.playMusic = playMusic;
+glob.commandPlaylist = commandPlaylist;
 glob.playPlaylist = playPlaylist;
 
 var prePosition;
@@ -346,7 +347,16 @@ function getJTune(pitch) {
   }
 }
 
+
 function playPlaylist(playlist, shuffle = false) {
+  playlister(playlist, playMusic, shuffle)
+}
+
+function commandPlaylist(playlist, shuffle = false) {
+  playlister(playlist, commandMusic, shuffle)
+}
+
+function playlister(playlist, playsound, shuffle = false) {
   if (flag.Playlist) {
     bot.log("[note] [Playlist] aborted")
     stopMusic();
@@ -378,30 +388,29 @@ function playPlaylist(playlist, shuffle = false) {
         glob.PlaylistFiles[r] = tmp;
       }
     }
+    var playlistPlayer;
+    try {
+      playlistPlayer = setInterval(function () {
+        if (glob.PlaylistIndex >= glob.PlaylistFiles.length) {
+          flag.Playlist = false;
+        }
+
+        if (!flag.Playlist) {
+          clearInterval(playlistPlayer);
+          bot.log("[note] [Playlist] END");
+          return;
+        }
+
+        if (glob.doNothing()) {
+          bot.log("[note] [Playlist] " + glob.PlaylistFiles[glob.PlaylistIndex] + " : " + glob.PlaylistIndex + "/" + glob.PlaylistFiles.length);
+          playsound(glob.PlaylistFiles[glob.PlaylistIndex].split("\t")[0]);
+          glob.PlaylistIndex++;
+          glob.PlaylistIndex %= glob.PlaylistFiles.length;
+        }
+      }, 5000);
+    } catch (e) {
+      console.log(e);
+    }
   });
-
-  var playlistPlayer;
-  try {
-    playlistPlayer = setInterval(function () {
-      if (glob.PlaylistIndex >= glob.PlaylistFiles.length) {
-        flag.Playlist = false;
-      }
-
-      if (!flag.Playlist) {
-        clearInterval(playlistPlayer);
-        bot.log("[note] [Playlist] END");
-        return;
-      }
-
-      if (glob.doNothing()) {
-        bot.log("[note] [Playlist] " + glob.PlaylistFiles[glob.PlaylistIndex] + " : " + glob.PlaylistIndex + "/" + glob.PlaylistFiles.length);
-        playMusic(glob.PlaylistFiles[glob.PlaylistIndex].split("\t")[0]);
-        glob.PlaylistIndex++;
-        glob.PlaylistIndex %= glob.PlaylistFiles.length;
-      }
-    }, 5000);
-  } catch (e) {
-    console.log(e);
-  }
 }
 
