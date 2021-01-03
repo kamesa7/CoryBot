@@ -1,7 +1,7 @@
 flag.MusicArm = false;
 flag.logNote = false;
 
-glob.notes = [[], [], [], [], [], [], [], [], [], []];
+glob.notes = [[], [], [], [], [], [], [], [], [], [], [], [], [], [], [], []];
 
 const initTempo = 90;
 const tuneTempo = 90;
@@ -14,44 +14,36 @@ glob.PlaylistIndex = 0;
 glob.currentMusic = null;
 glob.validNoteDistance = 10;
 
-glob.generalMusicObj = {
-  pits: [],
-  seqData: [],
-  soundCount: 0,
-  outRanges: 0,
-  tempo: 60,
-  title: "MUSIC",
-  baseTitle: "baseMUSIC",
-  duration: 0,
-  baseduration: 0,
-  score: 0,
-  perfection: 100
-};
-
 glob.skip = skip;
 glob.stopMusic = stopMusic;
 glob.initNote = initNote;
 glob.tuneNote = tuneNote;
 glob.commandMusic = commandMusic;
 glob.playMusic = playMusic;
-glob.createMusic = createMusic;
 glob.playPlaylist = playPlaylist;
 
 var prePosition;
 var preTune = 0;
 var playedNote = 0;
-/*
-  0:"harp"
-  1:"doubleBass"
-  2:"snareDrum"
-  3:"sticks"
-  4:"bassDrum"
-  5:"xylophone"
-  6:"bell"
-  7:"guiter"
-  8:"chime"
-  9:"flute"
-*/
+
+const instmap = {
+  "harp": 0,
+  "basedrum": 1,
+  "snare": 2,
+  "hat": 3,
+  "bass": 4,
+  "flute": 5,
+  "bell": 6,
+  "guiter": 7,
+  "chime": 8,
+  "xylophone": 9,
+  "iron_xylophone": 10,
+  "cow_bell": 11,
+  "didgeridoo": 12,
+  "bit": 13,
+  "banjo": 14,
+  "pling": 15
+}
 
 function stopMusic() {
   glob.finishState("music")
@@ -117,7 +109,7 @@ bot.on('noteHeard', (block, instrument, pitch) => {
 
 function initNote() {
   bot.log("[note] Init");
-  glob.notes = [[], [], [], [], [], [], [], [], [], []];
+  glob.notes = [[], [], [], [], [], [], [], [], [], [], [], [], [], [], [], []];
   bot.findBlock(
     { point: bot.entity.position.floored(), matching: 74, maxDistance: glob.validNoteDistance, count: 500 }
     , function (err, blocks) {
@@ -166,7 +158,7 @@ function tuneNote() {
       for (var tg = 0; tg < 25; tg++) {
         for (var m = 0; m < 25; m++) {
           if (arrayInst[m].pitch == tg) {
-            bot.log("[note] Tune: " + m + " " + arrayInst[m].pitch + " ok");
+            if (flag.logNote) bot.log("[note] Tune: " + m + " " + arrayInst[m].pitch + " ok");
             okArray[m] = true;
             break;
           }
@@ -188,13 +180,7 @@ function tuneNote() {
         }
       }
     } else if (arrayInst.length > 0) {
-      for (var m = 0; m < arrayInst.length; m++) {
-        if (!arrayInst[m]) break;
-        var tg = Math.floor(Math.min((m + 1) * 24 / arrayInst.length - 1, 23));
-        var needCount = (arrayInst[m].pitch <= tg) ? tg - arrayInst[m].pitch : 25 - (arrayInst[m].pitch - tg);
-        bot.log("[note] Tune: " + m + " " + arrayInst[m].pitch + " needCount: " + needCount);
-        addTune(arrayInst[m], needCount);
-      }
+      bot.log("[note] Tune: noteneeds 25 " + arrayInst.length);
     }
   }
   try {
@@ -229,114 +215,66 @@ function tuneNote() {
   }
 }
 
-
-function createMusic(MusicObj) {
-  var pits = MusicObj.pits;
-  MusicObj.seqData = [];
-  MusicObj.soundCount = 0;
-  MusicObj.outRanges = 0;
-  if (!MusicObj.baseTitle) MusicObj.baseTitle = "";
-  if (!MusicObj.title) MusicObj.title = "";
-
-  var inst = 0;
-  for (var i = 0; i < pits.length; i++) {
-    if (typeof (pits[i]) == "string") {
-      if (pits[i] == "wait") {
-        i++;
-        for (var k = pits[i]; k > 0; --k) {
-          MusicObj.seqData.push(null);
-        }
-      }
-      else if (pits[i] == "harp") inst = 0;
-      else if (pits[i] == "doubleBass") inst = 1;
-      else if (pits[i] == "snareDrum") inst = 2;
-      else if (pits[i] == "sticks") inst = 3;
-      else if (pits[i] == "bassDrum") inst = 4;
-      else if (pits[i] == "flute") inst = 5;
-      else if (pits[i] == "bell") inst = 6;
-      else if (pits[i] == "guiter") inst = 7;
-      else if (pits[i] == "chime") inst = 8;
-      else if (pits[i] == "xylophone") inst = 9;
-      else inst = 0;
-      continue;
-    }
-    if (pits[i] == null) {//wait
-      MusicObj.seqData.push(null);
-      continue;
-    }
-
-    if (pits[i] < 0 || pits[i] > 24) {//out range
-      MusicObj.outRanges++;
-      MusicObj.seqData.push(null);
-      console.log("invalid note range");
-      continue;
-    }
-    for (var k = 0; k < glob.notes[inst].length; k++) {//matching
-      if (glob.notes[inst][k].pitch == pits[i]) {
-        MusicObj.soundCount++;
-        MusicObj.seqData.push(glob.notes[inst][k]);
-        break;
-      }
-    }
-    if (k == glob.notes[inst].length) {//not exist
-      MusicObj.outRanges++;
-      MusicObj.seqData.push(null);
-      continue;
-    }
-
-  }
-  bot.log("[note] MusicCreated  " + MusicObj.baseTitle + " : " + MusicObj.title + " err:" + MusicObj.outRanges);
-  if ((MusicObj.title == "untitled" || MusicObj.title == "") && MusicObj.baseTitle != "") MusicObj.title = MusicObj.baseTitle
-
-  if (MusicObj.outRanges > 0) bot.log("[note] Something Error in creating Music : " + MusicObj.outRanges);
+function playMusic(MusicObj) {
+  player(MusicObj, playNote)
 }
 
-function playMusic(MusicObj) {
+function commandMusic(MusicObj) {
+  player(MusicObj, commandNote)
+}
+
+function player(MusicObj, playsound) {
   skip();
   glob.tryState("music", function () {
-    var musician;
-    var musicCode;
-    var startTime = new Date().getTime();
-    if (typeof (MusicObj) == "string") {
-      var baseTitle = MusicObj;
-      if (flag.logNote)
-        bot.log("[note] load " + baseTitle);
-      try {
-        MusicObj = jsonfile.readFileSync("MineMusic/" + baseTitle);
-      } catch (e) {
-        console.log(e)
-        glob.finishState("music");
-        return;
+    skip();
+    glob.tryState("music", function () {
+      var musicCode;
+      var startTime = new Date().getTime();
+      if (typeof (MusicObj) == "string") {
+        var baseTitle = MusicObj;
+        if (flag.logNote)
+          bot.log("[note] load " + baseTitle);
+        try {
+          MusicObj = jsonfile.readFileSync("MineMusic/" + baseTitle);
+        } catch (e) {
+          console.log(e)
+          glob.finishState("music");
+          return;
+        }
       }
-      if (!MusicObj) {
-        glob.finishState("music");
-        return;
+      glob.currentMusic = MusicObj;
+      musicCode = 0;
+      const pits = MusicObj.pits
+      bot.log("[note] Music " + MusicObj.title + " tempo: " + MusicObj.tempo + " seconds: " + MusicObj.seconds + " sounds: " + MusicObj.sounds + " pitslength: " + pits.length);
+      var inst = pits[musicCode++]
+      var wait = pits[musicCode++]
+      var pitch = pits[musicCode++]
+      setTimeout(player, wait)
+      function player() {
+        playsound(inst, pitch)
+        if (musicCode >= pits.length || glob.getState() != "music") {
+          bot.log("[note] MusicEnd " + ((playedNote / MusicObj.sounds) * 100) + "% missing: " + (MusicObj.sounds - playedNote) + " seconds: " + (new Date().getTime() - startTime) / 1000 + "s");
+          glob.currentMusic = null;
+          glob.finishState("music")
+          return
+        }
+        const next = pits[musicCode++]
+        if (typeof (next) == "string") {
+          inst = next;
+          wait = pits[musicCode++]
+        } else {
+          wait = next;
+        }
+        pitch = pits[musicCode++]
+        if (wait == 0) {
+          player();
+        } else {
+          setTimeout(player, wait)
+        }
       }
-      if (MusicObj && !MusicObj.baseTitle)
-        MusicObj.baseTitle = baseTitle;
-    }
-    if (!MusicObj.seqData) {
-      if (flag.logNote) bot.log("[note] New Music");
-      createMusic(MusicObj);
-    }
-    playedNote = 0;
-    glob.currentMusic = MusicObj;
-
-    bot.log("[note] playMusic " + MusicObj.title + " length: " + MusicObj.seqData.length + " sounds: " + MusicObj.soundCount + " tempo: " + MusicObj.tempo + " seconds: " + MusicObj.duration + "/" + MusicObj.baseduration + " score: " + MusicObj.score + " perfection: " + MusicObj.perfection);
-    musicCode = 0;
-    musician = setInterval(function () {
-      if (MusicObj.seqData[musicCode])
-        punchNote(MusicObj.seqData[musicCode].block);
-      if (++musicCode >= MusicObj.seqData.length || glob.getState() != "music") {
-        clearInterval(musician);
-        bot.log("[note] MusicEnd " + ((playedNote / MusicObj.soundCount) * 100) + "% missing: " + (MusicObj.soundCount - playedNote) + " seconds: " + (new Date().getTime() - startTime) / 1000 + "s");
-        glob.currentMusic = null;
-        glob.finishState("music")
-      }
-    }, MusicObj.tempo);
-  });
+    })
+  })
 };
-
 
 function punchNote(block) {
   if (flag.MusicArm)
@@ -351,54 +289,24 @@ function punchNote(block) {
     bot._client.write('arm_animation', { hand: 0 });
 }
 
-function commandMusic(MusicObj) {
-  skip();
-  glob.tryState("music", function () {
-    var musicCode;
-    var startTime = new Date().getTime();
-    if (typeof (MusicObj) == "string") {
-      var baseTitle = MusicObj;
-      if (flag.logNote)
-        bot.log("[note] load " + baseTitle);
-      try {
-        MusicObj = jsonfile.readFileSync("MineMusic/" + baseTitle);
-      } catch (e) {
-        console.log(e)
-        glob.finishState("music");
-        return;
-      }
-    }
-    glob.currentMusic = MusicObj;
-    musicCode = 0;
-    const pits = MusicObj.pits
-    bot.log("[note] commandMusic " + MusicObj.title + " tempo: " + MusicObj.tempo + " seconds: " + MusicObj.seconds + " pitslength: " + pits.length);
-    var inst = pits[musicCode++]
-    var wait = pits[musicCode++]
-    var pitch = pits[musicCode++]
-    setTimeout(player, wait)
-    function player() {
-      commandNote(inst, pitch)
-      if (musicCode >= pits.length || glob.getState() != "music") {
-        bot.log("[note] MusicEnd " + " seconds: " + (new Date().getTime() - startTime) / 1000 + "s");
-        glob.currentMusic = null;
-        glob.finishState("music")
-        return
-      }
-      const next = pits[musicCode++]
-      if (typeof (next) == "string") {
-        inst = next;
-        wait = pits[musicCode++]
-      } else {
-        wait = next;
-      }
-      pitch = pits[musicCode++]
-      if (wait == 0) {
-        player();
-      } else {
-        setTimeout(player, wait)
-      }
-    }
+function playNote(inst, pitch) {
+  const note = glob.notes[instmap[inst]][pitch]
+  if (!note || !note.block) {
+    bot.log("couldn't find note " + inst + " " + pitch)
+    return
+  }
+  const block = note.block
+
+  if (flag.MusicArm)
+    bot.lookAt(block.position.offset(0.5, 0.5, 0.5), true);//, () => {
+  bot._client.write('block_dig', {
+    status: 0, // start digging
+    location: block.position,
+    face: 1 // hard coded to always dig from the top
   })
+  bot.targetDigBlock = block
+  if (flag.MusicArm)
+    bot._client.write('arm_animation', { hand: 0 });
 }
 
 function commandNote(inst, pitch) {
