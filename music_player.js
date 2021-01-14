@@ -14,7 +14,7 @@ glob.PlaylistIndex = 0;
 
 glob.currentMusic = null;
 glob.validNoteDistance = 10;
-glob.logggingMusicDelay = 100;
+glob.logggingMusicDelay = 250;
 
 glob.skip = skip;
 glob.stopMusic = stopMusic;
@@ -58,55 +58,50 @@ function skip() {
 }
 
 bot.on('noteHeard', (block, instrument, pitch) => {
-  try {
+  if (flag.logNote) {
+    bot.log("[note] " + getJTune(pitch) + " " + block.position + " " + instrument.id);
+  }
 
-    if (block.position.distanceTo(bot.entity.position) > glob.validNoteDistance) return;
+  if (glob.getState() == "music") {
+    playedNote++;
+    return;
+  }
 
-    if (flag.logNote) {
-      bot.log("[note] " + getJTune(pitch) + " " + block.position + " " + instrument.id);
-    }
+  if (block.position.distanceTo(bot.entity.position) > glob.validNoteDistance) return;
 
-    if (glob.getState() == "music") {
-      playedNote++;
-      return;
-    }
+  var Note = {
+    block,
+    instrument,
+    pitch
+  };
+  if (flag.Tuning && !isSame(block.position, prePosition)) {
+    bot.log("[note] tuned " + preTune);
+  }
+  prePosition = block.position;
 
-    var Note = {
-      block,
-      instrument,
-      pitch
-    };
-    if (flag.Tuning && !isSame(block.position, prePosition)) {
-      bot.log("[note] tuned " + preTune);
-    }
-    prePosition = block.position;
+  for (var i = 0; i < glob.notes.length; i++) {
+    for (var k = 0; k < glob.notes[i].length; k++) {
+      if (isSame(block.position, glob.notes[i][k].block.position)) {
+        if ((glob.notes[i][k].pitch == pitch) && (glob.notes[i][k].instrument == instrument)) {
 
-    for (var i = 0; i < glob.notes.length; i++) {
-      for (var k = 0; k < glob.notes[i].length; k++) {
-        if (isSame(block.position, glob.notes[i][k].block.position)) {
-          if ((glob.notes[i][k].pitch == pitch) && (glob.notes[i][k].instrument == instrument)) {
-
-          } else if (glob.notes[i][k].instrument == instrument) {
-            glob.notes[i][k].pitch = pitch;
-            if (!flag.Tuning && flag.logNote) {
-              bot.log("[note] PitchChange");
-            }
-          } else {
-            bot.log("[note] InstChange");
+        } else if (glob.notes[i][k].instrument == instrument) {
+          glob.notes[i][k].pitch = pitch;
+          if (!flag.Tuning && flag.logNote) {
+            bot.log("[note] PitchChange");
           }
-          glob.notes[i][k].instrument = instrument;
-          preTune = pitch;
-          i = 100;
-          break;
+        } else {
+          bot.log("[note] InstChange");
         }
+        glob.notes[i][k].instrument = instrument;
+        preTune = pitch;
+        i = 100;
+        break;
       }
     }
-    if (i == glob.notes.length && k == glob.notes[i - 1].length) {
-      glob.notes[instrument.id].push(Note);
-      if (flag.logNote) bot.log("[note] NewNote  " + instrument.name + " " + pitch);
-    }
-  } catch (e) {
-    console.log(e);
+  }
+  if (i == glob.notes.length && k == glob.notes[i - 1].length) {
+    glob.notes[instrument.id].push(Note);
+    if (flag.logNote) bot.log("[note] NewNote  " + instrument.name + " " + pitch);
   }
 });
 

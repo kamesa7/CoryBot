@@ -1067,7 +1067,7 @@ function getMinInd(arr) {
 var interest_entity = null;
 
 function setInterestEntity(entity = null) {
-    if (glob.doNothing() && entity && interest_entity !== entity) {
+    if (entity && interest_entity !== entity) {
         interest_entity = entity;
         var name = interest_entity.name !== undefined ? interest_entity.name : interest_entity.username;
         var type = interest_entity.type;
@@ -1080,13 +1080,14 @@ function setInterestEntity(entity = null) {
 }
 
 bot.on('entityMoved', (entity) => {
+    if (!glob.doNothing()) return
+    
     const distance = bot.entity.position.distanceTo(entity.position);
-
     const collideDistance = myPosition().xzDistanceTo(entity.position);
     const collideHeight = Math.abs(myPosition().y - entity.position.y)
 
     // 至近距離にプレイヤーがいる場合少し動く
-    if (entity.type === 'player' && collideDistance < 0.8 && collideHeight < 1.5 && glob.doNothing() && flag.Collision) {
+    if (flag.Collision && entity.type === 'player' && collideDistance < 0.8 && collideHeight < 1.5) {
         const botpos = bot.entity.position.clone();
         const entpos = entity.position.clone();
         botpos.y = entpos.y = 0;
