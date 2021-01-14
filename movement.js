@@ -1080,18 +1080,18 @@ function setInterestEntity(entity = null) {
 }
 
 bot.on('entityMoved', (entity) => {
-    var distance = bot.entity.position.distanceTo(entity.position);
+    const distance = bot.entity.position.distanceTo(entity.position);
 
-    var collideDistance = myPosition().xzDistanceTo(entity.position);
-    var collideHeight = Math.abs(myPosition().y - entity.position.y)
+    const collideDistance = myPosition().xzDistanceTo(entity.position);
+    const collideHeight = Math.abs(myPosition().y - entity.position.y)
 
     // 至近距離にプレイヤーがいる場合少し動く
     if (entity.type === 'player' && collideDistance < 0.8 && collideHeight < 1.5 && glob.doNothing() && flag.Collision) {
-        var botpos = bot.entity.position.clone();
-        var entpos = entity.position.clone();
+        const botpos = bot.entity.position.clone();
+        const entpos = entity.position.clone();
         botpos.y = entpos.y = 0;
-        botpos.subtract(entpos);
-        bot.entity.velocity.add(botpos.scaled(20));
+        const diff = botpos.minus(entpos).unit().scaled(0.8 - collideDistance)
+        bot.entity.velocity.add(diff);
     }
 
     if (distance < 5) {
