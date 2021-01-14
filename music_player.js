@@ -1,5 +1,6 @@
 flag.MusicArm = false;
 flag.logNote = false;
+flag.logMusic = true;
 
 glob.notes = [[], [], [], [], [], [], [], [], [], [], [], [], [], [], [], []];
 
@@ -13,6 +14,7 @@ glob.PlaylistIndex = 0;
 
 glob.currentMusic = null;
 glob.validNoteDistance = 10;
+glob.logggingMusicDelay = 100;
 
 glob.skip = skip;
 glob.stopMusic = stopMusic;
@@ -225,56 +227,58 @@ function commandMusic(MusicObj) {
 }
 
 function player(MusicObj, playsound) {
-  skip();
   glob.tryState("music", function () {
-    skip();
-    glob.tryState("music", function () {
-      var musicCode;
-      var startTime = new Date().getTime();
-      if (typeof (MusicObj) == "string") {
-        var baseTitle = MusicObj;
-        if (flag.logNote)
-          bot.log("[note] load " + baseTitle);
-        try {
-          MusicObj = jsonfile.readFileSync("MineMusic/" + baseTitle);
-        } catch (e) {
-          console.log(e)
-          glob.finishState("music");
-          return;
-        }
+    var musicCode;
+    var startTime = new Date().getTime();
+    if (typeof (MusicObj) == "string") {
+      var baseTitle = MusicObj;
+      if (flag.logMusic)
+        bot.log("[music] load " + baseTitle);
+      try {
+        MusicObj = jsonfile.readFileSync("MineMusic/" + baseTitle);
+      } catch (e) {
+        console.log(e)
+        glob.finishState("music");
+        return;
       }
-      glob.currentMusic = MusicObj;
-      playedNote = 0;
-      musicCode = 0;
-      const pits = MusicObj.pits
-      bot.log("[note] Music " + MusicObj.title + " tempo: " + MusicObj.tempo + " seconds: " + MusicObj.seconds + " sounds: " + MusicObj.sounds + " pitslength: " + pits.length);
-      var inst = pits[musicCode++]
-      var wait = pits[musicCode++]
-      var pitch = pits[musicCode++]
-      setTimeout(player, wait)
-      function player() {
-        playsound(inst, pitch)
-        if (musicCode >= pits.length || glob.getState() != "music") {
-          bot.log("[note] MusicEnd " + ((playedNote / MusicObj.sounds) * 100) + "% missing: " + (MusicObj.sounds - playedNote) + " seconds: " + (new Date().getTime() - startTime) / 1000 + "s");
-          glob.currentMusic = null;
-          glob.finishState("music")
-          return
-        }
-        const next = pits[musicCode++]
-        if (typeof (next) == "string") {
-          inst = next;
-          wait = pits[musicCode++]
-        } else {
-          wait = next;
-        }
-        pitch = pits[musicCode++]
-        if (wait == 0) {
-          player();
-        } else {
-          setTimeout(player, wait)
-        }
+    }
+    glob.currentMusic = MusicObj;
+    playedNote = 0;
+    musicCode = 0;
+    const pits = MusicObj.pits
+    bot.log("[music] Music " + MusicObj.title + " tempo: " + MusicObj.tempo + " seconds: " + MusicObj.seconds + " sounds: " + MusicObj.sounds + " pitslength: " + pits.length);
+    var inst = pits[musicCode++]
+    var wait = pits[musicCode++]
+    var pitch = pits[musicCode++]
+    var clock = Date.now();
+    setTimeout(player, wait)
+    function player() {
+      const now = Date.now();
+      if (flag.logMusic && ((now - clock) - wait) >= glob.logggingMusicDelay) {
+        bot.log("[music] Delayed " + ((now - clock) - wait) + "ms")
       }
-    })
+      clock = now
+      playsound(inst, pitch)
+      if (musicCode >= pits.length || glob.getState() != "music") {
+        bot.log("[music] MusicEnd " + ((playedNote / MusicObj.sounds) * 100) + "% missing: " + (MusicObj.sounds - playedNote) + " seconds: " + (new Date().getTime() - startTime) / 1000 + "s");
+        glob.currentMusic = null;
+        glob.finishState("music")
+        return
+      }
+      const next = pits[musicCode++]
+      if (typeof (next) == "string") {
+        inst = next;
+        wait = pits[musicCode++]
+      } else {
+        wait = next;
+      }
+      pitch = pits[musicCode++]
+      if (wait == 0) {
+        player();
+      } else {
+        setTimeout(player, wait)
+      }
+    }
   })
 };
 
