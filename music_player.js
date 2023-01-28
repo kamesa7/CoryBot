@@ -14,7 +14,7 @@ glob.PlaylistIndex = 0;
 
 glob.currentMusic = null;
 glob.validNoteDistance = 10;
-glob.logggingMusicDelay = 250;
+glob.loggingMusicDelay = 250;
 
 glob.skip = skip;
 glob.stopMusic = stopMusic;
@@ -249,7 +249,7 @@ function player(MusicObj, playsound) {
     setTimeout(player, wait)
     function player() {
       const now = Date.now();
-      if (flag.logMusic && ((now - clock) - wait) >= glob.logggingMusicDelay) {
+      if (flag.logMusic && ((now - clock) - wait) >= glob.loggingMusicDelay) {
         bot.log("[music] Delayed " + ((now - clock) - wait) + "ms")
       }
       clock = now
