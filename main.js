@@ -9,7 +9,7 @@ Vec3 = require('vec3');
 mcData = require("minecraft-data")(process.env.MC_VERSION);
 bucketsJs = require('buckets-js');
 isSame = require("./isSameObject");
-dateformat = require('dateformat')
+// dateformat = require('dateformat')
 
 var steveName = null;
 
@@ -48,23 +48,24 @@ dirCheck()
 moduleReplace()
 addVectorPrototype()
 initialize()
-bot.loadPlugin(require('mineflayer-blockfinder')(mineflayer));
-require("./state_controler")
-require("./inventory_manager")
+// bot.loadPlugin(require('mineflayer-blockfinder')(mineflayer));
+require("./viewer")
+// require("./state_controler")
+// require("./inventory_manager")
 //require("./event_manager")
-require("./chat_manager")
-require("./chat")
-require("./movement")
-require("./combat")
-require("./builder")
-require("./digger")
-require("./elytra")
-require("./farmer")
-require("./calculator")
-require("./music_player")
-require("./pearl_golf")
-if (glob.USE_RADAR) require("./radar")
-if (glob.BOUYOMICHAN) require("./chat_bouyomi")
+// require("./chat_manager")
+// require("./chat")
+// require("./movement")
+// require("./combat")
+// require("./builder")
+// require("./digger")
+// require("./elytra")
+// require("./farmer")
+// require("./calculator")
+// require("./music_player")
+// require("./pearl_golf")
+// if (glob.USE_RADAR) require("./radar")
+// if (glob.BOUYOMICHAN) require("./chat_bouyomi")
 
 function initialize() {
   if (glob.LOCAL) {
@@ -91,7 +92,8 @@ function initialize() {
       session: sessionCache,
       password: process.env.MC_PASSWORD,
       version: process.env.MC_VERSION,
-      verbose: true
+      verbose: true,
+      auth: "microsoft"
     });
     console.log('Connecting to [' + process.env.MC_HOST + ':' + process.env.MC_PORT + ']');
     console.log('User [' + process.env.MC_USERNAME + ']');
@@ -102,7 +104,8 @@ function initialize() {
       username: process.env.MC_USERNAME,
       password: process.env.MC_PASSWORD,
       version: process.env.MC_VERSION,
-      verbose: true
+      verbose: true,
+      auth: "microsoft"
     });
     console.log('Connecting to [' + process.env.MC_HOST + ':' + process.env.MC_PORT + ']');
     console.log('User [' + process.env.MC_USERNAME + ']');
@@ -128,8 +131,8 @@ function initialize() {
 
   bot.on('end', () => {
     console.log('bot.end :: process exit');
-    glob.event.emit("log", "---[[bot.end]]--- " + dateformat(new Date(), "isoTime"))
-    if (!glob.LOCAL) jsonfile.writeFileSync("session_cache.json", bot._client.session)
+    // glob.event.emit("log", "---[[bot.end]]--- " + dateFormat(new Date(), "isoTime"))
+    // if (!glob.LOCAL) jsonfile.writeFileSync("session_cache.json", bot._client.session)
     setTimeout(process.exit, 500);
   });
 }

@@ -4,17 +4,17 @@
   "description": "minecraft bot by mineflayer",
   "main": "main.js",
   "dependencies": {
-    "binary-nbt": "^0.5.7",
+    "binary-nbt": "^0.5.0",
     "buckets-js": "^1.98.2",
-    "dateformat": "^3.0.2",
-    "dotenv": "^8.2.0",
-    "express": "^4.17.1",
-    "jsonfile": "^5.0.0",
-    "mineflayer": "2.40.1",
+    "dateformat": "^5.0.3",
+    "dotenv": "^16.0.3",
+    "express": "^4.18.2",
+    "jsonfile": "^6.1.0",
+    "mineflayer": "^4.7.0",
     "mineflayer-blockfinder": "^0.0.7",
-    "socket.io": "^2.4.0"
+    "prismarine-viewer": "^1.23.0",
+    "socket.io": "^4.4.0"
   },
-  "devDependencies": {},
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
